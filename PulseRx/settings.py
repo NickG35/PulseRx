@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'patients',
     'pharmacy',
+    'sslserver',
 ]
 
 MIDDLEWARE = [
