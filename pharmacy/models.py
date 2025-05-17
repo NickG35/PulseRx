@@ -1,3 +1,7 @@
 from django.db import models
+from accounts.models import CustomAccount
 
-# Create your models here.
+class PharmacyProfile(models.Model):
+    user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
+    pharmacy_name = models.CharField(max_length=255)
+    address = models.TextField()
