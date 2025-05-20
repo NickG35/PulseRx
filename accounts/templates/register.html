@@ -1,0 +1,10 @@
+<h1>Welcome to register page</h1>
+
+<form class="register-form" action="{% url 'register' %}" method="post">
+    {% csrf_token %}
+    {{ user_form.as_p }}
+    {% if profile_form %}
+        {{ profile_form.as_p }}
+    {% endif %}
+    <button type="submit">Register</button>
+</form>
