@@ -7,7 +7,7 @@ class UserRegistrationForm(UserCreationForm):
         ('pharmacy', 'Pharmacy'),
         ('patient', 'Patient'),
     )
-    role = forms.ChoiceField(max_length=10, choices=ROLE_CHOICES)
+    role = forms.ChoiceField(choices=ROLE_CHOICES)
 
     class Meta:
         model = CustomAccount
