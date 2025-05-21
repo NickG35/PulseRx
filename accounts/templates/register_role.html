@@ -1,0 +1,8 @@
+<h1>{{role}} register</h1>
+
+<form action="{% url 'register_role' role=role %}" method="post">
+    {% csrf_token %}
+    {{ user_form.as_p }}
+    {{ profile_form.as_p }}
+    <button type="submit">Submit</button>
+</form>
