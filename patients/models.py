@@ -8,6 +8,9 @@ class PatientProfile(models.Model):
     gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female')])
     phone_number = models.CharField(max_length=20, blank=True)
 
+    def __str__(self):
+        return f"{self.user}"
+
 class MedicationReminder(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     medicine = models.ForeignKey(Drug, on_delete=models.PROTECT)

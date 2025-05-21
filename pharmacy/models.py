@@ -6,6 +6,9 @@ class PharmacyProfile(models.Model):
     pharmacy_name = models.CharField(max_length=255)
     address = models.TextField()
 
+    def __str__(self):
+        return f"{self.user}"
+
 class Drug(models.Model):
     name = models.CharField(max_length=255)
     brand = models.CharField(max_length=255, blank=True)
