@@ -8,10 +8,17 @@ from django.contrib.auth import login
 def login(request):
     return render(request, 'login.html')
 
-def register(request):
+def role_picker(request):
+    if request.method == "POST":
+        role=request.POST.get('role')
+        return redirect('register_role', role=role)
+    return render(request, 'register.html')
+        
+    
+
+def register_role(request, role):
     if request.method == "POST":
         user_form = UserRegistrationForm(request.POST)
-        role = request.POST.get('role')
 
         if role == 'pharmacy':
             profile_form = PharmacyProfileForm(request.POST)
@@ -19,25 +26,32 @@ def register(request):
             profile_form = PatientProfileForm(request.POST)
         else:
             profile_form = None
-        
-        if profile_form:
-            if user_form.is_valid() and profile_form.is_valid():
-                user = user_form.save()
-                profile = profile_form.save(commit=False)
-                profile.user = user
-                profile.save()
-                login(request, user)
-                
-                if user.role == 'pharmacy':
-                    return redirect('pharmacy_home')
-                elif user.role == 'patient':
-                    return redirect('patient_home')
-    else:
-        user_form = UserRegistrationForm()
-        profile_form = None
 
-    return render(request, 'register.html', {
+        if user_form.is_valid() and profile_form and profile_form.is_valid():
+            user = user_form.save(commit=False)
+            user.role = role
+            user.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user
+            profile.save()
+            login(request, user)
+            return redirect('pharmacy_home' if role == 'pharmacy' else 'patient_home')
+
+        
+    else:
+        user_form = UserRegistrationForm(initial={'role': role})
+        if role == 'pharmacy':
+            profile_form = PharmacyProfileForm()
+        elif role == 'patient':
+            profile_form = PatientProfileForm()
+        else:
+            profile_form = None
+    
+
+    return render(request, 'register_role.html', {
         'user_form': user_form,
         'profile_form': profile_form,
+        'role': role
     })
+
 
