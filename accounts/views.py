@@ -1,12 +1,23 @@
 from django.shortcuts import render, redirect
-from .forms import UserRegistrationForm
+from .forms import UserRegistrationForm, LoginForm
 from pharmacy.forms import PharmacyProfileForm
 from patients.forms import PatientProfileForm
 from django.contrib.auth import login
+from django.contrib.auth.views import LoginView
+from django.urls import reverse_lazy
 
 # Create your views here.
-def login(request):
-    return render(request, 'login.html')
+class CustomLoginView(LoginView):
+    template_name = 'login.html'
+    authentication_form = LoginForm
+
+    def redirect_url(self):
+        user = self.request.user
+        if user.role == 'pharmacy':
+            return reverse_lazy('pharmacy_home')
+        elif user.role == 'patient':
+            return reverse_lazy('patient_home')
+
 
 def role_picker(request):
     if request.method == "POST":
