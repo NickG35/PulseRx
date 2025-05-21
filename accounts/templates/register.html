@@ -2,9 +2,12 @@
 
 <form class="register-form" action="{% url 'register' %}" method="post">
     {% csrf_token %}
-    {{ user_form.as_p }}
-    {% if profile_form %}
-        {{ profile_form.as_p }}
-    {% endif %}
+    
+    <select name="role">
+        <option value="" disabled selected>Select your role</option>
+        <option value="pharmacy">Pharmacy</option>
+        <option value="patient">Patient</option>
+    </select>
+
     <button type="submit">Register</button>
 </form>
