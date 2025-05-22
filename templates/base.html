@@ -5,18 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %} PulseRx {% endblock %}</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
 </head>
-<body>
-    <nav>
+
+<nav class="dashboard-nav">
+    <div class="end-div">
+        <a href="{% url 'home' %}"><h1>PulseRx</h1></a>
+    </div>
+    {% if request.user.role == 'patient' %}
+        <div>
+            <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
+            <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
+            <a href="{% url 'account' %}" class="main-link">Account</a>
+            <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+        </div>
+    {% endif %}
+    <div class="end-div">
         <a href="{% url 'logout' %}">Logout</a>
-    </nav>
-    <header>
-        <h1>PulseRx</h1>
-    </header>
+    </div>
+</nav>
+<body>
     {% block content %}
 
     {% endblock %}
-    
+
 </body>
 </html>
