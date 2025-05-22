@@ -16,4 +16,4 @@ User = get_user_model()
 
 class LoginForm (AuthenticationForm):
     username = forms.CharField(max_length=100)
-    username = forms.CharField(widget=forms.PasswordInput)
+    password = forms.CharField(widget=forms.PasswordInput)
