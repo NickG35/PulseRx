@@ -1,0 +1,23 @@
+
+
+.dashboard-nav {
+    justify-content: space-between;
+    display: flex;
+    border: 1px solid;
+    align-items: center;
+    padding: 0px;
+    margin: 0px;
+}
+
+.end-div {
+    padding: 0px 15px;
+}
+
+a {
+    text-decoration: none;
+    color: black;
+}
+
+.main-link {
+    padding: 0px 10px;
+}
