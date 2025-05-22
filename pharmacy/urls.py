@@ -3,4 +3,9 @@ from . import views
 
 urlpatterns = [
     path('dashboard', views.pharmacy_home, name='pharmacy_home'),
+    path('create_prescriptions', views.create_prescriptions, name='create_prescriptions'),
+    path('my_patients', views.my_patients, name='my_patients'),
+    path('pharmacy_account', views.account, name='pharmacy_account'),
+    path('inventory', views.inventory, name='inventory'),
+    path('pharmacy_messages', views.pharmacy_messages, name='pharmacy_messages'),
 ]
