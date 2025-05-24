@@ -14,7 +14,11 @@ class Drug(models.Model):
     brand = models.CharField(max_length=255, blank=True)
     description = models.TextField()
     dosage = models.CharField(max_length=100)
+    route = models.CharField(max_length=100, blank=True)
     stock = models.IntegerField(default=100)
+
+    def __str__(self):
+        return f"{self.brand}"
 
 class Prescription (models.Model):
     patient = models.ForeignKey(CustomAccount, related_name='patient', on_delete=models.SET_NULL, null=True, limit_choices_to={'role': 'patient'})
