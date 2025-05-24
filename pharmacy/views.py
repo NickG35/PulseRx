@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django.core.paginator import Paginator
+from .models import Drug
 
 # Create your views here.
 def pharmacy_home(request):
@@ -14,7 +16,13 @@ def account(request):
     return render(request, 'pharmacy_account.html')
 
 def inventory(request):
-    return render(request, 'inventory.html')
+    drugs = Drug.objects.all()
+    paginator = Paginator(drugs, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'inventory.html', {
+        'page_obj': page_obj
+    })
 
 def pharmacy_messages(request):
     return render(request, 'pharmacy_messages.html')
