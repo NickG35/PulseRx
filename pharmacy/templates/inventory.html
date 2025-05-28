@@ -2,9 +2,38 @@
 
 {% block content %}
 <p>These are my inventory</p>
-{% for drug in page_obj %}
-    <p>{{drug.name}}({{drug.brand}})</p>
-{% endfor %}
+<div class="med-container">
+    {% for drug in page_obj %}
+    <div class="med-item">
+      <div class="image-holder">
+        {% if drug.route == "ORAL" %}
+        <i id="med-icon" class="fa-solid fa-capsules"></i>
+        {% elif drug.route == "RESPIRATORY (INHALATION)" %}
+        <i id="med-icon" class="fa-solid fa-lungs"></i>
+        {% elif drug.route == "INTRATHECAL" %}
+        <i id="med-icon" class="fa-solid fa-syringe"></i>
+        {% elif drug.route == "OPHTHALMIC" %}
+        <i id="med-icon" class="fa-solid fa-eye"></i>
+        {% elif drug.route == "TOPICAL" %}
+        <i id="med-icon" class="fa-solid fa-pump-soap"></i>
+        {% elif drug.route == "SUBCUTANEOUS" %}
+        <i id="med-icon" class="fa-solid fa-syringe"></i>
+        {% elif drug.route == "INTRAMUSCULAR" %}
+        <i id="med-icon" class="fa-solid fa-syringe"></i>
+        {% elif drug.route == "INTRAVENOUS" %}
+        <i id="med-icon" class="fa-solid fa-droplet"></i>
+        {% elif drug.route == "SUBLINGUAL" %}
+        <i id="med-icon" class="fa-solid fa-mouth"></i>
+        {% elif drug.route == "NASAL" %}
+        <i id="med-icon" class="fa-solid fa-head-side-cough"></i>
+        {% endif %}
+      </div>
+      <div class="drug-name">
+        <p class="drug-title">{{drug.name}}({{drug.brand}})</p>
+      </div>
+    </div>
+    {% endfor %}
+</div>
 
 <div class="pagination">
     {% if page_obj.has_previous %}
