@@ -7,5 +7,6 @@ urlpatterns = [
     path('my_patients', views.my_patients, name='my_patients'),
     path('pharmacy_account', views.account, name='pharmacy_account'),
     path('inventory', views.inventory, name='inventory'),
+    path('drug_detail/<int:drug_id>', views.drug_detail, name='drug_detail'),
     path('pharmacy_messages', views.pharmacy_messages, name='pharmacy_messages'),
 ]
