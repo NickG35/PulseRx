@@ -1,5 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
+{% load med_icons %}
+{% for drug in drug_info %}
+    <div class="image-holder">
+        <i id="med-icon" class="fa-solid {{drug.route|med_icon}}"></i>
+    </div>
+    <p>{{drug.name}}({{drug.brand}})</p>
+    <p>{{drug.description}}</p>
+    <p>{{drug.dosage}}</p>
+    <p>{{drug.route}}</p>
+    <p>{{drug.stock}}</p>
+{% endfor %}
 {% endblock %}
