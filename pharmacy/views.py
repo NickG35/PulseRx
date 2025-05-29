@@ -24,5 +24,12 @@ def inventory(request):
         'page_obj': page_obj
     })
 
+def drug_detail(request, drug_id):
+    drug_info = Drug.objects.filter(id=drug_id).all()
+    return render(request, 'drug_detail.html', {
+        'drug_info': drug_info
+    })
+
+
 def pharmacy_messages(request):
     return render(request, 'pharmacy_messages.html')
