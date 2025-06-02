@@ -40,7 +40,6 @@ a {
 .med-container {
     display: grid;
     grid-template-columns: repeat(4,1fr);
-    border: 1px solid;
     gap: 25px;
     padding: 16px;
     justify-content: center;
