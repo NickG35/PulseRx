@@ -17,3 +17,6 @@ class MedicationReminder(models.Model):
     frequency = models.CharField(max_length=100)
     time = models.TimeField()
 
+class Pharmacist(models.Model):
+    pharmacist = models.ForeignKey(CustomAccount, related_name='patients', on_delete=models.SET_NULL, null=True, limit_choices_to={'role': 'pharmacist'})
+
