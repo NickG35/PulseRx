@@ -2,4 +2,12 @@
 
 {% block content %}
 <p>These are my patients</p>
+{% for info in patients %}
+    {{info.patient.id}}
+    {{info.patient.patientprofile.user}}
+    {{info.patient.patientprofile.dob}}
+    {{info.patient.patientprofile.gender}}
+    {{info.patient.email}}
+    {{info.patient.patientprofile.phone_number}}
+{%  endfor %}
 {% endblock %}
