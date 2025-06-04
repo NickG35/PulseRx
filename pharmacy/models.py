@@ -7,7 +7,16 @@ class PharmacyProfile(models.Model):
     address = models.TextField()
 
     def __str__(self):
-        return f"{self.user}"
+        return f"{self.pharmacy_name}"
+
+class PharmacistProfile(models.Model):
+    user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
+    pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.CASCADE, related_name='pharmacists')
+    first_name = models.CharField(max_length=100, null=False)
+    last_name = models.CharField(max_length=100, null=False)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.pharmacy.pharmacy_name})"
 
 class Drug(models.Model):
     name = models.CharField(max_length=255)
