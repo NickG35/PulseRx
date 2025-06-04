@@ -2,4 +2,12 @@
 
 {% block content %}
     <h1>my pharmacy</h1>
+    <p>Select your pharmacy</p>
+    <form method="post">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit">Submit</button>
+    </form>
+    <p>{{pharmacies.pharmacy_name}}</p>
+    <p>{{pharmacies.address}}</p>
 {% endblock %}
