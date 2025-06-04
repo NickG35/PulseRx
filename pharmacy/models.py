@@ -1,10 +1,13 @@
 from django.db import models
 from accounts.models import CustomAccount
+import uuid
+
 
 class PharmacyProfile(models.Model):
     user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
     pharmacy_name = models.CharField(max_length=255)
     address = models.TextField()
+    join_code = models.CharField(max_length=6, unique=True, default=uuid.uuid4().hex[:6].upper)
 
     def __str__(self):
         return f"{self.pharmacy_name}"
