@@ -2,12 +2,14 @@ from django.db import models
 from accounts.models import CustomAccount
 import uuid
 
+def generate_join_code():
+    return uuid.uuid4().hex[:6].upper()
 
 class PharmacyProfile(models.Model):
     user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
     pharmacy_name = models.CharField(max_length=255)
     address = models.TextField()
-    join_code = models.CharField(max_length=6, unique=True, default=uuid.uuid4().hex[:6].upper)
+    join_code = models.CharField(max_length=6, unique=True, default=generate_join_code)
 
     def __str__(self):
         return f"{self.pharmacy_name}"
