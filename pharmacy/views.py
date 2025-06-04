@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator
-from .models import Drug
+from .models import Drug, PharmacyProfile
 
 # Create your views here.
 def pharmacy_home(request):
@@ -10,7 +10,11 @@ def create_prescriptions(request):
     return render(request, 'create_prescriptions.html')
 
 def my_patients(request):
-    return render(request, 'my_patients.html')
+    pharmacy_profile = PharmacyProfile.objects.get(user=request.user)
+    patients = pharmacy_profile.patients.all()
+    return render(request, 'my_patients.html', {
+        'patients': patients
+    })
 
 def account(request):
     return render(request, 'pharmacy_account.html')
