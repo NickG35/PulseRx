@@ -3,7 +3,8 @@ from django.db import models
 
 class CustomAccount(AbstractUser):
     ROLE_CHOICES = (
-        ('pharmacy', 'Pharmacy'),
+        ('pharmacy admin', 'Pharmacy Admin'),
+        ('pharmacist', 'Pharmacist'),
         ('patient', 'Patient'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
