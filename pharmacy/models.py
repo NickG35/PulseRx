@@ -8,7 +8,9 @@ def generate_join_code():
 class PharmacyProfile(models.Model):
     user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
     pharmacy_name = models.CharField(max_length=255)
-    address = models.TextField()
+    street_address = models.CharField(max_length=120)
+    city = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=10)
     join_code = models.CharField(max_length=6, unique=True, default=generate_join_code)
 
     def __str__(self):
