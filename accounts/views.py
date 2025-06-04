@@ -33,7 +33,7 @@ def role_picker(request):
 
 @login_required
 def role_redirect(request):
-    if request.user.role == 'pharmacy':
+    if request.user.role == 'pharmacy admin':
         return redirect('pharmacy_home')
     elif request.user.role == 'patient':
         return redirect('patient_home')
@@ -44,7 +44,7 @@ def register_role(request, role):
     if request.method == "POST":
         user_form = UserRegistrationForm(request.POST)
 
-        if role == 'pharmacy':
+        if role == 'pharmacy admin':
             profile_form = PharmacyProfileForm(request.POST)
         elif role == 'patient':
             profile_form = PatientProfileForm(request.POST)
