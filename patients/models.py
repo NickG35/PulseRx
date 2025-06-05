@@ -3,12 +3,12 @@ from accounts.models import CustomAccount
 from pharmacy.models import Drug, PharmacyProfile
 
 class PatientProfile(models.Model):
-    first_name = models.CharField(max_length=100, null=False, default='admin')
-    last_name = models.CharField(max_length=100, null=False, default='admin')
+    first_name = models.CharField(max_length=100, null=False)
+    last_name = models.CharField(max_length=100, null=False)
     user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
     dob = models.DateField()
     gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female')])
-    phone_number = models.CharField(max_length=20, null=False, default='1')
+    phone_number = models.CharField(max_length=20, null=False)
 
     def __str__(self):
         return f"{self.user}"
