@@ -1,16 +1,30 @@
 from django.shortcuts import render
 from django.core.paginator import Paginator
-from .models import Drug, PharmacyProfile
+from .models import Drug, PharmacyProfile, PharmacistProfile
 
 # Create your views here.
 def pharmacy_home(request):
-    return render(request, 'pharmacy_home.html')
+    pharmacy = PharmacyProfile.objects.get(user=request.user)
+    return render(request, 'pharmacy_home.html', {
+        'pharmacy': pharmacy,
+    })
+
+def pharmacist_home(request):
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
+    return render(request, 'pharmacist_home.html', {
+        'pharmacist': pharmacist,
+    })
 
 def create_prescriptions(request):
     return render(request, 'create_prescriptions.html')
 
 def my_patients(request):
-    pharmacy_profile = PharmacyProfile.objects.get(user=request.user)
+    try:
+        pharmacy_profile = PharmacyProfile.objects.get(user=request.user)
+    except PharmacyProfile.DoesNotExist:
+        pharmacist =  PharmacistProfile.objects.get(user=request.user)
+        pharmacy_profile = pharmacist.pharmacy
+
     patients = pharmacy_profile.patients.all()
     return render(request, 'my_patients.html', {
         'patients': patients
