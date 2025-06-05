@@ -5,7 +5,7 @@ from pharmacy.models import PharmacyProfile
 class PatientProfileForm(forms.ModelForm):
     class Meta:
         model = PatientProfile
-        fields = ['dob', 'gender', 'phone_number']
+        exclude = ['user']
 
 class PharmacistForm(forms.Form):
     pharmacy = forms.ModelChoiceField(
