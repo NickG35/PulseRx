@@ -4,7 +4,8 @@
 <p>These are my patients</p>
 {% for info in patients %}
     {{info.patient.id}}
-    {{info.patient.patientprofile.user}}
+    {{info.patient.patientprofile.first_name}}
+    {{info.patient.patientprofile.last_name}}
     {{info.patient.patientprofile.dob}}
     {{info.patient.patientprofile.gender}}
     {{info.patient.email}}
