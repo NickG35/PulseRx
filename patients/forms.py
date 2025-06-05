@@ -6,11 +6,3 @@ class PatientProfileForm(forms.ModelForm):
     class Meta:
         model = PatientProfile
         exclude = ['user']
-
-class PharmacistForm(forms.Form):
-    pharmacy = forms.ModelChoiceField(
-        queryset=PharmacyProfile.objects.all(),
-        label="Select a Pharmacy",
-        empty_label="Choose a pharmacy",
-        required=True
-    )
