@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect
 from .forms import UserRegistrationForm, LoginForm
-from pharmacy.forms import PharmacyProfileForm
+from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
+from pharmacy.models import PharmacyProfile
 
 
 # Create your views here.
@@ -15,8 +16,10 @@ class CustomLoginView(LoginView):
 
     def get_success_url(self):
         user = self.request.user
-        if user.role == 'pharmacy':
+        if user.role == 'pharmacy admin':
             return reverse_lazy('pharmacy_home')
+        elif user.role == 'pharmacist':
+            return reverse_lazy('pharmacist_home')
         elif user.role == 'patient':
             return reverse_lazy('patient_home')
         
@@ -41,35 +44,55 @@ def role_redirect(request):
     
 
 def register_role(request, role):
+    profile_form_classes = {
+        'pharmacy admin': PharmacyProfileForm,
+        'patient': PatientProfileForm,
+        'pharmacist': PharmacistProfileForm,
+    }
+
+    ProfileForm = profile_form_classes.get(role)
+
     if request.method == "POST":
         user_form = UserRegistrationForm(request.POST)
-
-        if role == 'pharmacy admin':
-            profile_form = PharmacyProfileForm(request.POST)
-        elif role == 'patient':
-            profile_form = PatientProfileForm(request.POST)
-        else:
-            profile_form = None
+        profile_form = ProfileForm(request.POST) if ProfileForm else None
 
         if user_form.is_valid() and profile_form and profile_form.is_valid():
             user = user_form.save(commit=False)
             user.role = role
             user.save()
+
             profile = profile_form.save(commit=False)
             profile.user = user
+
+            if role == 'pharmacist':
+                join_code = profile_form.cleaned_data.get('join_code')
+                try:
+                    pharmacy = PharmacyProfile.objects.get(join_code=join_code)
+                    profile.pharmacy = pharmacy
+                except PharmacyProfile.DoesNotExist:
+                    profile_form.add_error('join_code', 'Invalid join code. Please contact your pharmacy admin.')
+                    return render(request, 'register_role.html', {
+                        'user_form': user_form,
+                        'profile_form': profile_form,
+                        'role': role
+                    })
+            
             profile.save()
             login(request, user)
-            return redirect('pharmacy_home' if role == 'pharmacy' else 'patient_home')
+
+            if role == 'pharmacy admin':
+                return redirect('pharmacy_home')
+            elif role == 'patient':
+                return redirect('patient_home')
+            elif role == 'pharmacist':
+                return redirect('pharmacist_home') 
+
 
         
     else:
         user_form = UserRegistrationForm(initial={'role': role})
-        if role == 'pharmacy':
-            profile_form = PharmacyProfileForm()
-        elif role == 'patient':
-            profile_form = PatientProfileForm()
-        else:
-            profile_form = None
+        profile_form = ProfileForm() if ProfileForm else None
+        
     
 
     return render(request, 'register_role.html', {
