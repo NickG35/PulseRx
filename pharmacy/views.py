@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
-from .models import Drug, PharmacyProfile, PharmacistProfile
+from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
+from .forms import PrescriptionForm
 from patients.models import PatientProfile
 
 # Create your views here.
@@ -17,7 +18,16 @@ def pharmacist_home(request):
     })
 
 def create_prescriptions(request):
-    return render(request, 'create_prescriptions.html')
+    pharmacist =  PharmacistProfile.objects.get(user=request.user)
+    pharmacy_profile = pharmacist.pharmacy
+    form = PrescriptionForm(request.POST or None, pharmacy=pharmacy_profile)
+    if form.is_valid():
+        form.save()
+        return redirect('create_prescriptions')
+    
+    return render(request, 'create_prescriptions.html', {
+        'form': form,
+    })
 
 def my_patients(request):
     pharmacist =  PharmacistProfile.objects.get(user=request.user)
