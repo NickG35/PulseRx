@@ -1,5 +1,6 @@
 from django import forms
-from .models import PharmacyProfile, PharmacistProfile
+from .models import PharmacyProfile, PharmacistProfile, Prescription
+from patients.models import PatientProfile
 
 class PharmacyProfileForm(forms.ModelForm):
     class Meta:
@@ -11,3 +12,15 @@ class PharmacistProfileForm(forms.ModelForm):
     class Meta:
         model = PharmacistProfile
         exclude = ['user','pharmacy']
+
+class PrescriptionForm(forms.ModelForm):
+    class Meta:
+        model = Prescription
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        pharmacy = kwargs.pop('pharmacy', None)
+        super().__init__(*args, **kwargs)
+        if pharmacy:
+            self.fields['patient'].queryset = PatientProfile.objects.filter(pharmacy=pharmacy)
+            self.fields['prescribed_by'].queryset = PharmacistProfile.objects.filter(pharmacy=pharmacy)
