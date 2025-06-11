@@ -14,13 +14,10 @@ class PharmacistProfileForm(forms.ModelForm):
         exclude = ['user','pharmacy']
 
 class PrescriptionForm(forms.ModelForm):
+    patient = forms.ModelChoiceField(
+        queryset=PatientProfile.objects.none(),
+        widget=forms.HiddenInput(attrs={'class': 'hidden-patient'})
+    )
     class Meta:
         model = Prescription
-        fields = '__all__'
-    
-    def __init__(self, *args, **kwargs):
-        pharmacy = kwargs.pop('pharmacy', None)
-        super().__init__(*args, **kwargs)
-        if pharmacy:
-            self.fields['patient'].queryset = PatientProfile.objects.filter(pharmacy=pharmacy)
-            self.fields['prescribed_by'].queryset = PharmacistProfile.objects.filter(pharmacy=pharmacy)
+        exclude = ['prescribed_by']
