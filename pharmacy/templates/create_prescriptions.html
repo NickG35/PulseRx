@@ -1,10 +1,79 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<p>create prescription</p>
-<form method="post">
-    {% csrf_token %}
-    {{form.as_p}}
-    <button type="submit">Submit</button>
-</form>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let timeoutId; 
+            const resultsContainer = document.getElementById('autocompleteResults');
+            const patientInput = document.querySelector('.hidden-patient');
+            const searchUrl = "{% url 'patient_search' %}";
+
+            let lastResultsHTML = '';
+
+            document.getElementById('search-input').addEventListener('keyup', function(){
+                clearTimeout(timeoutId)
+                const query = this.value.trim();
+
+                if (query.length === 0) {
+                    resultsContainer.innerHTML = ''
+                    lastResultsHTML = '';
+                    return;
+                }
+
+                timeoutId = setTimeout(() => {
+                    fetch(`${searchUrl}?q=${encodeURIComponent(query)}`)
+                        .then(response => {
+                            if (!response.ok){
+                                throw new Error(`HTTP error status: ${response.status}`);
+                            }
+                            return response.json()
+                        })
+                        .then(data => {
+                            const fragment = document.createDocumentFragment();
+
+                            if(data.length > 0) {
+                                data.forEach(patient => {
+                                    const resultItem = document.createElement('div');
+                                    resultItem.classList.add('search-item');
+                                    resultItem.textContent = `${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
+                                    resultItem.addEventListener('click', () => {
+                                        patientInput.value = `${patient.id}`;
+                                        this.value = `${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
+                                    });
+                                    fragment.appendChild(resultItem);
+                                });
+                            } else {
+                                const noResults = document.createElement('div');
+                                noResults.textContent = 'No patients found.';
+                                noResults.classList.add('no-results');
+                                fragment.appendChild(noResults);
+                            }
+
+                            const tempDiv = document.createElement('div');
+                            tempDiv.appendChild(fragment.cloneNode(true));
+                            const newHTML = tempDiv.innerHTML;
+
+                            if (newHTML != lastResultsHTML) {
+                                resultsContainer.innerHTML = newHTML;
+                                lastResultsHTML = newHTML;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching patient data:', error);
+                            resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+                        });;
+                }, 300);
+            });
+        });
+    </script>
+
+    <p>create prescription</p>
+
+    <input type="text" id="search-input" placeholder="search for patients..">
+    <div id="autocompleteResults"></div>
+
+    <form method="post">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit">Submit</button>
+    </form>
 {% endblock %}
