@@ -3,6 +3,8 @@ from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
+from django.http import JsonResponse
+from django.db.models import Q
 
 # Create your views here.
 def pharmacy_home(request):
@@ -18,9 +20,7 @@ def pharmacist_home(request):
     })
 
 def create_prescriptions(request):
-    pharmacist =  PharmacistProfile.objects.get(user=request.user)
-    pharmacy_profile = pharmacist.pharmacy
-    form = PrescriptionForm(request.POST or None, pharmacy=pharmacy_profile)
+    form = PrescriptionForm(request.POST)
     if form.is_valid():
         form.save()
         return redirect('create_prescriptions')
@@ -28,6 +28,28 @@ def create_prescriptions(request):
     return render(request, 'create_prescriptions.html', {
         'form': form,
     })
+
+def patient_search(request):
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = pharmacist.pharmacy
+    pharmacy_patients = PatientProfile.objects.filter(pharmacy=pharmacy)
+
+    query = request.GET.get('q', '').strip()
+    if query:
+        name_parts = query.split()
+        if len(name_parts) == 2:
+            first, last = name_parts
+            items = pharmacy_patients.filter(Q(first_name__icontains=first) & Q(last_name__icontains=last))
+        else:
+            items = pharmacy_patients.filter(Q(first_name__icontains=query)| Q(last_name__icontains=query) | Q(id__icontains=query)).order_by('first_name')[:10]
+
+        results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.id} for item in items]
+    else:
+        results = []
+        
+    return JsonResponse(results, safe=False)
+
+
 
 def my_patients(request):
     pharmacist =  PharmacistProfile.objects.get(user=request.user)
