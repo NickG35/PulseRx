@@ -1,5 +1,5 @@
 from django import forms
-from .models import PharmacyProfile, PharmacistProfile, Prescription
+from .models import PharmacyProfile, PharmacistProfile, Prescription, Drug
 from patients.models import PatientProfile
 
 class PharmacyProfileForm(forms.ModelForm):
@@ -14,10 +14,19 @@ class PharmacistProfileForm(forms.ModelForm):
         exclude = ['user','pharmacy']
 
 class PrescriptionForm(forms.ModelForm):
-    patient = forms.ModelChoiceField(
-        queryset=PatientProfile.objects.none(),
-        widget=forms.HiddenInput(attrs={'class': 'hidden-patient'})
-    )
-    class Meta:
-        model = Prescription
-        exclude = ['prescribed_by']
+        class Meta:
+            model = Prescription
+            exclude = ['prescribed_by']
+            widgets = {
+              'patient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
+              'medicine': forms.HiddenInput(attrs={'class': 'hidden-medicine'}),
+            }
+        
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+        
+            self.fields['patient'].queryset = PatientProfile.objects.all()
+            self.fields['medicine'].queryset = Drug.objects.all()
+            
+            for field in self.fields.values():
+                field.error_messages = {'required': ''}
