@@ -11,6 +11,7 @@
 
             document.getElementById('search-input').addEventListener('keyup', function(){
                 clearTimeout(timeoutId)
+                const input = this;
                 const query = this.value.trim();
 
                 if (query.length === 0) {
@@ -32,12 +33,13 @@
 
                             if(data.length > 0) {
                                 data.forEach(patient => {
-                                    const resultItem = document.createElement('div');
+                                    const  resultItem = document.createElement('div');
                                     resultItem.classList.add('search-item');
-                                    resultItem.textContent = `${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
+                                    resultItem.textContent =`${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
                                     resultItem.addEventListener('click', () => {
                                         patientInput.value = `${patient.id}`;
-                                        this.value = `${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
+                                        input.value = `${patient.first_name} ${patient.last_name} ID: ${patient.id}`;
+                                        resultsContainer.innerHTML = '';
                                     });
                                     fragment.appendChild(resultItem);
                                 });
@@ -52,17 +54,81 @@
                             tempDiv.appendChild(fragment.cloneNode(true));
                             const newHTML = tempDiv.innerHTML;
 
-                            if (newHTML != lastResultsHTML) {
-                                resultsContainer.innerHTML = newHTML;
-                                lastResultsHTML = newHTML;
-                            }
+                            resultsContainer.innerHTML = ''; 
+                            resultsContainer.appendChild(fragment); 
+
                         })
                         .catch(error => {
                             console.error('Error fetching patient data:', error);
                             resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
-                        });;
+                        });
                 }, 300);
             });
+
+            let timeoutID
+            const medContainer = document.getElementById('medicineResults');
+            const medInput = document.querySelector('.hidden-medicine');
+            const medUrl = "{% url 'medicine_search' %}";
+
+            let beforeResultsHTML = '';
+            document.getElementById('med-input').addEventListener('keyup', function(){
+                clearTimeout(timeoutID)
+                const input = this;
+
+                const query = this.value.trim();
+
+                if (query.length === 0) {
+                    medContainer.innerHTML = ''
+                    beforeResultsHTML = '';
+                    return;
+                }
+
+                timeoutID = setTimeout(() => {
+                    fetch(`${medUrl}?q=${encodeURIComponent(query)}`)
+                        .then(response => {
+                            if (!response.ok){
+                                throw new Error(`HTTP error status: ${response.status}`);
+                            }
+                            return response.json()
+                        })
+                        .then(data => {
+                            const fragment = document.createDocumentFragment();
+
+                            if(data.length > 0) {
+                                data.forEach(medicine => {
+                                    const medItem = document.createElement('div');
+                                    medItem.classList.add('search-item');
+                                    medItem.textContent = `${medicine.name} (${medicine.brand}) ${medicine.id}`;
+                                    medItem.addEventListener('click', () => {
+                                        medInput.value = `${medicine.id}`;
+                                        input.value = `${medicine.name} (${medicine.brand})`;
+                                        medContainer.innerHTML = '';
+                                    });
+                                    fragment.appendChild(medItem);
+                                });
+                            } else {
+                                const noMeds = document.createElement('div');
+                                noMeds.textContent = 'No medicine found.';
+                                noMeds.classList.add('no-results');
+                                fragment.appendChild(noMeds);
+                            }
+
+                            const temporaryDiv = document.createElement('div');
+                            temporaryDiv.appendChild(fragment.cloneNode(true));
+                            const currentHTML = temporaryDiv.innerHTML;
+
+                    
+                            medContainer.innerHTML = '';
+                            medContainer.appendChild(fragment);
+                        })
+                        .catch(error => {
+                            console.error('Error fetching medicine data:', error);
+                            medContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+                        });
+                }, 300);
+            });
+
+
         });
     </script>
 
@@ -71,9 +137,18 @@
     <input type="text" id="search-input" placeholder="search for patients..">
     <div id="autocompleteResults"></div>
 
+    <input type="text" id="med-input" placeholder="search for medicine..">
+    <div id="medicineResults"></div>
+
     <form method="post">
         {% csrf_token %}
-        {{form.as_p}}
+        {% for field in form %}
+            {{field.label}}
+            {{ field }}
+            {% for error in field.errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        {% endfor %}
         <button type="submit">Submit</button>
     </form>
 {% endblock %}
