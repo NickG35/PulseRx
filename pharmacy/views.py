@@ -21,8 +21,11 @@ def pharmacist_home(request):
 
 def create_prescriptions(request):
     form = PrescriptionForm(request.POST)
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
     if form.is_valid():
-        form.save()
+        prescription = form.save(commit=False)
+        prescription.prescribed_by = pharmacist
+        prescription.save()
         return redirect('create_prescriptions')
     
     return render(request, 'create_prescriptions.html', {
@@ -44,6 +47,24 @@ def patient_search(request):
             items = pharmacy_patients.filter(Q(first_name__icontains=query)| Q(last_name__icontains=query) | Q(id__icontains=query)).order_by('first_name')[:10]
 
         results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.id} for item in items]
+    else:
+        results = []
+        
+    return JsonResponse(results, safe=False)
+
+def medicine_search(request):
+    drugs = Drug.objects.all()
+
+    query = request.GET.get('q', '').strip()
+    if query:
+        name_parts = query.split()
+        if len(name_parts) == 2:
+            generic, brand = name_parts
+            items = drugs.filter(Q(name__icontains=generic) & Q(brand__icontains=brand))
+        else:
+            items = drugs.filter(Q(name__icontains=query)| Q(brand__icontains=query) | Q(id__icontains=query)).order_by('name')[:10]
+
+        results= [{'name': item.name, 'brand': item.brand, 'id': item.id} for item in items]
     else:
         results = []
         
