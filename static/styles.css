@@ -13,6 +13,11 @@
     padding: 0px 15px;
 }
 
+.search-item {
+    border: 1px solid black;
+    background: beige;
+}
+
 a {
     text-decoration: none;
     color: black;
