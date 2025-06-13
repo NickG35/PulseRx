@@ -16,7 +16,13 @@
 .search-item {
     border: 1px solid black;
     background: beige;
+    cursor: pointer;
 }
+
+.search-item:hover{
+    background: gray;
+}
+
 
 a {
     text-decoration: none;
