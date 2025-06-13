@@ -63,6 +63,7 @@
                             resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
                         });
                 }, 300);
+
             });
 
             let timeoutID
@@ -128,7 +129,10 @@
                 }, 300);
             });
 
-
+            flatpickr(".datepicker", {
+                    dateFormat: "m-d-Y",
+                    allowInput: true
+            });
         });
     </script>
 
