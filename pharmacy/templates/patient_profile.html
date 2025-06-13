@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Patient Info</h2>
+    <p>{{patient.first_name}} {{patient.last_name}}</p>
+    <strong>DOB:</strong> {{ patient.dob }}<br>
+    <strong>Gender:</strong> {{ patient.gender }}<br>
+    <strong>Email:</strong> {{ patient.user.email }}<br>
+    <strong>Phone:</strong> {{ patient.phone_number }}<br>
+
+<h2>Prescription History</h2>
+{% for prescription in patient.prescription.all %}
+    <p>Name: {{prescription.medicine.name}}({{prescription.medicine.brand}})</p>
+    <p>QTY: {{prescription.quantity}}</p>
+    <p>Prescribed by: Dr. {{prescription.prescribed_by}}</p>
+    <p>Prescribed on {{prescription.prescribed_on}}</p>
+    <p>Expires: {{prescription.expiration_date}}</p>
+{% empty %}
+    <p>No prescriptions yet</p>
+{% endfor %}
+{% endblock %}
