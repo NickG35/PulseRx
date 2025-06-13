@@ -38,7 +38,7 @@ class Drug(models.Model):
         return f"{self.brand}"
 
 class Prescription (models.Model):
-    patient = models.ForeignKey('patients.PatientProfile', on_delete=models.SET_NULL, null=True)
+    patient = models.ForeignKey('patients.PatientProfile', related_name='prescription', on_delete=models.SET_NULL, null=True)
     medicine = models.ForeignKey(Drug, related_name='drug', on_delete=models.PROTECT)
     quantity = models.IntegerField(default=0)
     prescribed_by = models.ForeignKey(PharmacistProfile, related_name='pharmacist', on_delete=models.SET_NULL, null=True)
