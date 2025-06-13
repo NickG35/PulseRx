@@ -81,6 +81,12 @@ def my_patients(request):
         'patients': patients
     })
 
+def patient_profile(request, patient_id):
+    patient = PatientProfile.objects.get(id=patient_id)
+    return render(request, 'patient_profile.html', {
+        'patient': patient
+    })
+
 def account(request):
     return render(request, 'pharmacy_account.html')
 
