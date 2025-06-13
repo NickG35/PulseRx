@@ -14,6 +14,14 @@ class PharmacistProfileForm(forms.ModelForm):
         exclude = ['user','pharmacy']
 
 class PrescriptionForm(forms.ModelForm):
+        expiration_date = forms.DateField(
+            input_formats=['%m-%d-%Y'],
+            widget=forms.DateInput(attrs={
+                 'class': 'datepicker',
+                 'placeholder': 'MM-DD-YYYY'
+            })
+        )
+
         class Meta:
             model = Prescription
             exclude = ['prescribed_by']
