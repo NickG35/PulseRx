@@ -1,5 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>This is my pharmacy account</p>
+<h3>Account Info</h3>
+<p>Change Username: {{user.username}}</p>
+<p>Update Email: {{user.email}}</p>
+
+<h3>Activity Overview</h3>
+<p>Prescriptions Filled</p>
+<p>Low Stock Medications</p>
+
+<h3>Security</h3>
+<p>Change Password: {{user.password}}</p>
+
 {% endblock %}
