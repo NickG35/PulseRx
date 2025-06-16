@@ -12,10 +12,10 @@
 </head>
 
 <nav class="dashboard-nav">
-    <div class="end-div">
-        <a href="{% url 'home' %}"><h1>PulseRx</h1></a>
-    </div>
     {% if request.user.role == 'patient' %}
+        <div class="end-div">
+            <a href="{% url 'patient_home' %}"><h1>PulseRx</h1></a>
+        </div>
         <div>
             <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
             <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
@@ -24,12 +24,19 @@
             <a href="{% url 'messages' %}" class="main-link">Messages</a>
         </div>
     {% elif request.user.role == 'pharmacist' %}
+        <div class="end-div">
+            <a href="{% url 'pharmacist_home' %}"><h1>PulseRx</h1></a>
+        </div>
         <div>
             <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
             <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
             <a href="{% url 'pharmacy_account' %}" class="main-link">Account</a>
             <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
             <a href="{% url 'pharmacy_messages' %}" class="main-link">Messages</a>
+        </div>
+    {% else %}
+        <div class="end-div">
+            <a href="{% url 'pharmacy_home' %}"><h1>PulseRx</h1></a>
         </div>
     {% endif %}
     <div class="end-div">
