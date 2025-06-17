@@ -35,9 +35,11 @@
             info.disabled = false;
             document.getElementById(save_btn).style.display = 'block';
             document.getElementById(cancel_btn).style.display = 'block';
-            if (confirmation){
-                confirmation.style.display = 'block';
-                confirmation.disabled = false;
+            if(info.className == 'password-info') {
+                if (confirmation){
+                    confirmation.style.display = 'block';
+                    confirmation.disabled = false;
+                }
             }
         })
     }
