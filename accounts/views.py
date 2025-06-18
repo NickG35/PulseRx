@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .forms import UserRegistrationForm, LoginForm
+from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
 from django.contrib.auth import login, logout, update_session_auth_hash
@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile
+from django.contrib.auth import authenticate
 
 
 # Create your views here.
@@ -104,29 +105,35 @@ def register_role(request, role):
 
 def account_settings(request):
     user = request.user
+    account_form = AccountUpdateForm(instance=user)
+    password_form = PasswordUpdateForm()
 
     if request.method == 'POST':
         if request.POST.get('form_type') == 'account':
-            username = request.POST.get('username')
-            email = request.POST.get('email')
-            user.username = username
-            user.email = email
-            user.save()
-            messages.success(request, "Account info updated.")
+            account_form = AccountUpdateForm(request.POST, instance=user)
+            if account_form.is_valid():
+                account_form.save()
+                messages.success(request, "Account info updated.")
+                return redirect('account_settings')
 
         elif request.POST.get('form_type') == 'password':
-            password = request.POST.get('password')
-            confirmation = request.POST.get('confirmation')
+            password_form = PasswordUpdateForm(request.POST)
+            if password_form.is_valid():
+                current_password = password_form.cleaned_data['current_password']
+                if not user.check_password(current_password):
+                    messages.error (request, "Current Password is incorrect.")
+                else:
+                    password = password_form.cleaned_data['password']
+                    user.set_password(password)
+                    user.save()
+                    update_session_auth_hash(request, user)
+                    messages.success(request, "Password updated successfully.")
+                    return redirect('account_settings')
 
-            if password == confirmation:
-                user.set_password(password)
-                user.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, "Password updated successfully.")
-            else:
-                messages.error(request, "Passwords do not match.")
-
-    return render(request, 'account_settings.html')
+    return render(request, 'account_settings.html', {
+        'account_form': account_form,
+        'password_form': password_form
+    })
 
 
 
