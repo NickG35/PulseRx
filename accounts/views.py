@@ -126,7 +126,7 @@ def account_settings(request):
             else:
                 messages.error(request, "Passwords do not match.")
 
-    return render(request, 'pharmacy_account.html')
+    return render(request, 'account_settings.html')
 
 
 
