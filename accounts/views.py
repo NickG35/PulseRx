@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from .forms import UserRegistrationForm, LoginForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.views import LoginView
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile
@@ -100,5 +101,32 @@ def register_role(request, role):
         'profile_form': profile_form,
         'role': role
     })
+
+def account_settings(request):
+    user = request.user
+
+    if request.method == 'POST':
+        if request.POST.get('form_type') == 'account':
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            user.username = username
+            user.email = email
+            user.save()
+            messages.success(request, "Account info updated.")
+
+        elif request.POST.get('form_type') == 'password':
+            password = request.POST.get('password')
+            confirmation = request.POST.get('confirmation')
+
+            if password == confirmation:
+                user.set_password(password)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Password updated successfully.")
+            else:
+                messages.error(request, "Passwords do not match.")
+
+    return render(request, 'pharmacy_account.html')
+
 
 
