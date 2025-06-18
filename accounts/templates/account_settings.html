@@ -3,9 +3,11 @@
 {% block content %}
 
 {% if messages %}
-    {% for message in messages %} 
-        <p class="{{ message.tags }}">{{ message }}</p>
-    {% endfor %}
+    <ul class="messages">
+        {% for message in messages %} 
+            <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
 {% endif %}
 
 <h3>Account Info</h3>
@@ -13,10 +15,13 @@
 <form method="post">
     {% csrf_token %}
     <input type="hidden" name="form_type" value="account">
-    <label for="username">change username</label>
-    <input type="text" name="username" value="{{user.username}}" class="user-info" id="username" disabled>
-    <label for="email">update email</label>
-    <input type="email" name="email" value="{{user.email}}" class="user-info" id="email" disabled>
+    {% for field in account_form %}
+        <p>{{ field.label }}</p>
+        {{ field }}
+        {% for error in field.errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    {% endfor %}
     <button onclick="disableInput('.user-info', 'save-btn', 'cancel-btn')" style="display: none" type="button" id="cancel-btn">Cancel</button>
     <button style="display: none" type="submit" id="save-btn">Save</button>
 </form>
@@ -31,9 +36,18 @@
 <button onclick="editUser('.password-info', 'savebtn', 'cancelbtn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
 <form method="post">
     {% csrf_token %}
+
+    {% for error in password_form.non_field_errors %}
+        <p class="error">{{ error }}</p>
+    {% endfor %}
+        
     <input type="hidden" name="form_type" value="password">
-    <input type="password" name="password" value="{{user.password}}" class="password-info" id="password" disabled>
-    <input placeholder="confirm password" style="display: none" type="password" name="confirmation" class="password-info" id="confirmation" disabled>
+    {% for field in password_form %}
+        {{ field }}
+        {% for error in field.errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    {% endfor %}
     <button onclick="disableInput('.password-info', 'savebtn', 'cancelbtn')" style="display: none" type="button" id="cancelbtn">Cancel</button>
     <button style="display: none" type="submit" id="savebtn">Save</button>
 </form>
