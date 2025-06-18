@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
-from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
+from .models import Drug, PharmacyProfile, PharmacistProfile
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
 from django.http import JsonResponse
@@ -86,9 +86,6 @@ def patient_profile(request, patient_id):
     return render(request, 'patient_profile.html', {
         'patient': patient
     })
-
-def account(request):
-    return render(request, 'pharmacy_account.html')
 
 def inventory(request):
     drugs = Drug.objects.all()
