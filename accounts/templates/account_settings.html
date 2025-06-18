@@ -21,9 +21,11 @@
     <button style="display: none" type="submit" id="save-btn">Save</button>
 </form>
 
-<h3>Activity Overview</h3>
-<p>Prescriptions Filled</p>
-<p>Low Stock Medications</p>
+{% if request.user.role == 'pharmacist' %}
+    <h3>Activity Overview</h3>
+    <p>Prescriptions Filled</p>
+    <p>Low Stock Medications</p>
+{% endif %}
 
 <h3>Security</h3>
 <button onclick="editUser('.password-info', 'savebtn', 'cancelbtn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
