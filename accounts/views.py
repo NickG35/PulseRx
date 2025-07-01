@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile
-from django.contrib.auth import authenticate
+from django.http import JsonResponse
 
 
 # Create your views here.
@@ -105,34 +105,35 @@ def register_role(request, role):
 
 def account_settings(request):
     user = request.user
-    account_form = AccountUpdateForm(instance=user)
-    password_form = PasswordUpdateForm()
+    account_form = AccountUpdateForm(instance=user, user=request.user)
+    password_form = PasswordUpdateForm(user=request.user)
 
     if request.method == 'POST':
         if request.POST.get('form_type') == 'account':
-            account_form = AccountUpdateForm(request.POST, instance=user)
+            account_form = AccountUpdateForm(request.POST, instance=user, user=request.user)
             if account_form.is_valid():
                 account_form.save()
-                messages.success(request, "Account info updated.")
-                return redirect('account_settings')
+                message = "Account info updated."
+                return JsonResponse({'success': True, 'message': message})
+            else:
+                return JsonResponse({'success': False, 'errors': account_form.errors})
 
         elif request.POST.get('form_type') == 'password':
-            password_form = PasswordUpdateForm(request.POST)
+            password_form = PasswordUpdateForm(request.POST, user=request.user)
             if password_form.is_valid():
-                current_password = password_form.cleaned_data['current_password']
-                if not user.check_password(current_password):
-                    messages.error (request, "Current Password is incorrect.")
-                else:
-                    password = password_form.cleaned_data['password']
-                    user.set_password(password)
-                    user.save()
-                    update_session_auth_hash(request, user)
-                    messages.success(request, "Password updated successfully.")
-                    return redirect('account_settings')
+                password = password_form.cleaned_data['password']
+                user.set_password(password)
+                user.save()
+                update_session_auth_hash(request, user)
+                message = "Password updated successfully."
+                return JsonResponse({'success': True, 'message': message,})
+            else:
+                #ensure your still showing the confirmation field if forms not valid
+                return JsonResponse({'success': False, 'errors': password_form.errors})
 
     return render(request, 'account_settings.html', {
         'account_form': account_form,
-        'password_form': password_form
+        'password_form': password_form,
     })
 
 
