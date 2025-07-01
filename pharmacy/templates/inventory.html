@@ -1,7 +1,83 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    let timeoutID
+    const medContainer = document.getElementById('medicineResults');
+    const medInput = document.querySelector('.hidden-medicine');
+    const medUrl = "{% url 'medicine_search' %}";
+
+    let beforeResultsHTML = '';
+    document.getElementById('med-input').addEventListener('keyup', function(){
+        clearTimeout(timeoutID)
+        const input = this;
+
+        const query = this.value.trim();
+
+        if (query.length === 0) {
+            medContainer.innerHTML = ''
+            beforeResultsHTML = '';
+            return;
+        }
+
+        timeoutID = setTimeout(() => {
+            fetch(`${medUrl}?q=${encodeURIComponent(query)}`)
+                .then(response => {
+                    if (!response.ok){
+                        throw new Error(`HTTP error status: ${response.status}`);
+                    }
+                    return response.json()
+                })
+                .then(data => {
+                    const fragment = document.createDocumentFragment();
+
+                    if(data.length > 0) {
+                        data.forEach(medicine => {
+                          const medItem = document.createElement('div');
+                          medItem.classList.add('search-item');
+
+                          const searchLink = document.createElement('a');
+                          searchLink.href = `/pharmacy/drug_detail/${medicine.id}`;
+                          searchLink.textContent = `${medicine.name} (${medicine.brand}) ID: ${medicine.id}`;
+                          searchLink.style.display = 'block';
+                          
+                          medItem.appendChild(searchLink)
+                          fragment.appendChild(medItem);
+                        });
+                    } else {
+                        const noMeds = document.createElement('div');
+                        noMeds.textContent = 'No medicine found.';
+                        noMeds.classList.add('no-results');
+                        fragment.appendChild(noMeds);
+                    }
+
+                    const temporaryDiv = document.createElement('div');
+                    temporaryDiv.appendChild(fragment.cloneNode(true));
+                    const currentHTML = temporaryDiv.innerHTML;
+
+            
+                    medContainer.innerHTML = '';
+                    medContainer.appendChild(fragment);
+                })
+                .catch(error => {
+                    console.error('Error fetching medicine data:', error);
+                    medContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+                });
+        }, 300);
+    });
+
+    flatpickr(".datepicker", {
+            dateFormat: "m-d-Y",
+            allowInput: true
+    });
+  });
+</script>
 <h2>Inventory</h2>
+
+<input type="text" id="med-input" placeholder="search for medicine..">
+<div id="medicineResults"></div>
+
 <div class="med-container">
     {% for drug in page_obj %}
     <div class="med-item">
