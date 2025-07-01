@@ -2,24 +2,16 @@
 
 {% block content %}
 
-{% if messages %}
-    <ul class="messages">
-        {% for message in messages %} 
-            <li class="{{ message.tags }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
-
 <h3>Account Info</h3>
 <button onclick="editUser('.user-info', 'save-btn', 'cancel-btn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
-<form method="post">
+<form id="account-form" method="post">
     {% csrf_token %}
     <input type="hidden" name="form_type" value="account">
     {% for field in account_form %}
         <p>{{ field.label }}</p>
         {{ field }}
         {% for error in field.errors %}
-            <p>{{ error }}</p>
+            <p class="error">{{ error }}</p>
         {% endfor %}
     {% endfor %}
     <button onclick="disableInput('.user-info', 'save-btn', 'cancel-btn')" style="display: none" type="button" id="cancel-btn">Cancel</button>
@@ -34,7 +26,7 @@
 
 <h3>Security</h3>
 <button onclick="editUser('.password-info', 'savebtn', 'cancelbtn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
-<form method="post">
+<form id="password-form" method="post">
     {% csrf_token %}
 
     {% for error in password_form.non_field_errors %}
@@ -42,11 +34,13 @@
     {% endfor %}
         
     <input type="hidden" name="form_type" value="password">
-    {% for field in password_form %}
+     {% for field in password_form %}
+        <p>{{ field.label }}</p>
         {{ field }}
         {% for error in field.errors %}
-            <p>{{ error }}</p>
+            <p class="error">{{ error }}</p>
         {% endfor %}
+        {{ field.password }}
     {% endfor %}
     <button onclick="disableInput('.password-info', 'savebtn', 'cancelbtn')" style="display: none" type="button" id="cancelbtn">Cancel</button>
     <button style="display: none" type="submit" id="savebtn">Save</button>
@@ -54,13 +48,81 @@
 
 <script>
     const confirmation = document.getElementById('confirmation');
+    function updateForm(formName) {
+        formName.addEventListener('submit', async function (e)  {
+            e.preventDefault();
+
+            formData = new FormData(formName);
+            
+            //clear previous errors
+            document.querySelectorAll('.error').forEach(p => p.textContent = '');
+
+            const formType = formData.get('form_type');
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            const response = await fetch('/accounts/account_settings', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+
+                for (const [key, value] of formData.entries()) {
+                    const input = formName.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.setAttribute('data-original', value);
+                    }
+                }
+
+                let message = document.createElement('p');
+                message.textContent = data.message;
+                message.classList = 'success-message';
+                formName.prepend(message);
+                setTimeout(() => message.remove(), 4000);
+
+                if (formType === 'account'){
+                    disableInput('.user-info', 'save-btn', 'cancel-btn');
+                } else if (formType === 'password') {
+                    disableInput('.password-info', 'savebtn', 'cancelbtn');
+                }
+
+            } else {
+                if(data.errors) {
+                    const error = document.createElement('p');
+                    error.classList = 'error';
+                    const allErrors = [];
+
+                    for (const [field, messages] of Object.entries(data.errors)) {
+                        const input = formName.querySelector(`[name="${field}"]`);
+                        if (input) {
+                            const errorEl = document.createElement('p');
+                            errorEl.classList.add('error');
+                            errorEl.textContent = messages.join(' ');
+                            input.insertAdjacentElement('afterend', errorEl);
+                        }
+                    }
+
+                    if (formType === 'password') {
+                        confirmation.style.display = 'block';
+                    }
+                }
+            }
+        });
+    }
+
     function editUser(userInfo, save_btn, cancel_btn){
         const information = document.querySelectorAll(userInfo);
         information.forEach((info) => {
             info.disabled = false;
             document.getElementById(save_btn).style.display = 'block';
             document.getElementById(cancel_btn).style.display = 'block';
-            if(info.className == 'password-info') {
+            if(info.classList.contains('password-info')) {
                 if (confirmation){
                     confirmation.style.display = 'block';
                     confirmation.disabled = false;
@@ -69,20 +131,49 @@
         })
     }
 
-    function disableInput(userInfo, save_btn, cancel_btn){
-        const information = document.querySelectorAll(userInfo);
-        information.forEach((info) => {
-            info.disabled = true;
-            document.getElementById(save_btn).style.display = 'none';
-            document.getElementById(cancel_btn).style.display = 'none';
-            if(info.className == 'password-info') {
+    function disableInput(selector, save_btn, cancel_btn){
+        const inputs = document.querySelectorAll(selector);
+
+        const isPasswordForm = selector === '.password-info';
+
+        inputs.forEach(input => {
+            input.disabled = true;
+
+            if (isPasswordForm) {
+                input.value = '';
                 if (confirmation){
                     confirmation.style.display = 'none';
                     confirmation.disabled = true;
                 }
+            } else {
+                input.value = input.getAttribute('data-original');
             }
-        })
+        });
+                
+        const saveBtn = document.getElementById(save_btn);
+        const cancelBtn = document.getElementById(cancel_btn);
+        if (saveBtn) saveBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+
+        if (inputs.length > 0) {
+            const form = inputs[0].closest('form');
+
+            if(!isPasswordForm){
+                const restoreInputs = form.querySelectorAll('[data-original]');
+                restoreInputs.forEach(input => {
+                    input.value = input.getAttribute('data-original');
+                });
+            }
+
+            const errors = form.querySelectorAll('.error');
+            errors.forEach(error => error.style.display = 'none');
+        }
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateForm(document.getElementById('account-form'));
+        updateForm(document.getElementById('password-form'));
+    });
 </script>
 
 {% endblock %}
