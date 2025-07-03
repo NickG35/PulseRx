@@ -3,11 +3,9 @@
     <p>create prescription</p>
 
     <input placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-link="no">
-    <input type="hidden" class="hidden-patient">
     <div id="autocompleteResults-patient"></div>
 
     <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-link="no">
-    <input type="hidden" class="hidden-medicine">
     <div id="autocompleteResults-medicine"></div>
 
     <form method="post">
