@@ -42,6 +42,94 @@
             <a href="{% url 'logout' %}">Logout</a>
         </div>
 </nav>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const formatters = {
+            patient: p => `${p.first_name} ${p.last_name} ID: ${p.id}`,
+            medicine: m => `${m.name}(${m.brand}) ID: ${m.id}`
+        }
+
+        const linkGenerators = {
+            patient: item => `/pharmacy/patient_profile/${item.id}`,  
+            medicine: item => `/pharmacy/drug_detail/${item.id}`
+        };
+
+
+        const inputs = document.querySelectorAll('.autocomplete-input');
+        
+        inputs.forEach(input => {
+            const type = input.dataset.type;
+            const url = input.dataset.url;
+            const searchType = input.dataset.link === 'yes';
+            const resultsContainer = document.getElementById(`autocompleteResults-${type}`);
+            const hiddenInput = document.querySelector(`.hidden-${type}`);
+            let timeoutId;
+
+            input.addEventListener('keyup', function(){
+                clearTimeout(timeoutId)
+                const query = this.value.trim();
+
+                if (query.length === 0) {
+                    resultsContainer.innerHTML = ''
+                    return;
+                }
+
+                timeoutID = setTimeout(() => {
+                    fetch(`${url}?q=${encodeURIComponent(query)}`)
+                        .then(response => {
+                            if (!response.ok){
+                                throw new Error(`HTTP error status: ${response.status}`);
+                            }
+                            return response.json()
+                        })
+                        .then(data => {
+                            const fragment = document.createDocumentFragment();
+
+                            if(data.length > 0) {
+                                data.forEach(item => {
+                                    const div = document.createElement('div');
+                                    div.classList.add('search-item');
+
+                                    if (searchType){
+                                        const searchLink = document.createElement('a');
+                                        searchLink.href = linkGenerators[type](item);
+                                        searchLink.textContent = formatters[type](item);
+                                        searchLink.style.display = 'block';
+                                        div.appendChild(searchLink)
+                                    } else {
+                                        div.textContent = formatters[type](item);
+                                        div.addEventListener('click', () => {
+                                            input.value = formatters[type](item);
+                                            resultsContainer.innerHTML = '';
+                                            hiddenInput.value = item.id;
+                                        })
+                                    }
+                                    fragment.appendChild(div);
+                                });
+                            } else {
+                                const div = document.createElement('div');
+                                div.textContent = `No ${type} found.`;
+                                div.classList.add('no-results');
+                                fragment.appendChild(div);
+                            }
+
+                            resultsContainer.innerHTML = '';
+                            resultsContainer.appendChild(fragment);
+                        })
+                        .catch(error => {
+                            console.error(`Error fetching ${type} data:`, error);
+                            resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+                        });
+                }, 300);
+            });
+        });
+
+        flatpickr(".datepicker", {
+            dateFormat: "m-d-Y",
+            allowInput: true
+        });
+    })
+</script>
 <body>
     {% block content %}
 
