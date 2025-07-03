@@ -27,6 +27,8 @@ def create_prescriptions(request):
         prescription.prescribed_by = pharmacist
         prescription.save()
         return redirect('create_prescriptions')
+    else:
+        print(form.errors)
     
     return render(request, 'create_prescriptions.html', {
         'form': form,
