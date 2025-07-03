@@ -62,7 +62,7 @@
             const url = input.dataset.url;
             const searchType = input.dataset.link === 'yes';
             const resultsContainer = document.getElementById(`autocompleteResults-${type}`);
-            const hiddenInput = document.querySelector(`.hidden-${type}`);
+            const hiddenInput = document.querySelector(`[name="${type}"]`);
             let timeoutId;
 
             input.addEventListener('keyup', function(){
@@ -102,6 +102,8 @@
                                             input.value = formatters[type](item);
                                             resultsContainer.innerHTML = '';
                                             hiddenInput.value = item.id;
+                                            console.log(hiddenInput); console.log(hiddenInput.value);
+
                                         })
                                     }
                                     fragment.appendChild(div);
