@@ -60,6 +60,7 @@
         inputs.forEach(input => {
             const type = input.dataset.type;
             const url = input.dataset.url;
+            const email = input.dataset.email === "yes";
             const searchType = input.dataset.link === 'yes';
             const resultsContainer = document.getElementById(`autocompleteResults-${type}`);
             const hiddenInput = document.querySelector(`[name="${type}"]`);
@@ -74,7 +75,7 @@
                     return;
                 }
 
-                timeoutID = setTimeout(() => {
+                timeoutId = setTimeout(() => {
                     fetch(`${url}?q=${encodeURIComponent(query)}`)
                         .then(response => {
                             if (!response.ok){
@@ -93,13 +94,19 @@
                                     if (searchType){
                                         const searchLink = document.createElement('a');
                                         searchLink.href = linkGenerators[type](item);
-                                        searchLink.textContent = formatters[type](item);
                                         searchLink.style.display = 'block';
+                                        searchLink.textContent = formatters[type](item);
                                         div.appendChild(searchLink)
                                     } else {
                                         div.textContent = formatters[type](item);
-                                        div.addEventListener('click', () => {
+                                        if(email) {
+                                            div.textContent = `${item.first_name} ${item.last_name} ${item.email}`
+                                        }
+                                        div.addEventListener('click', () => {    
                                             input.value = formatters[type](item);
+                                            if(email) {
+                                                input.value = `${item.first_name} ${item.last_name} ${item.email}`
+                                            }
                                             resultsContainer.innerHTML = '';
                                             hiddenInput.value = item.id;
                                             console.log(hiddenInput); console.log(hiddenInput.value);
