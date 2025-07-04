@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile
-from .forms import PrescriptionForm
+from .forms import PrescriptionForm, MessageForm
 from patients.models import PatientProfile
+from accounts.models import CustomAccount
 from django.http import JsonResponse
 from django.db.models import Q
 
@@ -48,7 +49,7 @@ def patient_search(request):
         else:
             items = pharmacy_patients.filter(Q(first_name__icontains=query)| Q(last_name__icontains=query) | Q(id__icontains=query)).order_by('first_name')[:10]
 
-        results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.id} for item in items]
+        results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.id, 'email': item.user.email} for item in items]
     else:
         results = []
         
@@ -106,4 +107,16 @@ def drug_detail(request, drug_id):
 
 
 def pharmacy_messages(request):
-    return render(request, 'pharmacy_messages.html')
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.sender = request.user
+            message.save()
+            return redirect('pharmacy_messages')
+    else:
+        form = MessageForm()
+        
+    return render(request, 'pharmacy_messages.html', {
+        'form': form
+    })
