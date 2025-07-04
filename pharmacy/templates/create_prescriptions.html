@@ -2,10 +2,10 @@
 {% block content %}
     <p>create prescription</p>
 
-    <input placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-link="no">
+    <input placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no">
     <div id="autocompleteResults-patient"></div>
 
-    <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-link="no">
+    <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no">
     <div id="autocompleteResults-medicine"></div>
 
     <form method="post">

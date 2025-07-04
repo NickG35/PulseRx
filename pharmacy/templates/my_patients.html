@@ -4,7 +4,7 @@
 
 <p>These are my patients</p>
 {% if patients %}
-    <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-link="yes">
+    <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="yes">
     <input type="hidden" class="hidden-patient">
     <div id="autocompleteResults-patient"></div>
     <ul>
