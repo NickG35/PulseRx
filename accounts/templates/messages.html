@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<p>These are my pharmacy messages</p>
+<input placeholder="To:"  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="yes" data-link="no">
+<div id="autocompleteResults-patient"></div>
+<form method="post">
+    {% csrf_token %}
+    <label for="id_sender">From:</label>
+    <input type="text" id="id_sender" value="{{request.user.first_name}} {{request.user.last_name}} {{ request.user.email }}>" disabled>
+
+    {{form.as_p}}
+
+    <button type="submit">Send</button>
+</form>
+<h3>Sent</h3>
+{% for message in sent_messages %} 
+    <p>{{message.sender.email}}</p>
+    <p>{{message.recipient.email}}</p>
+    <p>{{message.content}}</p>
+    <p>{{message.timestamp}}</p>
+{% endfor %}
+
+<h3>Inbox</h3>
+{% for message in received_messages %} 
+    <p>{{message.sender.email}}</p>
+    <p>{{message.recipient.email}}</p>
+    <p>{{message.content}}</p>
+    <p>{{message.timestamp}}</p>
+{% endfor %}
+{% endblock %}
