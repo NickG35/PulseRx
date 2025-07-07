@@ -2,4 +2,11 @@
 
 {% block content %}
     <h1>prescriptions</h1>
+    {% for prescription in prescriptions %}
+        <p><a href="{% url 'drug_detail' drug_id=prescription.medicine.id%}">Drug: {{prescription.medicine.name}} ({{prescription.medicine.brand}})</a></p>
+        <p>QTY: {{prescription.quantity}}</p>
+        <p>Prescribed by: {{prescription.prescribed_by}}</p>
+        <p>Created on: {{prescription.prescribed_on}}</p>
+        <p>Exp date: {{prescription.expiration_date}}</p>
+    {% endfor %}
 {% endblock %}
