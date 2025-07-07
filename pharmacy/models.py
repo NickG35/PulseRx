@@ -45,14 +45,4 @@ class Prescription (models.Model):
     prescribed_on = models.DateTimeField(auto_now_add=True)
     expiration_date = models.DateField()
 
-#start creating messages model and interactions - includes content, timestamp, read (boolean), sender, and recipient
-class Message(models.Model):
-    sender = models.ForeignKey(CustomAccount, related_name='sender', on_delete=models.PROTECT)
-    recipient = models.ForeignKey(CustomAccount, related_name='recipient', on_delete=models.PROTECT)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    read = models.BooleanField(default=False)
-    read_time = models.DateField()
-
-
 
