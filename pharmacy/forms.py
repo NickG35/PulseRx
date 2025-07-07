@@ -1,5 +1,5 @@
 from django import forms
-from .models import PharmacyProfile, PharmacistProfile, Prescription, Drug, Message
+from .models import PharmacyProfile, PharmacistProfile, Prescription, Drug
 from patients.models import PatientProfile
 
 class PharmacyProfileForm(forms.ModelForm):
@@ -39,13 +39,5 @@ class PrescriptionForm(forms.ModelForm):
             for field in self.fields.values():
                 field.error_messages = {'required': ''}
 
-class MessageForm(forms.ModelForm):
-    recipient = forms.ModelChoiceField(queryset=PatientProfile.objects.none())
 
-    class Meta:
-        model = Message
-        exclude = ['timestamp','read', 'read_time', 'sender']
-        widgets = {
-              'recipient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
-            }
     
