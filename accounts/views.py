@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm
+from .models import Message
+from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm, MessageForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
 from django.contrib.auth import login, logout, update_session_auth_hash
@@ -136,5 +137,22 @@ def account_settings(request):
         'password_form': password_form,
     })
 
-
+def account_messages(request):
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.sender = request.user
+            message.save()
+            return redirect('pharmacy_messages')
+    else:
+        sent_messages = Message.objects.filter(sender=request.user).all()
+        received_messages = Message.objects.filter(recipient=request.user).all()
+        form = MessageForm()
+        
+    return render(request, 'messages.html', {
+        'form': form,
+        'sent_messages': sent_messages,
+        'received_messages': received_messages,
+    })
 
