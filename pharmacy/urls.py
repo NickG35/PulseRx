@@ -11,5 +11,4 @@ urlpatterns = [
     path('patient_profile/<int:patient_id>', views.patient_profile, name='patient_profile'),
     path('inventory', views.inventory, name='inventory'),
     path('drug_detail/<int:drug_id>', views.drug_detail, name='drug_detail'),
-    path('pharmacy_messages', views.pharmacy_messages, name='pharmacy_messages'),
 ]
