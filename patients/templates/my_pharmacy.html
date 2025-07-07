@@ -2,6 +2,8 @@
 
 {% block content %}
     <h1>my pharmacy</h1>
+    <p>{{pharmacy.pharmacy_name}}</p>
+    <p>{{pharmacy.street_address}} {{pharmacy.city}}, {{pharmacy.state}} {{pharmacy.zip_code}}</p>
     <p>Select your pharmacy</p>
     <form method="post">
         {% csrf_token %}
