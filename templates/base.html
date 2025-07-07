@@ -30,7 +30,7 @@
                 <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
                 <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
                 <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-                <a href="{% url 'pharmacy_messages' %}" class="main-link">Messages</a>
+                <a href="{% url 'messages' %}" class="main-link">Messages</a>
             </div>
         {% else %}
             <div class="end-div">
@@ -63,7 +63,7 @@
             const email = input.dataset.email === "yes";
             const searchType = input.dataset.link === 'yes';
             const resultsContainer = document.getElementById(`autocompleteResults-${type}`);
-            const hiddenInput = document.querySelector(`[name="${type}"]`);
+            const hiddenInput = document.querySelector(`.hidden-${type}`);
             let timeoutId;
 
             input.addEventListener('keyup', function(){
@@ -76,7 +76,7 @@
                 }
 
                 timeoutId = setTimeout(() => {
-                    fetch(`${url}?q=${encodeURIComponent(query)}`)
+                    fetch(`${url}?q=${encodeURIComponent(query)}&email=${email ? 'yes': 'no'}`)
                         .then(response => {
                             if (!response.ok){
                                 throw new Error(`HTTP error status: ${response.status}`);
