@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile
-from .forms import PrescriptionForm, MessageForm
+from .forms import PrescriptionForm
 from patients.models import PatientProfile
-from accounts.models import CustomAccount
 from django.http import JsonResponse
 from django.db.models import Q
 
@@ -41,6 +40,8 @@ def patient_search(request):
     pharmacy_patients = PatientProfile.objects.filter(pharmacy=pharmacy)
 
     query = request.GET.get('q', '').strip()
+    email_mode = request.GET.get('email', '') == 'yes'
+
     if query:
         name_parts = query.split()
         if len(name_parts) == 2:
@@ -49,7 +50,7 @@ def patient_search(request):
         else:
             items = pharmacy_patients.filter(Q(first_name__icontains=query)| Q(last_name__icontains=query) | Q(id__icontains=query)).order_by('first_name')[:10]
 
-        results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.id, 'email': item.user.email} for item in items]
+        results= [{'first_name': item.first_name, 'last_name': item.last_name, 'id': item.user.id if email_mode else item.id, 'email': item.user.email} for item in items]
     else:
         results = []
         
@@ -103,20 +104,4 @@ def drug_detail(request, drug_id):
     drug_info = Drug.objects.filter(id=drug_id).all()
     return render(request, 'drug_detail.html', {
         'drug_info': drug_info
-    })
-
-
-def pharmacy_messages(request):
-    if request.method == 'POST':
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            message = form.save(commit=False)
-            message.sender = request.user
-            message.save()
-            return redirect('pharmacy_messages')
-    else:
-        form = MessageForm()
-        
-    return render(request, 'pharmacy_messages.html', {
-        'form': form
     })
