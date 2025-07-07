@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from .models import CustomAccount
+from .models import CustomAccount, Message
 
 class UserRegistrationForm(UserCreationForm):
     class Meta:
@@ -99,3 +99,18 @@ class PasswordUpdateForm(forms.Form):
             validate_password(password)
 
         return cleaned_data
+
+class MessageForm(forms.ModelForm):
+
+    class Meta:
+        model = Message
+        exclude = ['timestamp','read', 'read_time', 'sender']
+        widgets = {
+              'recipient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
+            }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Explicitly allow all users as valid recipients
+        self.fields['recipient'].queryset = CustomAccount.objects.all()
+        
