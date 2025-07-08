@@ -2,4 +2,16 @@
 
 {% block content %}
     <h1>reminders</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit">Submit</button>
+    </form>
+    {% for reminder in all_reminders %}
+        <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
+        <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
+        <p>QTY: {{reminder.prescription.quantity}}</p>
+        <p>{{reminder.frequency}} times</p>
+        <p>Take at: {{reminder.time}}</p>
+    {% endfor %}
 {% endblock %}
