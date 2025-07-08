@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
-from .models import PatientProfile
+from .models import PatientProfile, MedicationReminder
+from .forms import ReminderForm
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -23,7 +24,23 @@ def account(request):
     return render(request, 'account.html')
 
 def reminders(request):
-    return render(request, 'reminders.html')
+    patient = PatientProfile.objects.get(user=request.user)
+    all_reminders = MedicationReminder.objects.filter(user=patient).all()
+
+    if request.method == 'POST':
+        form = ReminderForm(request.POST, patient=patient)
+        if form.is_valid():
+            reminder = form.save(commit=False)
+            reminder.user = patient
+            reminder.save()
+            return redirect('reminders')
+    else:
+        form = ReminderForm(patient=patient)
+
+    return render(request, 'reminders.html', {
+        'form': form,
+        'all_reminders': all_reminders,
+    })
 
 def messages(request):
     return render(request, 'messages.html')
