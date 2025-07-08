@@ -15,6 +15,7 @@ class PatientProfile(models.Model):
         return f"{self.user}"
 
 class MedicationReminder(models.Model):
+    user = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     frequency = models.CharField(max_length=100)
     time = models.TimeField()
