@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
 from .models import PatientProfile, MedicationReminder
-from .forms import ReminderForm
+from .forms import ReminderForm, PharmacyForm
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -16,8 +16,18 @@ def prescriptions(request):
 def my_pharmacy(request):
     patient = PatientProfile.objects.get(user=request.user)
     current_pharmacy = patient.pharmacy
+
+    if request.method == 'POST':
+        form = PharmacyForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('my_pharmacy')
+    else:
+        form = PharmacyForm()
+
     return render(request, 'my_pharmacy.html', {
         'pharmacy': current_pharmacy,
+        'form': form,
     })
 
 def account(request):
