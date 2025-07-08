@@ -1,11 +1,17 @@
 from django import forms
 from .models import PatientProfile, MedicationReminder
+from pharmacy.models import PharmacyProfile
 from pharmacy.models import Prescription
 
 class PatientProfileForm(forms.ModelForm):
     class Meta:
         model = PatientProfile
         exclude = ['user']
+
+class PharmacyForm(forms.ModelForm):
+    class Meta:
+        model = PatientProfile
+        fields = ['pharmacy']
 
 class ReminderForm(forms.ModelForm):
     class Meta:
