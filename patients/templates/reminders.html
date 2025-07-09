@@ -14,4 +14,15 @@
         <p>{{reminder.frequency}} times</p>
         <p>Take at: {{reminder.time}}</p>
     {% endfor %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            flatpickr("#timeInput", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false
+            });
+        });
+    </script>
 {% endblock %}
