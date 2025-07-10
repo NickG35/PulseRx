@@ -18,4 +18,9 @@ class MedicationReminder(models.Model):
     user = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     frequency = models.CharField(max_length=100)
+    start_date = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+class ReminderTime(models.Model):
+    reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name='times')
     time = models.TimeField()
