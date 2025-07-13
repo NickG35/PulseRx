@@ -16,10 +16,11 @@ class PharmacyForm(forms.ModelForm):
 class ReminderForm(forms.ModelForm):
     class Meta:
         model = MedicationReminder
-        exclude = ['user']
-    
+        exclude = ['user', 'start_date', 'is_active']
+        
     def __init__(self, *args, **kwargs):
         patient = kwargs.pop('patient', None)
         super().__init__(*args, **kwargs)
+        self.fields['frequency'].widget.attrs.update({'id': 'frequency'})
         if patient:
             self.fields['prescription'].queryset = Prescription.objects.filter(patient=patient)
