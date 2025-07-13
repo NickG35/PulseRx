@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import CustomAccount
 from pharmacy.models import PharmacyProfile, Prescription
+from datetime import date
 
 class PatientProfile(models.Model):
     first_name = models.CharField(max_length=100, null=False)
@@ -17,8 +18,8 @@ class PatientProfile(models.Model):
 class MedicationReminder(models.Model):
     user = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
-    frequency = models.CharField(max_length=100)
-    start_date = models.DateField(auto_now_add=True)
+    frequency = models.IntegerField(choices=[(i, f"{i}") for i in range(1, 6)])
+    start_date = models.DateField(default=date.today)
     is_active = models.BooleanField(default=True)
 
 class ReminderTime(models.Model):
