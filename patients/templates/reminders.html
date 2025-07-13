@@ -5,8 +5,10 @@
     <form method="post">
         {% csrf_token %}
         {{form.as_p}}
+        <div id="timeInputs"></div>
         <button type="submit">Submit</button>
     </form>
+
     {% for reminder in all_reminders %}
         <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
         <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
@@ -17,11 +19,28 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            flatpickr("#timeInput", {
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "h:i K",
-                time_24hr: false
+            const timeInputsDiv = document.getElementById('timeInputs');
+            const frequencyDropdown = document.getElementById('frequency');
+
+            frequencyDropdown.addEventListener('change', function(){
+                const frequency = parseInt(this.value);
+                timeInputsDiv.innerHTML = '';
+
+                for (let i = 0; i < frequency; i++) {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = `time_${i}`;
+                    input.className = 'timeInput'
+                    input.placeholder = `Time ${i+1}`;
+                    timeInputsDiv.appendChild(input);
+                }
+
+                flatpickr("#timeInput", {
+                    enableTime: true,
+                    noCalendar: true,
+                    dateFormat: "h:i K",
+                    time_24hr: false
+                });
             });
         });
     </script>
