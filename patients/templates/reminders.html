@@ -4,7 +4,26 @@
     <h1>reminders</h1>
     <form method="post">
         {% csrf_token %}
-        {{form.as_p}}
+        <div>
+            <select name="{{form.prescription.name}}" id="{{form.prescription.id_for_label}}">
+                {% for val, label in form.prescription.field.choices %}
+                    <option value="{{ val }}" data-id="{{ val }}" 
+                        {% if form.prescription.value == val %}selected{% endif %}>
+                        {{label}}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="{{ form.frequency.id_for_label }}">Frequency:</label>
+            {{form.frequency}}
+        </div>
+        <div class="dosage-suggestion"></div>
+        <div>
+            <label for="{{ form.day_amount.id_for_label }}">Number of days:</label>
+            {{form.day_amount}}
+            <div class="day-suggestion"></div>
+        </div>
         <div id="timeInputs"></div>
         <button type="submit">Submit</button>
     </form>
@@ -14,11 +33,69 @@
         <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
         <p>QTY: {{reminder.prescription.quantity}}</p>
         <p>{{reminder.frequency}} times</p>
-        <p>Take at: {{reminder.time}}</p>
+        <p>Take at: 
+        <ul>
+            {% for time in reminder.times.all %}
+                <li>{{ time.time }}</li>
+            {% empty %}
+                <li>No times set</li>
+            {% endfor %}
+        </ul>
     {% endfor %}
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const prescriptionSelect = document.querySelector('#id_prescription');
+            const frequencySelect = document.querySelector('#frequency');
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const suggestionDay = document.querySelector('.day-suggestion');
+            const suggestionDosage = document.querySelector('.dosage-suggestion');
+
+            function createSuggestion(){
+                const prescription_id = prescriptionSelect.value;
+                const frequency = parseInt(frequencySelect.value);
+
+                suggestionDay.innerHTML = "";
+                suggestionDosage.innerHTML = "";
+
+
+                if (prescription_id){
+                    fetch("/patient/reminder_days", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,
+                    },
+                        body: JSON.stringify({prescription_id: prescription_id})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        data.results.forEach(item => {
+                            const dosageInfo = document.createElement('p');
+                            dosageInfo.classList.add('dosage-info');
+                            dosageInfo.textContent = `Dosage information: ${item.dosage}`;
+                            suggestionDosage.appendChild(dosageInfo);
+
+                            if (frequency){
+                                const quantity = item.quantity;
+                                const days = Math.floor(quantity / frequency);
+
+                                const suggestion = document.createElement('p');
+                                suggestion.classList.add('daySuggestion');
+                                suggestion.textContent = `Based on prescription information it is recommended that you repeat this reminder for ${days} day(s)`;
+                                suggestionDay.appendChild(suggestion);
+                            }   
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error", error)
+                    });
+                } 
+            }
+
+            prescriptionSelect.addEventListener('change', createSuggestion);
+            frequencySelect.addEventListener('change', createSuggestion);
+
             const timeInputsDiv = document.getElementById('timeInputs');
             const frequencyDropdown = document.getElementById('frequency');
 
@@ -35,11 +112,12 @@
                     timeInputsDiv.appendChild(input);
                 }
 
-                flatpickr("#timeInput", {
+                flatpickr(".timeInput", {
                     enableTime: true,
                     noCalendar: true,
                     dateFormat: "h:i K",
-                    time_24hr: false
+                    time_24hr: false,
+                    defaultDate: "12:00 PM"
                 });
             });
         });
