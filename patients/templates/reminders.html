@@ -37,8 +37,15 @@
         <ul>
             {% for time in reminder.times.all %}
                 <li>{{ time.time }}</li>
-            {% empty %}
-                <li>No times set</li>
+                {% if time.is_active %}
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}" checked>
+                    </div>
+                {% else %}
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}">
+                    </div>
+                {% endif %}
             {% endfor %}
         </ul>
     {% endfor %}
@@ -120,6 +127,32 @@
                     defaultDate: "12:00 PM"
                 });
             });
+
+            const toggleSwitch = document.querySelectorAll('.form-check-input');
+            toggleSwitch.forEach(item => {
+                item.addEventListener('click', function(){
+                    const time_id = item.getAttribute('data-id');
+                    fetch('/patient/toggle_time', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken,
+                        },
+                            body: JSON.stringify({time_id: time_id})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success){
+                            console.log(`button for time ${time_id} has been toggled`)
+                        } else {
+                            console.log('error: button has not been toggled')
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error", error)
+                    });
+                })
+            })
         });
     </script>
 {% endblock %}
