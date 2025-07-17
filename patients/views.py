@@ -81,3 +81,16 @@ def reminder_days(request):
     else:
         return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
 
+def toggle_time(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            time_id = data.get('time_id')
+            reminder_time = ReminderTime.objects.get(id=time_id)
+            reminder_time.is_active = not reminder_time.is_active
+            reminder_time.save()
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+    else:
+        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
