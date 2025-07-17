@@ -94,3 +94,18 @@ def toggle_time(request):
             return JsonResponse({"error": "Invalid JSON"}, status=400)
     else:
         return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
+
+def toggle_reminder(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            reminder_id = data.get('reminder_id')
+            reminder = MedicationReminder.objects.get(id=reminder_id)
+            reminder.is_active = not reminder.is_active
+            reminder.save()
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+    else:
+        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
+    
