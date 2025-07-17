@@ -29,6 +29,15 @@
     </form>
 
     {% for reminder in all_reminders %}
+        {% if reminder.is_active %}
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" data-reminder="{{reminder.id}}" checked>
+            </div>
+        {% else %}
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" data-reminder="{{reminder.id}}">
+            </div>
+        {% endif %}
         <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
         <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
         <p>QTY: {{reminder.prescription.quantity}}</p>
@@ -131,21 +140,40 @@
             const toggleSwitch = document.querySelectorAll('.form-check-input');
             toggleSwitch.forEach(item => {
                 item.addEventListener('click', function(){
+                    let url = "";
+                    let payload = {};
+
                     const time_id = item.getAttribute('data-id');
-                    fetch('/patient/toggle_time', {
+                    const reminder_id = item.getAttribute('data-reminder');
+
+                    if (time_id){
+                        url = '/patient/toggle_time';
+                        payload = {time_id: time_id};
+                    } else if (reminder_id) {
+                        url = '/patient/toggle_reminder';
+                        payload = {reminder_id: reminder_id};
+                    } else {
+                        console.error("No valid ID found on this switch")
+                        return;
+                    }
+
+                    fetch( url, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             "X-CSRFToken": csrfToken,
                         },
-                            body: JSON.stringify({time_id: time_id})
+                        body: JSON.stringify(payload)
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success){
-                            console.log(`button for time ${time_id} has been toggled`)
+                            console.log(`Toggle successful for ${time_id ? 'time ' + time_id : 'reminder ' + reminder_id}`);
+                            if(reminder_id){
+                                
+                            }
                         } else {
-                            console.log('error: button has not been toggled')
+                            console.log('error: toggle failed')
                         }
                     })
                     .catch(error => {
