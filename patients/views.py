@@ -66,7 +66,7 @@ def reminders(request):
 def messages(request):
     return render(request, 'messages.html')
 
-def reminder_days(request):
+def reminder_suggestions(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
