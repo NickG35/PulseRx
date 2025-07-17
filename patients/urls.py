@@ -9,4 +9,5 @@ urlpatterns = [
     path('reminders', views.reminders, name='reminders'),
     path('reminder_days', views.reminder_days, name='reminder_days'),
     path('messages', views.messages, name='messages'),
+    path('toggle_time', views.toggle_time, name='toggle_time')
 ]
