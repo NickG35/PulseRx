@@ -7,7 +7,7 @@ urlpatterns = [
     path('my_pharmacy', views.my_pharmacy, name='my_pharmacy'),
     path('account', views.account, name='account'),
     path('reminders', views.reminders, name='reminders'),
-    path('reminder_days', views.reminder_days, name='reminder_days'),
+    path('reminder_suggestions', views.reminder_suggestions, name='reminder_suggestions'),
     path('messages', views.messages, name='messages'),
     path('toggle_time', views.toggle_time, name='toggle_time')
 ]
