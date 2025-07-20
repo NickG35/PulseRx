@@ -29,34 +29,24 @@
     </form>
 
     {% for reminder in all_reminders %}
-        {% if reminder.is_active %}
+        <div class="reminder-layout {% if reminder.is_active %}black{% else %}grayed{% endif %}">
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" data-reminder="{{reminder.id}}" checked>
+                <input class="form-check-input" id="reminder-checkbox" type="checkbox" role="switch" data-reminder="{{reminder.id}}" {% if reminder.is_active %}checked{% endif %}>
             </div>
-        {% else %}
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" data-reminder="{{reminder.id}}">
-            </div>
-        {% endif %}
-        <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
-        <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
-        <p>QTY: {{reminder.prescription.quantity}}</p>
-        <p>{{reminder.frequency}} times</p>
-        <p>Take at: 
-        <ul>
-            {% for time in reminder.times.all %}
-                <li>{{ time.time }}</li>
-                {% if time.is_active %}
+            <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
+            <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
+            <p>QTY: {{reminder.prescription.quantity}}</p>
+            <p>{{reminder.frequency}} times</p>
+            <p>Take at:</p> 
+            <ul>
+                {% for time in reminder.times.all %}
+                    <li>{{ time.time }}</li>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}" checked>
+                        <input id="time-checkbox" class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}" {% if time.is_active %}checked{% endif %}>
                     </div>
-                {% else %}
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}">
-                    </div>
-                {% endif %}
-            {% endfor %}
-        </ul>
+                {% endfor %}
+            </ul>
+        </div>
     {% endfor %}
 
     <script>
@@ -138,8 +128,10 @@
             });
 
             const toggleSwitch = document.querySelectorAll('.form-check-input');
+            const reminderCheckbox = document.getElementById('reminder-checkbox');
+            const reminderLayout = document.querySelector('.reminder-layout');
             toggleSwitch.forEach(item => {
-                item.addEventListener('click', function(){
+                item.addEventListener('change', function(){
                     let url = "";
                     let payload = {};
 
@@ -169,8 +161,21 @@
                     .then(data => {
                         if (data.success){
                             console.log(`Toggle successful for ${time_id ? 'time ' + time_id : 'reminder ' + reminder_id}`);
-                            if(reminder_id){
+                            if(reminder_id ){
+                                reminderLayout.classList.toggle('black', reminderCheckbox.checked);
+                                reminderLayout.classList.toggle('grayed', !reminderCheckbox.checked);
+
+                                const timeCheckboxes = document.querySelectorAll('#time-checkbox');
+
+                                timeCheckboxes.forEach(cb => {
+                                    if (!reminderCheckbox.checked) {
+                                        cb.disabled = true;
+                                    } else {
+                                        cb.disabled = false;
+                                    }
+                                });
                                 
+
                             }
                         } else {
                             console.log('error: toggle failed')
