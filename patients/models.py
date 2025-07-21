@@ -1,7 +1,7 @@
 from django.db import models
 from accounts.models import CustomAccount
 from pharmacy.models import PharmacyProfile, Prescription
-from datetime import date
+from datetime import date, timedelta
 
 class PatientProfile(models.Model):
     first_name = models.CharField(max_length=100, null=False)
@@ -22,6 +22,14 @@ class MedicationReminder(models.Model):
     start_date = models.DateField(default=date.today)
     day_amount = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    remaining_days = models.PositiveIntegerField(null=True, blank=True)
+
+    def days_left(self):
+        if self.is_active:
+            total_days = self.remaining_days if self.remaining_days is not None else self.day_amount
+            return max(0, (self.start_date + timedelta(days=total_days) - date.today()).days)
+        else:
+            return self.remaining_days or 0
 
 class ReminderTime(models.Model):
     reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name='times')
