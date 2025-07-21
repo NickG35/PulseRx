@@ -44,6 +44,8 @@ def reminders(request):
         form = ReminderForm(request.POST, patient=patient)
         if form.is_valid():
             reminder = form.save(commit=False)
+            day_amount = int(request.POST.get('day_amount'))
+            reminder.remaining_days = day_amount
             reminder.user = patient
             reminder.save()
 
@@ -112,7 +114,18 @@ def toggle_reminder(request):
 
             reminder.is_active = not reminder.is_active
             reminder.save()
-            return JsonResponse({"success": True, "is_active": reminder.is_active, "remaining_days": reminder.remaining_days})
+            return JsonResponse({"success": True, "days_left": reminder.days_left()})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-    
+
+def unarchive(request):
+        try:
+            data = json.loads(request.body)
+            reminder_id = data.get('reminder_id')
+            reminder = MedicationReminder.objects.get(id=reminder_id)
+            reminder.is_active = True
+            reminder.is_archived = False
+            reminder.start_date = date.today()
+            reminder.save()
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
