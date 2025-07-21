@@ -37,6 +37,7 @@
             <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
             <p>QTY: {{reminder.prescription.quantity}}</p>
             <p>{{reminder.frequency}} times</p>
+            <p id="remaining_days">{{reminder.days_left}} days remaining</p>
             <p>Take at:</p> 
             <ul>
                 {% for time in reminder.times.all %}
@@ -164,6 +165,9 @@
                             if(reminder_id ){
                                 reminderLayout.classList.toggle('black', reminderCheckbox.checked);
                                 reminderLayout.classList.toggle('grayed', !reminderCheckbox.checked);
+
+                                document.querySelector('#remaining_days').textContent = `${data.days_left} days remaining`;
+                                console.log(data.days_left);
 
                                 const timeCheckboxes = document.querySelectorAll('#time-checkbox');
 
