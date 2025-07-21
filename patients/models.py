@@ -22,6 +22,7 @@ class MedicationReminder(models.Model):
     start_date = models.DateField(default=date.today)
     day_amount = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    is_archived = models.BooleanField(default=False)
     remaining_days = models.PositiveIntegerField(null=True, blank=True)
 
     def days_left(self):
