@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
 from .models import PatientProfile, MedicationReminder, ReminderTime
 from .forms import ReminderForm, PharmacyForm
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from django.http import JsonResponse
 import json
 
@@ -92,8 +92,6 @@ def toggle_time(request):
             return JsonResponse({"success": True})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-    else:
-        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
 
 def toggle_reminder(request):
     if request.method == 'POST':
@@ -101,11 +99,20 @@ def toggle_reminder(request):
             data = json.loads(request.body)
             reminder_id = data.get('reminder_id')
             reminder = MedicationReminder.objects.get(id=reminder_id)
+
+            if reminder.is_active:
+                # Turning OFF: Save remaining days before deactivation
+                end_date = reminder.start_date + timedelta(days=reminder.day_amount)
+                remaining = (end_date - date.today()).days
+                reminder.remaining_days = max(0, remaining)
+            else:
+                # Turning ON: Reset start_date and clear remaining_days
+                reminder.start_date = date.today()
+                reminder.remaining_days = None
+
             reminder.is_active = not reminder.is_active
             reminder.save()
-            return JsonResponse({"success": True})
+            return JsonResponse({"success": True, "is_active": reminder.is_active, "remaining_days": reminder.remaining_days})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-    else:
-        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
     
