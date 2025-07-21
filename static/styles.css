@@ -76,3 +76,17 @@ a {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.reminder-layout {
+    transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.grayed {
+    color: gray;
+    opacity: 0.5;
+}
+
+.black {
+    color: black;
+    opacity: 1;
+}
