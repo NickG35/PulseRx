@@ -38,7 +38,14 @@ def account(request):
 
 def reminders(request):
     patient = PatientProfile.objects.get(user=request.user)
-    all_reminders = MedicationReminder.objects.filter(user=patient).all()
+
+    reminders = MedicationReminder.objects.filter(user=patient,is_archived=False, is_active=True)
+    for reminder in reminders:
+        if reminder.days_left() == 0:
+            reminder.archive()
+            
+    all_reminders = MedicationReminder.objects.filter(user=patient, is_archived=False).all()
+    archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True, is_active=False).all()
 
     if request.method == 'POST':
         form = ReminderForm(request.POST, patient=patient)
@@ -63,6 +70,7 @@ def reminders(request):
     return render(request, 'reminders.html', {
         'form': form,
         'all_reminders': all_reminders,
+        'archived_reminders': archived_reminders
     })
 
 def messages(request):
@@ -127,5 +135,6 @@ def unarchive(request):
             reminder.is_archived = False
             reminder.start_date = date.today()
             reminder.save()
+            return JsonResponse({"success": True, "day_amount": reminder.day_amount})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
