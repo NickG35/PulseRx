@@ -27,29 +27,62 @@
         <div id="timeInputs"></div>
         <button type="submit">Submit</button>
     </form>
-
-    {% for reminder in all_reminders %}
-        <div class="reminder-layout {% if reminder.is_active %}black{% else %}grayed{% endif %}">
-            <div class="form-check form-switch">
-                <input class="form-check-input" id="reminder-checkbox" type="checkbox" role="switch" data-reminder="{{reminder.id}}" {% if reminder.is_active %}checked{% endif %}>
+    <div class="active_reminders">
+        {% for reminder in all_reminders %}
+            <div class="reminder-layout {% if reminder.is_active %}black{% else %}grayed{% endif %}">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" id="reminder-checkbox" type="checkbox" role="switch" data-reminder="{{reminder.id}}" {% if reminder.is_active %}checked{% endif %}>
+                </div>
+                <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
+                <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
+                <p>QTY: {{reminder.prescription.quantity}}</p>
+                <p class="remaining_days">{{reminder.days_left}} day(s) remaining</p>
+                <ul>
+                    {% for time in reminder.times.all %}
+                        <li>{{ time.time }}</li>
+                        <div class="form-check form-switch">
+                            <input id="time-checkbox" class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}" {% if time.is_active %}checked{% endif %}>
+                        </div>
+                    {% endfor %}
+                </ul>
             </div>
-            <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
-            <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
-            <p>QTY: {{reminder.prescription.quantity}}</p>
-            <p>{{reminder.frequency}} times</p>
-            <p id="remaining_days">{{reminder.days_left}} days remaining</p>
-            <p>Take at:</p> 
-            <ul>
-                {% for time in reminder.times.all %}
-                    <li>{{ time.time }}</li>
-                    <div class="form-check form-switch">
-                        <input id="time-checkbox" class="form-check-input" type="checkbox" role="switch" data-id="{{time.id}}" {% if time.is_active %}checked{% endif %}>
+        {% endfor %}
+    </div>
+        <div class="accordion" id="accordionExample">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        Archived ({{archived_reminders | length}})
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        {% for reminder in archived_reminders %}
+                            <div id="archive_{{reminder.id}}" class="archive-layout {% if reminder.is_active %}black{% else %}grayed{% endif %}">
+                                <div style="display: none;" class="form-check form-switch">
+                                    <input class="form-check-input" id="reminder-checkbox" type="checkbox" role="switch" data-reminder="{{reminder.id}}">
+                                </div>
+                                <p>Medicine: {{reminder.prescription.medicine.name}} ({{reminder.prescription.medicine.brand}})</p>
+                                <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
+                                <p>QTY: {{reminder.prescription.quantity}}</p>
+                                <p class="remaining_days"></p>
+                                <ul>
+                                    {% for time in reminder.times.all %}
+                                        <li>{{ time.time }}</li>
+                                        <div class="form-check form-switch">
+                                            <input id="time-checkbox" class="form-check-input" type="checkbox" data-id="{{time.id}}" disabled>
+                                        </div>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <button class="restore-button" type="button" data-reminder="{{reminder.id}}">Restore</button>
+                        {% empty %}
+                            <div>Nothing to display yet</div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
-            </ul>
+                </div>
+            </div>
         </div>
-    {% endfor %}
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const prescriptionSelect = document.querySelector('#id_prescription');
@@ -188,6 +221,46 @@
                     .catch(error => {
                         console.error("Error", error)
                     });
+                })
+            })
+
+            const restoreButton = document.querySelectorAll('.restore-button');
+            restoreButton.forEach(btn => {
+                const reminder_id = btn.getAttribute('data-reminder');
+                btn.addEventListener('click', function(){
+                    fetch('/patient/unarchive', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken,
+                        },
+                            body: JSON.stringify({reminder_id: reminder_id})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success){
+                            console.log(`Reminder ${reminder_id} is now active`);
+                            const archived_reminder = document.getElementById(`archive_${reminder_id}`)
+                            const active_container = document.querySelector('.active_reminders');
+
+                            if (archived_reminder) {
+                                active_container.prepend(archived_reminder);
+                                archived_reminder.classList.add('black');
+                                btn.remove();
+                                archived_reminder.querySelectorAll('.form-check-input').forEach(input => {
+                                    input.disabled = false;
+                                })
+                                archived_reminder.querySelector('.form-check').style.display = 'block';
+                                archived_reminder.querySelector('.remaining_days').textContent = `${data.day_amount} day(s) remaining;`
+                            } else {
+                                console.log('error: unarchiving failed')
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error", error)
+                    });
+                    
                 })
             })
         });
