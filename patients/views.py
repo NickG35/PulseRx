@@ -45,7 +45,7 @@ def reminders(request):
             reminder.archive()
             
     all_reminders = MedicationReminder.objects.filter(user=patient, is_archived=False).all()
-    archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True, is_active=False).all()
+    archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True).all()
 
     if request.method == 'POST':
         form = ReminderForm(request.POST, patient=patient)
@@ -115,10 +115,12 @@ def toggle_reminder(request):
                 end_date = reminder.start_date + timedelta(days=reminder.day_amount)
                 remaining = (end_date - date.today()).days
                 reminder.remaining_days = max(0, remaining)
+                reminder.times.update(is_active = False)
             else:
                 # Turning ON: Reset start_date and clear remaining_days
                 reminder.start_date = date.today()
                 reminder.remaining_days = None
+                reminder.times.update(is_active = True)
 
             reminder.is_active = not reminder.is_active
             reminder.save()
@@ -134,6 +136,7 @@ def unarchive(request):
             reminder.is_active = True
             reminder.is_archived = False
             reminder.start_date = date.today()
+            reminder.remaining_days = reminder.day_amount
             reminder.save()
             return JsonResponse({"success": True, "day_amount": reminder.day_amount})
         except json.JSONDecodeError:
