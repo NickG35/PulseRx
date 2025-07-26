@@ -11,5 +11,6 @@ urlpatterns = [
     path('messages', views.messages, name='messages'),
     path('toggle_reminder', views.toggle_reminder, name='toggle_reminder'),
     path('toggle_time', views.toggle_time, name='toggle_time'),
-    path('unarchive', views.unarchive, name='unarchive')
+    path('unarchive', views.unarchive, name='unarchive'),
+    path('delete_reminder', views.delete_reminder, name='delete_reminder')
 ]
