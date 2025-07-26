@@ -138,6 +138,27 @@ def unarchive(request):
             reminder.start_date = date.today()
             reminder.remaining_days = reminder.day_amount
             reminder.save()
-            return JsonResponse({"success": True, "day_amount": reminder.day_amount})
+
+            patient = PatientProfile.objects.get(user=request.user)
+            archive_count = MedicationReminder.objects.filter(user=patient, is_archived=True).count()
+
+            return JsonResponse({"success": True, "day_amount": reminder.day_amount, 'archive_count': archive_count})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+def delete_reminder(request):
+    try:
+        data = json.loads(request.body)
+        reminder_id = data.get('reminder_id')
+        reminder = MedicationReminder.objects.get(id=reminder_id)
+        reminder.delete()
+        return JsonResponse({"success": True})
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+def days_left_update(request):
+    try:
+        data = json.loads(request.body)
+        return JsonResponse({"success": True})
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
