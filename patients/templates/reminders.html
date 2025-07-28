@@ -29,7 +29,7 @@
     </form>
     <div class="active_reminders">
         {% for reminder in all_reminders %}
-            <button type="button" class="edit-reminder" date-reminder="{{reminder.id}}">Edit</button>
+            <button type="button" class="edit-reminder" data-reminder="{{reminder.id}}">Edit</button>
             <div id="reminder_{{reminder.id}}" class="reminder-layout {% if reminder.is_active %}black{% else %}grayed{% endif %}">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" data-type="reminder" data-reminder="{{reminder.id}}" {% if reminder.is_active %}checked{% endif %}>
@@ -49,7 +49,7 @@
                             <li>{{ time.time }}</li>
                         </div>
                         <div class="editable_{{reminder.id}}">
-                            <input name="reminder_time" class="timeInput" value="{{time.time}}">
+                            <input name="reminder_time" id="time_{{reminder.id}}" class="timeInput" value="{{time.time}}">
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input time-checkbox" type="checkbox" role="switch" data-type="time" data-id="{{time.id}}" {% if time.is_active %}checked {% endif %} {% if not reminder.is_active %} disabled {% endif %}>
@@ -77,9 +77,9 @@
                   </div>
                 </div>
               </div>
-              <div class="edit_buttons_{{reminder.id}}">
-                <button type="button" class="cancel-edit">Cancel</button>
-                <button type="button" class="edit-save">Save Changes</button>
+              <div class="editable_buttons_{{reminder.id}}">
+                <button type="button" class="cancel-edit" data-reminder="{{reminder.id}}">Cancel</button>
+                <button type="button" class="edit-save" data-reminder="{{reminder.id}}">Save Changes</button>
               </div>
         {% endfor %}
     </div>
@@ -377,13 +377,63 @@
                     })
                 })
             })
+            
             document.querySelectorAll('.edit-reminder').forEach(btn => {
                 btn.addEventListener('click', function(){
                     const reminder_id = btn.getAttribute('data-reminder');
-                    document.querySelectorAll(`.editable_${reminder_id}`).style.display = 'block';
-                    document.querySelectorAll(`.original_${reminder_id}`).style.display = 'none';
-                    const edit_buttons = document.querySelector(`.edit_buttons${reminder_id}`);
+                    const editable_buttons = document.querySelectorAll(`.editable_${reminder_id}`);
+                    const original_buttons = document.querySelectorAll(`.original_${reminder_id}`);
+                    const edit_buttons = document.querySelector(`.editable_buttons_${reminder_id}`);
+                    console.log(reminder_id);
+                    editable_buttons.forEach(el => {
+                        el.style.display = 'block';
+                    })
+                    original_buttons.forEach(el => {
+                        el.style.display = 'none';
+                    })
+                    edit_buttons.style.display = 'block';
+                })
+            })
 
+            document.querySelectorAll('.cancel-edit').forEach(btn => {
+                btn.addEventListener('click', function(){
+                    const reminder_id = btn.getAttribute('data-reminder');
+                    const editable_buttons = document.querySelectorAll(`.editable_${reminder_id}`);
+                    const original_buttons = document.querySelectorAll(`.original_${reminder_id}`);
+                    const edit_buttons = document.querySelector(`.editable_buttons_${reminder_id}`);
+                    console.log(reminder_id);
+                    editable_buttons.forEach(el => {
+                        el.style.display = 'none';
+                    });
+                    original_buttons.forEach(el => {
+                        el.style.display = 'block';
+                    });
+                    edit_buttons.style.display = 'none';
+                })
+            })
+
+            document.querySelectorAll('.edit-save').forEach(btn => {
+                btn.addEventListener('click', function(){
+                    const reminder_id = btn.getAttribute('data-reminder');
+                    fetch('/patient/edit_reminder', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken,
+                        },
+                            body: JSON.stringify({reminder_id: reminder_id})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success){
+                            console.log(`Reminder ${reminder_id} is updated`);
+                        } else {
+                            console.log('error: reminder cannot be updated');
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error", error)
+                    });
                 })
             })
         });
