@@ -156,7 +156,7 @@ def delete_reminder(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-def days_left_update(request):
+def edit_reminder(request):
     try:
         data = json.loads(request.body)
         return JsonResponse({"success": True})
