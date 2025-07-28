@@ -90,3 +90,7 @@ a {
     color: black;
     opacity: 1;
 }
+
+[class^="editable"] {
+    display: none;
+}
