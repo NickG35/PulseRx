@@ -114,7 +114,7 @@
                                             <li>{{ time.time }}</li>
                                         </div>
                                         <div class="editable_{{reminder.id}}">
-                                            <input name="reminder_time" id="time_{{reminder.id}}" class="timeInput" value="{{time.time}}">
+                                            <input name="reminder_time" id="time_{{reminder.id}}" class="timeInput" data-id="{{time.id}}" value="{{time.time}}">
                                         </div>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input time-checkbox" type="checkbox" data-type="time" data-id="{{time.id}}" disabled>
@@ -445,13 +445,26 @@
             document.querySelectorAll('.edit-save').forEach(btn => {
                 btn.addEventListener('click', function(){
                     const reminder_id = btn.getAttribute('data-reminder');
+
+                    const timeInputs = document.querySelectorAll(`#reminder_${reminder_id} input[name="reminder_time"]`);
+
+                    const updated_times = Array.from(timeInputs).map(input => {
+                        return {
+                            id: input.getAttribute('data-id'),
+                            time: input.value
+                        };
+                    });
+
                     fetch('/patient/edit_reminder', {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                             "X-CSRFToken": csrfToken,
                         },
-                            body: JSON.stringify({reminder_id: reminder_id})
+                            body: JSON.stringify({
+                                reminder_id: reminder_id,
+                                times: updated_times
+                            })
                     })
                     .then(response => response.json())
                     .then(data => {
