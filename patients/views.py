@@ -157,8 +157,25 @@ def delete_reminder(request):
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
 def edit_reminder(request):
-    try:
-        data = json.loads(request.body)
-        return JsonResponse({"success": True})
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            reminder_id = data.get('reminder_id')
+            updated_times = data.get('times', [])
+
+            reminder = MedicationReminder.objects.get(id=reminder_id)
+
+            for time in updated_times:
+                time_id = time.get('id')
+                new_time = time.get('time')
+
+                try:
+                    time_entry = ReminderTime.objects.get(id=time_id, reminder=reminder)
+                    time_entry.time = new_time
+                    time_entry.save()
+                except ReminderTime.DoesNotExist:
+                    continue
+
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
