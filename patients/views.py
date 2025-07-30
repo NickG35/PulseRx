@@ -135,6 +135,7 @@ def unarchive(request):
             reminder = MedicationReminder.objects.get(id=reminder_id)
             reminder.is_active = True
             reminder.is_archived = False
+            reminder.times.update(is_active = True)
             reminder.start_date = date.today()
             reminder.remaining_days = reminder.day_amount
             reminder.save()
