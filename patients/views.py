@@ -176,7 +176,13 @@ def edit_reminder(request):
                     time_entry.save()
                 except ReminderTime.DoesNotExist:
                     continue
+            
+            time_values = list(reminder.times.values_list('time', flat=True))
 
-            return JsonResponse({"success": True})
+            return JsonResponse({
+                "success": True,
+                "times": time_values
+            })
+        
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
