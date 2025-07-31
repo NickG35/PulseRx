@@ -43,19 +43,19 @@
                 <div class="editable_{{reminder.id}}">
                     <input type="number" min="1" step="1" name="remaining_days" class="edit-field" id="days_{{reminder.id}}" value="{{reminder.days_left}}">
                 </div>
-                <ul>
-                    {% for time in reminder.times.all %}
-                        <div class="original_{{reminder.id}}">
-                            <li>{{ time.time }}</li>
+                {% for time in reminder.times.all %}
+                    <div class="time-div">
+                        <div class="original_{{reminder.id}}" data-time-id="{{time.id}}">
+                            <p class="reminder_times">{{ time.time|time:"g:i A" }}</p>
                         </div>
                         <div class="editable_{{reminder.id}}">
-                            <input name="reminder_time" id="time_{{reminder.id}}" class="timeInput" value="{{time.time}}">
+                            <input type="time" name="reminder_time" id="time_{{reminder.id}}" class="timeInput" data-id="{{time.id}}" value="{{time.time|time:'H:i'}}">
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input time-checkbox" type="checkbox" role="switch" data-type="time" data-id="{{time.id}}" {% if time.is_active %}checked {% endif %} {% if not reminder.is_active %} disabled {% endif %}>
                         </div>
-                    {% endfor %}
-                </ul>
+                    </div>
+                {% endfor %}
             </div>
             <button type="button" id="delete{{reminder.id}}" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal_{{reminder.id}}">
                 Delete
@@ -108,19 +108,17 @@
                                 <div class="editable_{{reminder.id}}">
                                     <input type="number" min="1" step="1" name="remaining_days" class="edit-field" id="days_{{reminder.id}}" value="{{reminder.day_amount}}">
                                 </div>
-                                <ul>
-                                    {% for time in reminder.times.all %}
-                                        <div class="original_{{reminder.id}}">
-                                            <li>{{ time.time }}</li>
-                                        </div>
-                                        <div class="editable_{{reminder.id}}">
-                                            <input name="reminder_time" id="time_{{reminder.id}}" class="timeInput" data-id="{{time.id}}" value="{{time.time}}">
-                                        </div>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input time-checkbox" type="checkbox" data-type="time" data-id="{{time.id}}" disabled>
-                                        </div>
-                                    {% endfor %}
-                                </ul>
+                                {% for time in reminder.times.all %}
+                                    <div class="original_{{reminder.id}}">
+                                        <p class="reminder_times">{{ time.time|time:"g:i A" }}</p>
+                                    </div>
+                                    <div class="editable_{{reminder.id}}">
+                                        <input type="time" name="reminder_time" id="time_{{reminder.id}}" class="timeInput" data-id="{{time.id}}" value="{{time.time|time:'H:i'}}">
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input time-checkbox" type="checkbox" data-type="time" data-id="{{time.id}}" disabled>
+                                    </div>
+                                {% endfor %}
                             </div>
                             <button class="restore-button" type="button" data-reminder="{{reminder.id}}">Restore</button>
                             <button type="button" id="delete{{reminder.id}}" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal_{{reminder.id}}">
@@ -153,18 +151,7 @@
             </div>
         </div>
     <script>
-        function initializeTimePickers(selector = ".timeInput") {
-            flatpickr(selector, {
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "h:i K",
-                time_24hr: false,
-                defaultDate: "12:00 PM"
-        });
-}
         document.addEventListener('DOMContentLoaded', function() {
-            initializeTimePickers();
-
             const prescriptionSelect = document.querySelector('#id_prescription');
             const frequencySelect = document.querySelector('#frequency');
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -225,13 +212,12 @@
 
                 for (let i = 0; i < frequency; i++) {
                     const input = document.createElement('input');
-                    input.type = 'text';
+                    input.type = 'time';
                     input.name = `time_${i}`;
                     input.className = 'timeInput'
                     input.placeholder = `Time ${i+1}`;
                     timeInputsDiv.appendChild(input);
                 }
-                initializeTimePickers();
             });
 
             const toggleSwitch = document.querySelectorAll('.form-check-input');
@@ -445,6 +431,9 @@
             document.querySelectorAll('.edit-save').forEach(btn => {
                 btn.addEventListener('click', function(){
                     const reminder_id = btn.getAttribute('data-reminder');
+                    const editable_buttons = document.querySelectorAll(`.editable_${reminder_id}`);
+                    const original_buttons = document.querySelectorAll(`.original_${reminder_id}`);
+                    const edit_buttons = document.querySelector(`.editable_buttons_${reminder_id}`);
 
                     const timeInputs = document.querySelectorAll(`#reminder_${reminder_id} input[name="reminder_time"]`);
 
@@ -469,6 +458,30 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success){
+                            editable_buttons.forEach(el => {
+                                el.style.display = 'none';
+                            });
+
+                            original_buttons.forEach(el => {
+                                el.style.display = 'block';
+                            });
+
+                            edit_buttons.style.display = 'none';
+
+                            const times = data.times;
+                            console.log(times);
+                            
+                            times.forEach(time => {
+                                const timeDivs = document.querySelectorAll(`.original_${reminder_id}[data-time-id="${time.id}"]`);
+                                timeDivs.forEach(div => {
+                                    div.innerHTML = '';
+                                    const p = document.createElement('p');
+                                    p.textContent = time.time;
+                                    p.className = 'reminder_times';
+                                    div.appendChild(p);
+                                });
+                            });
+
                             console.log(`Reminder ${reminder_id} is updated`);
                         } else {
                             console.log('error: reminder cannot be updated');
