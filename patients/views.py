@@ -60,7 +60,7 @@ def reminders(request):
                 if time.startswith('time_'):
                     time_str = request.POST[time]
                     if time_str:
-                        time_obj = datetime.strptime(time_str, "%I:%M %p").time()
+                        time_obj = datetime.strptime(time_str, "%H:%M").time()
                         ReminderTime.objects.create(reminder=reminder, time=time_obj)
 
             return redirect('reminders')
@@ -177,7 +177,10 @@ def edit_reminder(request):
                 except ReminderTime.DoesNotExist:
                     continue
             
-            time_values = list(reminder.times.values_list('time', flat=True))
+            time_values = [
+                {'id': t['id'], 'time': t['time'].strftime('%-I:%M %p')}
+                for t in reminder.times.values('id', 'time')
+            ]
 
             return JsonResponse({
                 "success": True,
