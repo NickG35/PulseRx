@@ -94,3 +94,7 @@ a {
 [class^="editable"] {
     display: none;
 }
+
+.time-div {
+    display: flex;
+}
