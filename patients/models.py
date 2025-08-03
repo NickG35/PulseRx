@@ -2,6 +2,7 @@ from django.db import models
 from accounts.models import CustomAccount
 from pharmacy.models import PharmacyProfile, Prescription
 from datetime import date, timedelta
+from django.utils import timezone
 
 class PatientProfile(models.Model):
     first_name = models.CharField(max_length=100, null=False)
@@ -24,6 +25,7 @@ class MedicationReminder(models.Model):
     is_active = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
     remaining_days = models.PositiveIntegerField(null=True, blank=True)
+    restoration_time = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         status = "Archived" if self.is_archived else "Active"
