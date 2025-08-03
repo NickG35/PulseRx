@@ -38,7 +38,7 @@
                 <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
                 <p>QTY: {{reminder.prescription.quantity}}</p>
                 <div class="original_{{reminder.id}}">
-                    <p class="remaining_days">{{reminder.days_left}} day(s) remaining</p>
+                    <p class="remaining_days_{{reminder.id}}">{{reminder.days_left}} day(s) remaining</p>
                 </div>
                 <div class="editable_{{reminder.id}}">
                     <input type="number" min="1" step="1" name="remaining_days" class="edit-field" id="days_{{reminder.id}}" value="{{reminder.days_left}}">
@@ -103,7 +103,7 @@
                                 <p>Dosage: {{reminder.prescription.medicine.dosage}} mg</p>
                                 <p>QTY: {{reminder.prescription.quantity}}</p>
                                 <div class="original_{{reminder.id}}">
-                                    <p class="remaining_days"></p>
+                                    <p class="remaining_days_{{reminder.id}}"></p>
                                 </div>
                                 <div class="editable_{{reminder.id}}">
                                     <input type="number" min="1" step="1" name="remaining_days" class="edit-field" id="days_{{reminder.id}}" value="{{reminder.day_amount}}">
@@ -254,7 +254,7 @@
                         if (data.success){
                             console.log(`Toggle successful for ${time_id ? 'time ' + time_id : 'reminder ' + reminder_id}`);
                             if(type === 'reminder'){
-                                document.querySelector('.remaining_days').textContent = `${data.days_left} day(s) remaining`;
+                                document.querySelector(`.remaining_days_${reminder_id}`).textContent = `${data.days_left} day(s) remaining`;
                                 console.log(data.days_left);
 
                                 const reminderLayout = this.closest('.reminder-layout');
@@ -343,7 +343,7 @@
                                 });
 
                                 archived_reminder.querySelector('.form-check').style.display = 'block';
-                                archived_reminder.querySelector('.remaining_days').textContent = `${data.day_amount} day(s) remaining`;
+                                archived_reminder.querySelector(`.remaining_days_${reminder_id}`).textContent = `${data.day_amount} day(s) remaining`;
 
                                 document.getElementById('archive-count').textContent = `Archived (${data.archive_count})`;
 
@@ -434,9 +434,10 @@
                     const editable_buttons = document.querySelectorAll(`.editable_${reminder_id}`);
                     const original_buttons = document.querySelectorAll(`.original_${reminder_id}`);
                     const edit_buttons = document.querySelector(`.editable_buttons_${reminder_id}`);
+                    const dayInput = document.getElementById(`days_${reminder_id}`);
+                    const remaining_days = document.querySelector(`.remaining_days_${reminder_id}`);
 
                     const timeInputs = document.querySelectorAll(`#reminder_${reminder_id} input[name="reminder_time"]`);
-
                     const updated_times = Array.from(timeInputs).map(input => {
                         return {
                             id: input.getAttribute('data-id'),
@@ -452,7 +453,8 @@
                         },
                             body: JSON.stringify({
                                 reminder_id: reminder_id,
-                                times: updated_times
+                                times: updated_times,
+                                days: dayInput.value
                             })
                     })
                     .then(response => response.json())
@@ -467,6 +469,9 @@
                             });
 
                             edit_buttons.style.display = 'none';
+
+                            remaining_days.innerHTML = '';
+                            remaining_days.textContent = `${data.days} day(s) remaining`;
 
                             const times = data.times;
                             console.log(times);
