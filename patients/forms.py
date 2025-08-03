@@ -16,7 +16,7 @@ class PharmacyForm(forms.ModelForm):
 class ReminderForm(forms.ModelForm):
     class Meta:
         model = MedicationReminder
-        exclude = ['user', 'start_date','is_active', 'remaining_days']
+        exclude = ['user', 'start_date','is_active', 'remaining_days', 'restoration_time']
         
     def __init__(self, *args, **kwargs):
         patient = kwargs.pop('patient', None)
