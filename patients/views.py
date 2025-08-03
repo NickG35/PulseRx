@@ -4,6 +4,7 @@ from .models import PatientProfile, MedicationReminder, ReminderTime
 from .forms import ReminderForm, PharmacyForm
 from datetime import datetime, date, timedelta
 from django.http import JsonResponse
+from django.utils import timezone
 import json
 
 def patient_home(request):
@@ -44,8 +45,8 @@ def reminders(request):
         if reminder.days_left() == 0:
             reminder.archive()
             
-    all_reminders = MedicationReminder.objects.filter(user=patient, is_archived=False).all()
-    archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True).all()
+    all_reminders = MedicationReminder.objects.filter(user=patient, is_archived=False).order_by('-restoration_time').all()
+    archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True).order_by('-restoration_time').all()
 
     if request.method == 'POST':
         form = ReminderForm(request.POST, patient=patient)
@@ -138,6 +139,7 @@ def unarchive(request):
             reminder.times.update(is_active = True)
             reminder.start_date = date.today()
             reminder.remaining_days = reminder.day_amount
+            reminder.restoration_time = timezone.now()
             reminder.save()
 
             patient = PatientProfile.objects.get(user=request.user)
@@ -162,9 +164,13 @@ def edit_reminder(request):
         try:
             data = json.loads(request.body)
             reminder_id = data.get('reminder_id')
+            updated_days = data.get('days')
             updated_times = data.get('times', [])
 
             reminder = MedicationReminder.objects.get(id=reminder_id)
+            reminder.remaining_days = updated_days
+            reminder.save()
+
 
             for time in updated_times:
                 time_id = time.get('id')
@@ -184,7 +190,8 @@ def edit_reminder(request):
 
             return JsonResponse({
                 "success": True,
-                "times": time_values
+                "times": time_values,
+                "days": reminder.remaining_days
             })
         
         except json.JSONDecodeError:
