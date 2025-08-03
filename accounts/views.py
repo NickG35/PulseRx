@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Message
+from .models import Message, Notifications
 from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm, MessageForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
@@ -156,3 +156,8 @@ def account_messages(request):
         'received_messages': received_messages,
     })
 
+def notifications(request):
+    notifications = Notifications.objects.filter(user=request.user).order_by('-time').all()
+    return render(request, '/base.html', {
+        'notifications': notifications
+    })
