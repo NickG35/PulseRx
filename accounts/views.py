@@ -5,12 +5,13 @@ from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.views import LoginView
-from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile
+from patients.models import ReminderTime, MedicationReminder
 from django.http import JsonResponse
-
+import json
+from django.utils import timezone
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -156,8 +157,35 @@ def account_messages(request):
         'received_messages': received_messages,
     })
 
-def notifications(request):
+def notification_display(request):
     notifications = Notifications.objects.filter(user=request.user).order_by('-time').all()
-    return render(request, '/base.html', {
+    return render(request, 'templates/base.html', {
         'notifications': notifications
     })
+
+def notification_receiver(request):
+        if request.method == 'POST':
+            now = timezone.localtime()
+            now_time = now.time()
+            try:
+                reminder_times = ReminderTime.objects.filter(is_active=True)
+                created_notifications = []
+
+                for time in reminder_times:
+                    if time.time == now_time:
+                        reminder = time.reminder
+                        new_notification = Notifications.objects.create(
+                            user = request.user,
+                            reminder = reminder
+                        )
+                        created_notifications.append({
+                            "notification_id": new_notification.id,
+                            "reminder": reminder.medicine_name,
+                            "reminder_id": reminder.id,
+                            "created_time": new_notification.time.strftime("%Y-%m-%d %H:%M:%S"),
+                        })
+
+                return JsonResponse({"success": True, "notifications": created_notifications})
+                    
+            except json.JSONDecodeError:
+                return JsonResponse({"error": "Invalid JSON"}, status=400)
