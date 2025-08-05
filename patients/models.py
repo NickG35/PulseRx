@@ -43,6 +43,10 @@ class MedicationReminder(models.Model):
             self.is_archived = True
             self.is_active = False
             self.save(update_fields=["is_archived", "is_active"])
+    
+    @property
+    def medicine_name(self):
+        return self.prescription.medicine.name
 
 class ReminderTime(models.Model):
     reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name='times')
