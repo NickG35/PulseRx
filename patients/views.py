@@ -74,9 +74,6 @@ def reminders(request):
         'archived_reminders': archived_reminders
     })
 
-def messages(request):
-    return render(request, 'messages.html')
-
 def reminder_suggestions(request):
     if request.method == 'POST':
         try:
@@ -89,8 +86,6 @@ def reminder_suggestions(request):
             return JsonResponse({"results": response_data})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-    else:
-        return JsonResponse({"error": "Only POST requests are allowed"}, status=405)
 
 def toggle_time(request):
     if request.method == 'POST':
