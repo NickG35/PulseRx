@@ -8,7 +8,6 @@ urlpatterns = [
     path('account', views.account, name='account'),
     path('reminders', views.reminders, name='reminders'),
     path('reminder_suggestions', views.reminder_suggestions, name='reminder_suggestions'),
-    path('messages', views.messages, name='messages'),
     path('toggle_reminder', views.toggle_reminder, name='toggle_reminder'),
     path('toggle_time', views.toggle_time, name='toggle_time'),
     path('unarchive', views.unarchive, name='unarchive'),
