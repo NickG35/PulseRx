@@ -172,7 +172,7 @@ def notification_receiver(request):
                 created_notifications = []
 
                 for time in reminder_times:
-                    if time.time == now_time:
+                    if time.time.hour == now_time.hour and time.time.minute == now_time.minute:
                         reminder = time.reminder
                         new_notification = Notifications.objects.create(
                             user = request.user,
