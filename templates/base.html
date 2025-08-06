@@ -41,16 +41,21 @@
         {% endif %}
         <div class="end-div">
             <div class="dropdown show">
-                <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Notifications
                 </a>
               
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                     {% for noti in notifications %}
-                        <a class="dropdown-item" href="#"></a>
+                        <a class="dropdown-item" href="#">
+                            <span>Time to take your {{noti.reminder.medicine_name}}</span>
+                            <span><small>{{noti.time}}</small></span>
+                        </a>
+                    {% empty %}
+                        <span>No notifications to display</span>
                     {% endfor %}
                 </div>
-              </div>
+            </div>
             <a href="{% url 'account_settings' %}" class="main-link">Settings</a>
             <a href="{% url 'logout' %}">Logout</a>
         </div>
