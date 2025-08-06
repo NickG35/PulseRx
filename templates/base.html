@@ -47,7 +47,7 @@
               
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                     {% for noti in notifications %}
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}">
                             <span>Time to take your {{noti.reminder.medicine_name}}</span>
                             <span><small>{{noti.time}}</small></span>
                         </a>
@@ -177,6 +177,20 @@
             })
             .catch(error => console.error("Notification error:", error));
         }, 60000);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash;
+        if (hash) {
+            const target = document.querySelector(hash);
+            if (target) {
+                target.classList.add('highlight');
+
+                setTimeout(() => {
+                    target.classList.remove('highlight');
+                }, 2000);
+            }
+        }
     });
 </script>
 {% endif %}
