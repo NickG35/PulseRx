@@ -152,6 +152,29 @@
         });
     })
 </script>
+{% if request.user.is_authenticated and request.user.role == 'patient' %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setInterval(() => {
+            fetch('/accounts/notification_receiver', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFTOKEN': '{{ csrf_token }}'
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.notifications.length > 0) {
+                    data.notifications.forEach(notification => {
+                        console.log("Reminder:", notification.reminder);
+                    });
+                }
+            })
+            .catch(error => console.error("Notification error:", error));
+        }, 60000);
+    });
+</script>
+{% endif %}
 <body>
     {% block content %}
 
