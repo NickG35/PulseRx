@@ -157,12 +157,6 @@ def account_messages(request):
         'received_messages': received_messages,
     })
 
-def notification_display(request):
-    notifications = Notifications.objects.filter(user=request.user).order_by('-time').all()
-    return render(request, 'templates/base.html', {
-        'notifications': notifications
-    })
-
 def notification_receiver(request):
         if request.method == 'POST':
             now = timezone.localtime()
