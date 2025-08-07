@@ -176,7 +176,9 @@ def notification_receiver(request):
                             "notification_id": new_notification.id,
                             "reminder": reminder.medicine_name,
                             "reminder_id": reminder.id,
-                            "created_time": new_notification.time.strftime("%Y-%m-%d %H:%M:%S"),
+                            "created_time": new_notification.time.strftime("%b. %-d, %Y, %-I:%M %p") \
+                            .replace("AM", "a.m.") \
+                            .replace("PM", "p.m."),
                         })
 
                 return JsonResponse({"success": True, "notifications": created_notifications})
