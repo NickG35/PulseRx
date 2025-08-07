@@ -115,3 +115,25 @@ a {
     }
 }
 
+#hidden-dropdown {
+    background: none;
+    border: none;
+}
+
+#hidden-dropdown .rounded-circle {
+    width: 10px;
+    height: 10px;
+    top: 1px;
+    right: 0px;
+    display: none;
+}
+
+#noti-bell {
+    color: black;
+    font-size: 24px;
+}
+
+nav {
+    background: gray;
+}
+
