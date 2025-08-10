@@ -8,5 +8,7 @@ urlpatterns = [
     path('register/<str:role>', views.register_role, name='register_role'),
     path('account_settings', views.account_settings, name='account_settings'),
     path('messages', views.account_messages, name='messages'),
-    path('notification_receiver', views.notification_receiver, name='notification_receiver')
+    path('notification_receiver', views.notification_receiver, name='notification_receiver'),
+    path('delete_notification', views.delete_notification, name='delete_notification'),
+    path('read_notification', views.read_notification, name='read_notification')
 ]
