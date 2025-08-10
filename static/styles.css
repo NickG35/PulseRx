@@ -133,7 +133,12 @@ a {
     font-size: 24px;
 }
 
-nav {
-    background: gray;
+#noti-dropdown {
+  border-bottom: 1px solid lightgray;
+  padding: 10px;
+  align-items: center;
 }
 
+a.dropdown-item.read {
+    color: #adb5bd;
+}
