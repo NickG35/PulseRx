@@ -109,7 +109,7 @@
                                     <input type="number" min="1" step="1" name="remaining_days" class="edit-field" id="days_{{reminder.id}}" value="{{reminder.day_amount}}">
                                 </div>
                                 {% for time in reminder.times.all %}
-                                    <div class="original_{{reminder.id}}">
+                                    <div class="original_{{reminder.id}}" data-time-id="{{time.id}}">
                                         <p class="reminder_times">{{ time.time|time:"g:i A" }}</p>
                                     </div>
                                     <div class="editable_{{reminder.id}}">
