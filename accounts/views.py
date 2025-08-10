@@ -12,6 +12,8 @@ from patients.models import ReminderTime, MedicationReminder
 from django.http import JsonResponse
 import json
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.timezone import localtime
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -174,9 +176,10 @@ def notification_receiver(request):
                         )
                         created_notifications.append({
                             "notification_id": new_notification.id,
+                            "is_read": new_notification.is_read,
                             "reminder": reminder.medicine_name,
                             "reminder_id": reminder.id,
-                            "created_time": new_notification.time.strftime("%b. %-d, %Y, %-I:%M %p") \
+                            "created_time": localtime(new_notification.time).strftime("%b. %-d, %Y, %-I:%M %p") \
                             .replace("AM", "a.m.") \
                             .replace("PM", "p.m."),
                         })
@@ -185,3 +188,27 @@ def notification_receiver(request):
                     
             except json.JSONDecodeError:
                 return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+def delete_notification(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            noti_id = data.get('notification_id')
+            notification = Notifications.objects.get(id=noti_id)
+            notification.delete()
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+@csrf_exempt
+def read_notification(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            noti_id = data.get('notification_id')
+            notification = Notifications.objects.get(id=noti_id)
+            notification.is_read = True
+            notification.save()
+            return JsonResponse({"success": True})
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
