@@ -4,6 +4,7 @@
     <h1>reminders</h1>
     <form method="post">
         {% csrf_token %}
+        {{ form.non_field_errors }}
         <div>
             <select name="{{form.prescription.name}}" id="{{form.prescription.id_for_label}}">
                 {% for val, label in form.prescription.field.choices %}
@@ -23,6 +24,7 @@
         <div>
             <label for="{{ form.day_amount.id_for_label }}">Number of days:</label>
             {{form.day_amount}}
+            {{ form.day_amount.errors }}
             <div class="day-suggestion"></div>
         </div>
         <button type="submit">Submit</button>
@@ -444,6 +446,11 @@
                             time: input.value
                         };
                     });
+
+                    if (!dayInput.checkValidity()) {
+                        dayInput.reportValidity();
+                        return;
+                    }
 
                     fetch('/patient/edit_reminder', {
                         method: "POST",
