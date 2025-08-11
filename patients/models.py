@@ -3,6 +3,7 @@ from accounts.models import CustomAccount
 from pharmacy.models import PharmacyProfile, Prescription
 from datetime import date, timedelta
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 class PatientProfile(models.Model):
     first_name = models.CharField(max_length=100, null=False)
@@ -21,7 +22,7 @@ class MedicationReminder(models.Model):
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     frequency = models.PositiveIntegerField(choices=[(i, f"{i}") for i in range(1, 6)])
     start_date = models.DateField(default=date.today)
-    day_amount = models.PositiveIntegerField()
+    day_amount = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     is_active = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
     remaining_days = models.PositiveIntegerField(null=True, blank=True)
