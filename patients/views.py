@@ -48,8 +48,20 @@ def reminders(request):
     all_reminders = MedicationReminder.objects.filter(user=patient, is_archived=False).order_by('-restoration_time').all()
     archived_reminders = MedicationReminder.objects.filter(user=patient, is_archived=True).order_by('-restoration_time').all()
 
+    time_values = [] 
+    selected_prescription_id = None
+
     if request.method == 'POST':
         form = ReminderForm(request.POST, patient=patient)
+        selected_prescription_id = request.POST.get('prescription')
+
+        time_values = [
+            v for k, v in request.POST.items() if k.startswith("time_")
+        ]
+
+        if any(val == "" for val in time_values):
+            form.add_error(None, "All time fields must be filled.")
+
         if form.is_valid():
             reminder = form.save(commit=False)
             day_amount = int(request.POST.get('day_amount'))
@@ -70,6 +82,8 @@ def reminders(request):
 
     return render(request, 'reminders.html', {
         'form': form,
+        'selected_prescription_id': selected_prescription_id,
+        "time_values": time_values,
         'all_reminders': all_reminders,
         'archived_reminders': archived_reminders
     })
