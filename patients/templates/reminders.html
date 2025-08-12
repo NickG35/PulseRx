@@ -6,11 +6,10 @@
         {% csrf_token %}
         {{ form.non_field_errors }}
         <div>
-            <select name="{{form.prescription.name}}" id="{{form.prescription.id_for_label}}">
+            <select name="{{ form.prescription.name }}" id="{{ form.prescription.id_for_label }}">
                 {% for val, label in form.prescription.field.choices %}
-                    <option value="{{ val }}" data-id="{{ val }}" 
-                        {% if form.prescription.value == val %}selected{% endif %}>
-                        {{label}}
+                    <option value="{{ val }}" data-id="{{ val }}">
+                        {{ label }}
                     </option>
                 {% endfor %}
             </select>
@@ -20,7 +19,11 @@
             {{form.frequency}}
         </div>
         <div class="dosage-suggestion"></div>
-        <div id="timeInputs"></div>
+        <div id="timeInputs">
+            {% for val in time_values %} 
+                <input type="time" name="time_{{ forloop.counter0 }}" class="timeInput" value="{{val}}">
+            {% endfor %}
+        </div>
         <div>
             <label for="{{ form.day_amount.id_for_label }}">Number of days:</label>
             {{form.day_amount}}
@@ -201,6 +204,13 @@
                     });
                 } 
             }
+
+            const selectedPrescriptionId = "{{ selected_prescription_id|default:'' }}";
+            if (selectedPrescriptionId && prescriptionSelect) {
+                prescriptionSelect.value = selectedPrescriptionId;
+            }
+
+            createSuggestion();
 
             prescriptionSelect.addEventListener('change', createSuggestion);
             frequencySelect.addEventListener('change', createSuggestion);
