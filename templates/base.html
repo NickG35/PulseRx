@@ -50,6 +50,12 @@
               
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                     {% for noti in notifications %}
+                        <button type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                            <a class="dropdown-item" href="#">Delete</a>
+                        </div>
                         <a id="noti-dropdown" class="dropdown-item notiDrop {% if noti.is_read %} read {% endif %}" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
                             <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
                             <p class="reminder-time"><small>{{noti.time}}</small></p>
