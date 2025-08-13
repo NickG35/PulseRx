@@ -49,17 +49,17 @@
                 </button>
               
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                    <h5>Notifications</h5>
                     {% for noti in notifications %}
-                        <button type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="bi bi-three-dots"></i>
-                        </button>
-                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="#">Delete</a>
+                        <div id="noti_div_{{noti.id}}" class="dropdown-item">
+                            <button class="delete-noti" type="button" data-id="{{noti.id}}">
+                                <i class="bi bi-x"></i>
+                            </button>
+                            <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
+                                <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
+                                <p class="reminder-time"><small>{{noti.time}}</small></p>
+                            </a>
                         </div>
-                        <a id="noti-dropdown" class="dropdown-item notiDrop {% if noti.is_read %} read {% endif %}" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                            <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
-                            <p class="reminder-time"><small>{{noti.time}}</small></p>
-                        </a>
                     {% empty %}
                         <span>No notifications to display</span>
                     {% endfor %}
@@ -264,6 +264,31 @@
             }
         }
     });
+
+    const deleteButton = document.querySelectorAll('.delete-noti')
+    deleteButton.forEach(btn => {
+        btn.addEventListener('click', function(){
+            btn.stopPropagation();
+            const notification_id = btn.getAttribute('data-id');
+            const noti_div = document.getElementById(`noti_div_${notification_id}`);
+            fetch('/accounts/delete_notification', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFTOKEN': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({notification_id: notification_id})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`deleted notification ${notification_id} successfully`)
+                    noti_div.remove();
+                }
+            })
+            .catch(error => console.error("Notification error:", error));
+        });
+    });
+       
 </script>
 {% endif %}
 <body>
