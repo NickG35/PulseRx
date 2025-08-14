@@ -22,12 +22,12 @@ def my_pharmacy(request):
     current_pharmacy = patient.pharmacy
 
     if request.method == 'POST':
-        form = PharmacyForm(request.POST)
+        form = PharmacyForm(request.POST, instance=patient)
         if form.is_valid():
             form.save()
             return redirect('my_pharmacy')
     else:
-        form = PharmacyForm()
+        form = PharmacyForm(instance=patient)
 
     return render(request, 'my_pharmacy.html', {
         'pharmacy': current_pharmacy,
