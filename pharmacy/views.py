@@ -35,9 +35,16 @@ def create_prescriptions(request):
     })
 
 def patient_search(request):
-    pharmacist = PharmacistProfile.objects.get(user=request.user)
-    pharmacy = pharmacist.pharmacy
-    pharmacy_patients = PatientProfile.objects.filter(pharmacy=pharmacy)
+    if request.user.role in ['pharmacist']:
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role in ['pharmacy admin']:
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+
+    if pharmacy:
+        pharmacy_patients = PatientProfile.objects.filter(pharmacy=pharmacy)
+    else:
+        pharmacy_patients = PatientProfile.objects.none()
 
     query = request.GET.get('q', '').strip()
     email_mode = request.GET.get('email', '') == 'yes'
