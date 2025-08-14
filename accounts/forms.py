@@ -104,13 +104,5 @@ class MessageForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        exclude = ['timestamp','read', 'read_time', 'sender']
-        widgets = {
-              'recipient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
-            }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Explicitly allow all users as valid recipients
-        self.fields['recipient'].queryset = CustomAccount.objects.all()
+        exclude = ['timestamp','read', 'read_time', 'sender', 'recipient']
         
