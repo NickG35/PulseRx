@@ -268,8 +268,8 @@
 
     const deleteButton = document.querySelectorAll('.delete-noti')
     deleteButton.forEach(btn => {
-        btn.addEventListener('click', function(){
-            btn.stopPropagation();
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
             const notification_id = btn.getAttribute('data-id');
             const noti_div = document.getElementById(`noti_div_${notification_id}`);
             fetch('/accounts/delete_notification', {
