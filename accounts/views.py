@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Message, Notifications
+from .models import Message, Notifications, CustomAccount
 from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm, MessageForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
@@ -8,7 +8,7 @@ from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile
-from patients.models import ReminderTime, MedicationReminder
+from patients.models import ReminderTime, PatientProfile
 from django.http import JsonResponse
 import json
 from django.utils import timezone
@@ -141,22 +141,38 @@ def account_settings(request):
     })
 
 def account_messages(request):
+    sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp').all()
+    received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp').all()
+    pharmacy_email = None
+    if request.user.role in ['patient']:
+        current_patient = PatientProfile.objects.get(user=request.user)
+        pharmacy_email = current_patient.pharmacy.user.email
+        patient_pharmacy = current_patient.pharmacy.user
+
     if request.method == 'POST':
         form = MessageForm(request.POST)
+        recipient = request.POST.get('recipient')
+        patient = CustomAccount.objects.get(id=recipient)
+        
         if form.is_valid():
             message = form.save(commit=False)
             message.sender = request.user
+
+            if request.user.role in ['pharmacist', 'pharmacy admin']:
+                message.recipient = patient
+            else:
+                message.recipient = patient_pharmacy
+
             message.save()
-            return redirect('pharmacy_messages')
+            return redirect('messages')
     else:
-        sent_messages = Message.objects.filter(sender=request.user).all()
-        received_messages = Message.objects.filter(recipient=request.user).all()
         form = MessageForm()
         
     return render(request, 'messages.html', {
         'form': form,
         'sent_messages': sent_messages,
         'received_messages': received_messages,
+        'pharm_email': pharmacy_email
     })
 
 def notification_receiver(request):
