@@ -51,19 +51,20 @@
               
                 <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                     <h5>Notifications</h5>
-                    {% for noti in notifications %}
-                        <div id="noti_div_{{noti.id}}" class="dropdown-item">
-                            <button class="delete-noti" type="button" data-id="{{noti.id}}">
-                                <i class="bi bi-x"></i>
-                            </button>
-                            <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
-                                <p class="reminder-time"><small>{{noti.time}}</small></p>
-                            </a>
-                        </div>
-                    {% empty %}
-                        <span>No notifications to display</span>
-                    {% endfor %}
+                    <div class="noti-content">
+                        {% for noti in notifications %}
+                            <div id="noti_div_{{noti.id}}" class="dropdown-item">
+                                <button class="delete-noti" type="button" data-id="{{noti.id}}">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
+                                    <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
+                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
+                                </a>
+                            </div>
+                        {% endfor %}
+                        <span id="emptyMessage">No notifications to display</span>
+                    </div>
                 </div>
             </div>
             <a href="{% url 'account_settings' %}" class="main-link">Settings</a>
@@ -205,7 +206,14 @@
 </script>
 {% if request.user.is_authenticated and request.user.role == 'patient' %}
 <script>
+    const empty_message = document.getElementById('emptyMessage');
+
+    function updateEmptyMessage(){
+        const notiDrop = document.querySelectorAll('#noti-dropdown');
+        empty_message.style.display = notiDrop.length > 0 ? 'none': 'block';
+    }
     document.addEventListener('DOMContentLoaded', () => {
+        updateEmptyMessage();
         setInterval(() => {
             fetch('/accounts/notification_receiver', {
                 method: 'POST',
@@ -217,11 +225,22 @@
             .then(data => {
                 if (data.success && data.notifications.length > 0) {
                     console.log("Fetched data:", data.notifications);
+
                     data.notifications.forEach(notification => {
                         console.log("Reminder:", notification.reminder);
                         
-                        const dropdown = document.querySelector('.dropdown-menu');
+                        const noti_content = document.querySelector('.noti-content');
                         const bellIcon = document.getElementById('noti-bell');
+                        
+                        const delete_button = document.createElement('button');
+                        delete_button.classList.add('delete-noti');
+                        delete_button.dataset.id = `${notification.notification_id}`;
+
+                        const delete_icon = document.createElement('i');
+                        delete_icon.classList.add('bi', 'bi-x');
+
+
+                        delete_button.appendChild(delete_icon);
 
                         const reminderUrl = "{% url 'reminders' %}"
                         const dropdownItem = document.createElement('a');
@@ -241,10 +260,12 @@
                         reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
                         reminderTime.classList.add('reminder-time');
 
-
-                        dropdownItem.prepend(reminderMessage);
+                        dropdownItem.prepend(delete_button);
+                        dropdownItem.appendChild(reminderMessage);
                         dropdownItem.appendChild(reminderTime);
-                        dropdown.prepend(dropdownItem);
+                        noti_content.prepend(dropdownItem);
+
+                        updateEmptyMessage();
                     });
                 }
             })
@@ -284,6 +305,8 @@
                 if (data.success) {
                     console.log(`deleted notification ${notification_id} successfully`)
                     noti_div.remove();
+
+                    updateEmptyMessage();
                 }
             })
             .catch(error => console.error("Notification error:", error));
