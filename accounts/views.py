@@ -186,19 +186,28 @@ def notification_receiver(request):
                 for time in reminder_times:
                     if time.time.hour == now_time.hour and time.time.minute == now_time.minute:
                         reminder = time.reminder
-                        new_notification = Notifications.objects.create(
-                            user = request.user,
-                            reminder = reminder
-                        )
-                        created_notifications.append({
-                            "notification_id": new_notification.id,
-                            "is_read": new_notification.is_read,
-                            "reminder": reminder.medicine_name,
-                            "reminder_id": reminder.id,
-                            "created_time": localtime(new_notification.time).strftime("%b. %-d, %Y, %-I:%M %p") \
-                            .replace("AM", "a.m.") \
-                            .replace("PM", "p.m."),
-                        })
+
+                        exists = Notifications.objects.filter(
+                            user=request.user,
+                            reminder=reminder,
+                            time__hour=now_time.hour,
+                            time__minute=now_time.minute
+                        ).exists()
+                        
+                        if not exists:
+                            new_notification = Notifications.objects.create(
+                                user = request.user,
+                                reminder = reminder
+                            )
+                            created_notifications.append({
+                                "notification_id": new_notification.id,
+                                "is_read": new_notification.is_read,
+                                "reminder": reminder.medicine_name,
+                                "reminder_id": reminder.id,
+                                "created_time": localtime(new_notification.time).strftime("%b. %-d, %Y, %-I:%M %p") \
+                                .replace("AM", "a.m.") \
+                                .replace("PM", "p.m."),
+                            })
 
                 return JsonResponse({"success": True, "notifications": created_notifications})
                     
