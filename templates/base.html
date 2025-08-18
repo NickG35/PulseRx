@@ -213,12 +213,15 @@
         empty_message.style.display = notiDrop.length > 0 ? 'none': 'block';
     }
     document.addEventListener('DOMContentLoaded', () => {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const noti_content = document.querySelector('.noti-content');
         updateEmptyMessage();
         setInterval(() => {
             fetch('/accounts/notification_receiver', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFTOKEN': '{{ csrf_token }}'
+                    'X-CSRFTOKEN': csrfToken,
+                    'Content-Type': 'application/json'
                 },
             })
             .then(response => response.json())
@@ -227,30 +230,26 @@
                     console.log("Fetched data:", data.notifications);
 
                     data.notifications.forEach(notification => {
-                        console.log("Reminder:", notification.reminder);
-                        
-                        const noti_content = document.querySelector('.noti-content');
-                        const bellIcon = document.getElementById('noti-bell');
-                        
+                        console.log("Reminder:", notification.reminder)
+                        const wrapperDiv = document.createElement('div');
+                        wrapperDiv.id = `noti_div_${notification.notification_id}`;
+                        wrapperDiv.classList.add('dropdown-item');
+
                         const delete_button = document.createElement('button');
                         delete_button.classList.add('delete-noti');
                         delete_button.dataset.id = `${notification.notification_id}`;
 
                         const delete_icon = document.createElement('i');
                         delete_icon.classList.add('bi', 'bi-x');
-
-
                         delete_button.appendChild(delete_icon);
 
-                        const reminderUrl = "{% url 'reminders' %}"
+                        const reminderUrl = "{% url 'reminders' %}";
                         const dropdownItem = document.createElement('a');
                         dropdownItem.classList.add('dropdown-item', 'notiDrop');
                         dropdownItem.id = 'noti-dropdown';
                         dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
                         dropdownItem.dataset.id = `${notification.notification_id}`;
                         dropdownItem.dataset.read = `${notification.is_read}`;
-                        
-
 
                         const reminderMessage = document.createElement('p');
                         reminderMessage.textContent = `Time to take your ${notification.reminder}`;
@@ -260,10 +259,12 @@
                         reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
                         reminderTime.classList.add('reminder-time');
 
-                        dropdownItem.prepend(delete_button);
                         dropdownItem.appendChild(reminderMessage);
                         dropdownItem.appendChild(reminderTime);
-                        noti_content.prepend(dropdownItem);
+                        wrapperDiv.appendChild(delete_button);
+                        wrapperDiv.appendChild(dropdownItem);
+
+                        noti_content.prepend(wrapperDiv);
 
                         updateEmptyMessage();
                     });
@@ -287,31 +288,33 @@
         }
     });
 
-    const deleteButton = document.querySelectorAll('.delete-noti')
-    deleteButton.forEach(btn => {
-        btn.addEventListener('click', function(e){
-            e.stopPropagation();
-            const notification_id = btn.getAttribute('data-id');
-            const noti_div = document.getElementById(`noti_div_${notification_id}`);
-            fetch('/accounts/delete_notification', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFTOKEN': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({notification_id: notification_id})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log(`deleted notification ${notification_id} successfully`)
-                    noti_div.remove();
+    document.querySelector('.noti-content').addEventListener('click', function(e){
+        const btn = e.target.closest('.delete-noti');
+        if (!btn) return;
 
-                    updateEmptyMessage();
-                }
-            })
-            .catch(error => console.error("Notification error:", error));
-        });
+        e.stopPropagation();
+        const notification_id = btn.dataset.id;
+        const noti_div = document.getElementById(`noti_div_${notification_id}`);
+
+        fetch('/accounts/delete_notification', {
+            method: 'POST',
+            headers: {
+                'X-CSRFTOKEN': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({notification_id: notification_id})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(`Deleted notification ${notification_id} successfully`);
+                noti_div?.remove();
+                updateEmptyMessage();
+            }
+        })
+        .catch(error => console.error("Notification error:", error));
     });
+    
        
 </script>
 {% endif %}
