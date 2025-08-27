@@ -53,3 +53,5 @@ class ReminderTime(models.Model):
     reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name='times')
     time = models.TimeField()
     is_active = models.BooleanField(default=True)
+    task_id = models.CharField(max_length=255, blank=True, null=True)
+   
