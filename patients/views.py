@@ -6,6 +6,9 @@ from datetime import datetime, date, timedelta
 from django.http import JsonResponse
 from django.utils import timezone
 import json
+from accounts.tasks import send_reminder
+from celery import current_app
+from datetime import datetime, date
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -73,8 +76,22 @@ def reminders(request):
                 if time.startswith('time_'):
                     time_str = request.POST[time]
                     if time_str:
-                        time_obj = datetime.strptime(time_str, "%H:%M").time()
-                        ReminderTime.objects.create(reminder=reminder, time=time_obj)
+                        time_obj = datetime.strptime(time_str, "%H:%M").time().replace(second=0, microsecond=0)
+                        rt = ReminderTime.objects.create(reminder=reminder, time=time_obj)
+                        now = timezone.localtime()
+                        eta = timezone.make_aware(datetime.combine(date.today(), time_obj))
+                        if eta < now:
+                            eta += timedelta(days=1)
+                        
+                        if eta.hour == now.hour and eta.minute == now.minute:
+                            eta = now + timedelta(seconds=1)
+
+                        task = send_reminder.apply_async(
+                            args=[rt.id],
+                            eta=eta
+                        )
+                        rt.task_id = task.id
+                        rt.save(update_fields=["task_id"])
 
             return redirect('reminders')
     else:
@@ -151,6 +168,32 @@ def unarchive(request):
             reminder.restoration_time = timezone.now()
             reminder.save()
 
+            for time_entry in reminder.times.all():
+                time_entry.is_active = True
+
+                if time_entry.task_id:
+                    try:
+                        current_app.control.revoke(time_entry.task_id)
+                    except Exception:
+                        pass
+                
+                now = timezone.localtime()
+                eta = timezone.make_aware(
+                    datetime.combine(date.today(), time_entry.time)
+                )
+                if eta < now:
+                    eta += timedelta(days=1)
+                
+                if eta.hour == now.hour and eta.minute == now.minute:
+                    eta = now + timedelta(seconds=1)
+                
+                task = send_reminder.apply_async(
+                    args=[reminder.id, time_entry.id],
+                    eta=eta
+                )
+                time_entry.task_id = task.id
+                time_entry.save(update_fields=["is_active", "task_id"])
+
             patient = PatientProfile.objects.get(user=request.user)
             archive_count = MedicationReminder.objects.filter(user=patient, is_archived=True).count()
 
@@ -187,14 +230,35 @@ def edit_reminder(request):
 
                 try:
                     time_entry = ReminderTime.objects.get(id=time_id, reminder=reminder)
-                    time_entry.time = new_time
+                    parsed_time = datetime.strptime(new_time, "%H:%M").time().replace(second=0, microsecond=0)
+                    time_entry.time = parsed_time
+
+                    if time_entry.task_id:
+                        try:
+                            current_app.control.revoke(time_entry.task_id, terminate=True)
+                        except Exception:
+                            pass
+                    
+                    now = timezone.localtime()
+                    eta = timezone.make_aware(datetime.combine(date.today(), parsed_time))
+                    if eta < now:
+                        eta += timedelta(days=1)
+                    
+                    if eta.hour == now.hour and eta.minute == now.minute:
+                        eta = now + timedelta(seconds=1)
+                        
+
+                    task = send_reminder.apply_async((time_entry.id,), eta=eta)
+                    time_entry.task_id = task.id
                     time_entry.save()
+
+
                 except ReminderTime.DoesNotExist:
                     continue
             
             time_values = [
-                {'id': t['id'], 'time': t['time'].strftime('%-I:%M %p')}
-                for t in reminder.times.values('id', 'time')
+                {'id': t.id, 'time': t.time.strftime('%-I:%M %p')}
+                for t in reminder.times.all()
             ]
 
             return JsonResponse({
