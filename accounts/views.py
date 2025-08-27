@@ -14,6 +14,9 @@ import json
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import localtime
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -175,53 +178,23 @@ def account_messages(request):
         'pharm_email': pharmacy_email
     })
 
-def notification_receiver(request):
-        if request.method == 'POST':
-            now = timezone.localtime()
-            now_time = now.time()
-            try:
-                reminder_times = ReminderTime.objects.filter(is_active=True)
-                created_notifications = []
-
-                for time in reminder_times:
-                    if time.time.hour == now_time.hour and time.time.minute == now_time.minute:
-                        reminder = time.reminder
-
-                        exists = Notifications.objects.filter(
-                            user=request.user,
-                            reminder=reminder,
-                            time__hour=now_time.hour,
-                            time__minute=now_time.minute
-                        ).exists()
-                        
-                        if not exists:
-                            new_notification = Notifications.objects.create(
-                                user = request.user,
-                                reminder = reminder
-                            )
-                            created_notifications.append({
-                                "notification_id": new_notification.id,
-                                "is_read": new_notification.is_read,
-                                "reminder": reminder.medicine_name,
-                                "reminder_id": reminder.id,
-                                "created_time": localtime(new_notification.time).strftime("%b. %-d, %Y, %-I:%M %p") \
-                                .replace("AM", "a.m.") \
-                                .replace("PM", "p.m."),
-                            })
-
-                return JsonResponse({"success": True, "notifications": created_notifications})
-                    
-            except json.JSONDecodeError:
-                return JsonResponse({"error": "Invalid JSON"}, status=400)
 
 def delete_notification(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             noti_id = data.get('notification_id')
-            notification = Notifications.objects.get(id=noti_id)
+
+            if not noti_id:
+                return JsonResponse({"error": "missing notification id"}, status=400)
+            try:
+                notification = Notifications.objects.get(id=noti_id)
+            except ObjectDoesNotExist:
+                return JsonResponse({"error": "Notification not found"}, status=404)
+            
             notification.delete()
             return JsonResponse({"success": True})
+        
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
