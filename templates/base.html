@@ -63,7 +63,9 @@
                                 </a>
                             </div>
                         {% endfor %}
-                        <span id="emptyMessage">No notifications to display</span>
+                        {% if not noti %}
+                            <span id="emptyMessage" {% if notifications %} style="display: none;" {% endif %}>No notifications to display</span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -213,67 +215,72 @@
         empty_message.style.display = notiDrop.length > 0 ? 'none': 'block';
     }
     document.addEventListener('DOMContentLoaded', () => {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const noti_content = document.querySelector('.noti-content');
-        updateEmptyMessage();
-        setInterval(() => {
-            fetch('/accounts/notification_receiver', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFTOKEN': csrfToken,
-                    'Content-Type': 'application/json'
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.notifications.length > 0) {
-                    console.log("Fetched data:", data.notifications);
 
-                    data.notifications.forEach(notification => {
-                        console.log("Reminder:", notification.reminder)
-                        const wrapperDiv = document.createElement('div');
-                        wrapperDiv.id = `noti_div_${notification.notification_id}`;
-                        wrapperDiv.classList.add('dropdown-item');
+        const userId = document.querySelector('body').dataset.userId
+        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+        const socket = new WebSocket(`${protocol}://127.0.0.1:8000/ws/notifications/`);
 
-                        const delete_button = document.createElement('button');
-                        delete_button.classList.add('delete-noti');
-                        delete_button.dataset.id = `${notification.notification_id}`;
 
-                        const delete_icon = document.createElement('i');
-                        delete_icon.classList.add('bi', 'bi-x');
-                        delete_button.appendChild(delete_icon);
+        socket.onopen = () => console.log("Connected");
 
-                        const reminderUrl = "{% url 'reminders' %}";
-                        const dropdownItem = document.createElement('a');
-                        dropdownItem.classList.add('dropdown-item', 'notiDrop');
-                        dropdownItem.id = 'noti-dropdown';
-                        dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
-                        dropdownItem.dataset.id = `${notification.notification_id}`;
-                        dropdownItem.dataset.read = `${notification.is_read}`;
+        socket.onmessage= function(event) {
+            updateEmptyMessage();
+            const data = JSON.parse(event.data); 
+            console.log("Parsed message:", data);
 
-                        const reminderMessage = document.createElement('p');
-                        reminderMessage.textContent = `Time to take your ${notification.reminder}`;
-                        reminderMessage.classList.add('reminder-message');
+            if (data.notification) {
+                const notification = data.notification; 
+                console.log("Notification ID:", notification.id)
 
-                        const reminderTime = document.createElement('p');
-                        reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
-                        reminderTime.classList.add('reminder-time');
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.id = `noti_div_${notification.id}`;
+                wrapperDiv.classList.add('dropdown-item');
 
-                        dropdownItem.appendChild(reminderMessage);
-                        dropdownItem.appendChild(reminderTime);
-                        wrapperDiv.appendChild(delete_button);
-                        wrapperDiv.appendChild(dropdownItem);
+                const delete_button = document.createElement('button');
+                delete_button.classList.add('delete-noti');
+                delete_button.dataset.id = `${notification.id}`;
 
-                        noti_content.prepend(wrapperDiv);
+                const delete_icon = document.createElement('i');
+                delete_icon.classList.add('bi', 'bi-x');
+                delete_button.appendChild(delete_icon);
 
-                        updateEmptyMessage();
-                    });
-                }
-            })
-            .catch(error => console.error("Notification error:", error));
-        }, 60000);
+                const reminderUrl = "{% url 'reminders' %}";
+                const dropdownItem = document.createElement('a');
+                dropdownItem.classList.add('dropdown-item', 'notiDrop');
+                dropdownItem.id = 'noti-dropdown';
+                dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
+                dropdownItem.dataset.id = `${notification.id}`;
+                dropdownItem.dataset.read = `${notification.is_read}`;
+
+                const reminderMessage = document.createElement('p');
+                reminderMessage.textContent = `Time to take your ${notification.reminder}`;
+                reminderMessage.classList.add('reminder-message');
+
+                const reminderTime = document.createElement('p');
+                reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
+                reminderTime.classList.add('reminder-time');
+
+                dropdownItem.appendChild(reminderMessage);
+                dropdownItem.appendChild(reminderTime);
+                wrapperDiv.appendChild(delete_button);
+                wrapperDiv.appendChild(dropdownItem);
+
+                noti_content.prepend(wrapperDiv);
+
+                updateEmptyMessage();
+            }
+        };
+        socket.onclose = function(event) {
+            console.log('WebSocket closed unexpectedly');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        
     });
-
     window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash;
         if (hash) {
@@ -288,6 +295,22 @@
         }
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
     document.querySelector('.noti-content').addEventListener('click', function(e){
         const btn = e.target.closest('.delete-noti');
         if (!btn) return;
@@ -299,7 +322,7 @@
         fetch('/accounts/delete_notification', {
             method: 'POST',
             headers: {
-                'X-CSRFTOKEN': '{{ csrf_token }}',
+                'X-CSRFTOKEN': csrftoken,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({notification_id: notification_id})
@@ -318,7 +341,8 @@
        
 </script>
 {% endif %}
-<body>
+<body {% if user.is_authenticated %}data-user-id="{{ request.user.id }}"{% endif %}>
+    <p>{{request.user.id}}</p>
     {% block content %}
 
     {% endblock %}
