@@ -149,6 +149,32 @@ def toggle_reminder(request):
                 reminder.remaining_days = None
                 reminder.times.update(is_active = True)
 
+                for time_entry in reminder.times.all():
+                    time_entry.is_active = True
+
+                    if time_entry.task_id:
+                        try:
+                            current_app.control.revoke(time_entry.task_id)
+                        except Exception:
+                            pass
+
+                    now = timezone.localtime()
+                    eta = timezone.make_aware(
+                        datetime.combine(date.today(), time_entry.time)
+                    )
+                    if eta < now:
+                        eta += timedelta(days=1)
+                    
+                    if eta.hour == now.hour and eta.minute == now.minute:
+                        eta = now + timedelta(seconds=1)
+                    
+                    task = send_reminder.apply_async(
+                        args=[time_entry.id],
+                        eta=eta
+                    )
+                    time_entry.task_id = task.id
+                    time_entry.save(update_fields=["is_active", "task_id"])
+
             reminder.is_active = not reminder.is_active
             reminder.save()
             return JsonResponse({"success": True, "days_left": reminder.days_left()})
@@ -188,7 +214,7 @@ def unarchive(request):
                     eta = now + timedelta(seconds=1)
                 
                 task = send_reminder.apply_async(
-                    args=[reminder.id, time_entry.id],
+                    args=[time_entry.id],
                     eta=eta
                 )
                 time_entry.task_id = task.id
