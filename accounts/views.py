@@ -146,6 +146,15 @@ def account_settings(request):
 def account_messages(request):
     sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp').all()
     received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp').all()
+    form = MessageForm()
+        
+    return render(request, 'messages.html', {
+        'form': form,
+        'sent_messages': sent_messages,
+        'received_messages': received_messages,
+    })
+
+def send_messages(request):
     pharmacy_email = None
     if request.user.role in ['patient']:
         current_patient = PatientProfile.objects.get(user=request.user)
@@ -167,16 +176,7 @@ def account_messages(request):
                 message.recipient = patient_pharmacy
 
             message.save()
-            return redirect('messages')
-    else:
-        form = MessageForm()
-        
-    return render(request, 'messages.html', {
-        'form': form,
-        'sent_messages': sent_messages,
-        'received_messages': received_messages,
-        'pharm_email': pharmacy_email
-    })
+            return JsonResponse({"success": True, "sender": message.sender, "recipient": message.recipient, "content": message.content, "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M"), "read": message.read})
 
 
 def delete_notification(request):
