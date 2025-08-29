@@ -1,9 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+                return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        const form = document.getElementById('message-form');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            fetch('/accounts/send_messages', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                },
+                body: new FormData(form)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const sentBox = document.getElementById('sent-box');
+
+                    const emailBox = document.createElement('div');
+                    emailBox.classList.add('email-box');
+                    emailBox.id = `email_${data.id}`;
+                    emailBox.dataset.read = data.read;
+
+                    const sender = document.createElement('p');
+                    sender.classList.add('message-users');
+                    sender.id = 'sender';
+                    sender.textContent = data.sender;
+
+                    const recipient = document.createElement('p');
+                    recipient.classList.add('message-users');
+                    recipient.id = 'recipient';
+                    recipient.textContent = data.recipient;
+
+                    const messageContent = document.createElement('p');
+                    messageContent.id = 'message-content';
+                    messageContent.textContent = data.content;
+
+                    const messageTimestamp = document.createElement('p');
+                    messageTimestamp.id = 'message-timestamp';
+                    messageTimestamp.innerHTML = `<small>${data.timestamp}</small>`;
+
+                    emailBox.appendChild(sender);
+                    emailBox.appendChild(recipient);
+                    emailBox.appendChild(messageContent);
+                    emailBox.appendChild(messageTimestamp);
+
+                    sentBox.prepend(emailBox); 
+
+                    form.reset();
+                }
+            })
+            .catch(error => console.error("Notification error:", error));
+        })
+    });
+</script>
 <p>These are my pharmacy messages</p>
 
-<form method="post">
+<form id="message-form" method="post">
     {% csrf_token %}
     <label for="id_sender">From:</label>
     <input type="text" id="id_sender" value="{{request.user.first_name}} {{request.user.last_name}} {{ request.user.email }}>" disabled>
@@ -13,25 +84,31 @@
         <div id="autocompleteResults-patient"></div>
     {% else %}
         <label for="id_receiver">To:</label>
-        <input id="id_receiver" type="text" value="{{pharm_email}}" disabled>
+        <input id="id_receiver" type="text" value="{{pharmacy_email}}" disabled>
     {% endif %}
     {{form.as_p}}
 
     <button type="submit">Send</button>
 </form>
 <h3>Sent</h3>
-{% for message in sent_messages %} 
-    <p>{{message.sender.email}}</p>
-    <p>{{message.recipient.email}}</p>
-    <p>{{message.content}}</p>
-    <p>{{message.timestamp}}</p>
-{% endfor %}
+<div id="sent-box" class="messages-box">
+    {% for message in sent_messages %} 
+        <div class="email-box" id="email_{{message.id}}" data-read="{{message.read}}">
+            <p class="message-users" id="sender">{{message.sender.email}}</p>
+            <p class="message-users" id="recipient">{{message.recipient.email}}</p>
+            <p id="message-content">{{message.content}}</p>
+            <p id="message-timestamp"><small>{{message.timestamp}}</small></p>
+        </div>
+    {% endfor %}    
+</div>
 
 <h3>Inbox</h3>
-{% for message in received_messages %} 
-    <p>{{message.sender.email}}</p>
-    <p>{{message.recipient.email}}</p>
-    <p>{{message.content}}</p>
-    <p>{{message.timestamp}}</p>
-{% endfor %}
+<div id="inbox-box" class="messages-box">
+    {% for message in received_messages %} 
+        <p>{{message.sender.email}}</p>
+        <p>{{message.recipient.email}}</p>
+        <p>{{message.content}}</p>
+        <p>{{message.timestamp}}</p>
+    {% endfor %}
+</div>
 {% endblock %}
