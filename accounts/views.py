@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Message, Notifications, CustomAccount
+from .models import Message, Notifications, CustomAccount, Thread
 from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm, MessageForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
@@ -176,8 +176,10 @@ def send_messages(request):
 
         if form.is_valid():
             message = form.save(commit=False)
+            new_thread = Thread.objects.create()
             message.sender = request.user
             message.recipient = recipient
+            message.thread = new_thread
             message.save()
 
             created_time_local = timezone.localtime(message.timestamp)
