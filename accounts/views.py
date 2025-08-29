@@ -144,6 +144,11 @@ def account_settings(request):
     })
 
 def account_messages(request):
+    pharmacy_email = None
+    if request.user.role in ['patient']:
+        current_patient = PatientProfile.objects.get(user=request.user)
+        pharmacy_email = current_patient.pharmacy.user.email
+
     sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp').all()
     received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp').all()
     form = MessageForm()
@@ -152,31 +157,43 @@ def account_messages(request):
         'form': form,
         'sent_messages': sent_messages,
         'received_messages': received_messages,
+        'pharmacy_email': pharmacy_email
     })
 
 def send_messages(request):
-    pharmacy_email = None
-    if request.user.role in ['patient']:
-        current_patient = PatientProfile.objects.get(user=request.user)
-        pharmacy_email = current_patient.pharmacy.user.email
-        patient_pharmacy = current_patient.pharmacy.user
-
     if request.method == 'POST':
         form = MessageForm(request.POST)
-        recipient = request.POST.get('recipient')
-        patient = CustomAccount.objects.get(id=recipient)
         
+        if request.user.role in ['pharmacist', 'pharmacy admin']:
+            recipient_id = request.POST.get('recipient')
+            try:
+                recipient = CustomAccount.objects.get(id=recipient_id)
+            except CustomAccount.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Recipient not found"}, status=400)
+        else:
+            current_patient = PatientProfile.objects.get(user=request.user)
+            recipient = current_patient.pharmacy.user
+
         if form.is_valid():
             message = form.save(commit=False)
             message.sender = request.user
-
-            if request.user.role in ['pharmacist', 'pharmacy admin']:
-                message.recipient = patient
-            else:
-                message.recipient = patient_pharmacy
-
+            message.recipient = recipient
             message.save()
-            return JsonResponse({"success": True, "sender": message.sender, "recipient": message.recipient, "content": message.content, "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M"), "read": message.read})
+
+            created_time_local = timezone.localtime(message.timestamp)
+            formatted_time = created_time_local.strftime("%b. %-d, %Y, %-I:%M %p").replace("AM", "a.m.").replace("PM", "p.m.")
+
+            return JsonResponse({
+                "success": True, 
+                "id": message.id, 
+                "sender": message.sender.username, 
+                "recipient": message.recipient.username, 
+                "content": message.content, 
+                "timestamp": formatted_time, 
+                "read": message.read
+            })
+        
+    return JsonResponse({"success": False}, status=400)
 
 
 def delete_notification(request):
