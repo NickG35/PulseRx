@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
-from pharmacy.models import PharmacyProfile
+from pharmacy.models import PharmacyProfile, PharmacistProfile
 from patients.models import ReminderTime, PatientProfile
 from django.http import JsonResponse
 import json
@@ -17,6 +17,7 @@ from django.utils.timezone import localtime
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -149,20 +150,24 @@ def account_messages(request):
         current_patient = PatientProfile.objects.get(user=request.user)
         pharmacy_email = current_patient.pharmacy.user.email
 
-    sent_messages = Message.objects.filter(sender=request.user).order_by('-timestamp').all()
-    received_messages = Message.objects.filter(recipient=request.user).order_by('-timestamp').all()
+    user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
+
+
+    
     form = MessageForm()
         
     return render(request, 'messages.html', {
         'form': form,
-        'sent_messages': sent_messages,
-        'received_messages': received_messages,
+        'threads': user_threads,
         'pharmacy_email': pharmacy_email
     })
 
 def send_messages(request):
     if request.method == 'POST':
         form = MessageForm(request.POST)
+
+        recipient = None
+        pharmacists = []
         
         if request.user.role in ['pharmacist', 'pharmacy admin']:
             recipient_id = request.POST.get('recipient')
@@ -172,27 +177,46 @@ def send_messages(request):
                 return JsonResponse({"success": False, "error": "Recipient not found"}, status=400)
         else:
             current_patient = PatientProfile.objects.get(user=request.user)
+            pharmacy = current_patient.pharmacy
             recipient = current_patient.pharmacy.user
+            pharmacists = [p.user for p in PharmacistProfile.objects.filter(pharmacy=pharmacy)]
 
         if form.is_valid():
             message = form.save(commit=False)
-            new_thread = Thread.objects.create()
+            
+            participants = [request.user, recipient, *pharmacists]
+
+        
+            thread = (Thread.objects
+                      .filter(participant__in=participants)
+                      .annotate(num_participants=Count('participant'))
+                      .filter(num_participants=len(participants))
+                      .first())
+            
+            if not thread:
+                thread = Thread.objects.create()
+                thread.participant.add(request.user, recipient, *pharmacists)
+
             message.sender = request.user
             message.recipient = recipient
-            message.thread = new_thread
+            message.thread = thread
             message.save()
 
             created_time_local = timezone.localtime(message.timestamp)
             formatted_time = created_time_local.strftime("%b. %-d, %Y, %-I:%M %p").replace("AM", "a.m.").replace("PM", "p.m.")
 
+            thread.last_updated = timezone.now()
+            thread.save(update_fields=["last_updated"])
             return JsonResponse({
-                "success": True, 
-                "id": message.id, 
-                "sender": message.sender.username, 
-                "recipient": message.recipient.username, 
-                "content": message.content, 
-                "timestamp": formatted_time, 
-                "read": message.read
+                "success": True,
+                "id": message.id,
+                "content": message.content,
+                "timestamp": formatted_time,
+                "sender": message.sender.email,
+                "thread_id": message.thread.id,
+                "participants": recipient.email,
+                "current_user": request.user.email,
+                "read": message.read,
             })
         
     return JsonResponse({"success": False}, status=400)
