@@ -3,6 +3,15 @@
 {% block content %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const empty_message = document.getElementById('noMessage');
+
+        function updateEmptyMessage(){
+            const threadBox = document.querySelectorAll('.thread-box');
+            empty_message.style.display = threadBox.length > 0 ? 'none': 'block';
+        }
+
+        updateEmptyMessage();
+        
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -33,39 +42,48 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const sentBox = document.getElementById('sent-box');
+                    updateEmptyMessage();
+                    let threadBox = document.getElementById(`thread_${data.thread_id}`);
 
-                    const emailBox = document.createElement('div');
-                    emailBox.classList.add('email-box');
-                    emailBox.id = `email_${data.id}`;
-                    emailBox.dataset.read = data.read;
+                    if (!threadBox) {
+                        // Create a new thread container
+                        threadBox = document.createElement('div');
+                        threadBox.classList.add('thread-box');
+                        threadBox.id = `thread_${data.thread_id}`;
 
+                        // Add it to threads container
+                        document.getElementById('threads-box').prepend(threadBox);
+                    }
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('message-box');
+                    messageDiv.id = `message_${data.id}`;
+                    messageDiv.dataset.read = data.read;
+
+                    // Differentiate sender/recipient visually
                     const sender = document.createElement('p');
-                    sender.classList.add('message-users');
-                    sender.id = 'sender';
+                    sender.classList.add('message-sender');
                     sender.textContent = data.sender;
 
-                    const recipient = document.createElement('p');
-                    recipient.classList.add('message-users');
-                    recipient.id = 'recipient';
-                    recipient.textContent = data.recipient;
+                    const content = document.createElement('p');
+                    content.classList.add('message-content');
+                    content.textContent = data.content;
 
-                    const messageContent = document.createElement('p');
-                    messageContent.id = 'message-content';
-                    messageContent.textContent = data.content;
+                    const timestamp = document.createElement('p');
+                    timestamp.classList.add('message-timestamp');
+                    timestamp.innerHTML = `<small>${data.timestamp}</small>`;
 
-                    const messageTimestamp = document.createElement('p');
-                    messageTimestamp.id = 'message-timestamp';
-                    messageTimestamp.innerHTML = `<small>${data.timestamp}</small>`;
+                    messageDiv.appendChild(sender);
+                    messageDiv.appendChild(content);
+                    messageDiv.appendChild(timestamp);
 
-                    emailBox.appendChild(sender);
-                    emailBox.appendChild(recipient);
-                    emailBox.appendChild(messageContent);
-                    emailBox.appendChild(messageTimestamp);
+                    // Insert message at bottom of this thread
+                    threadBox.appendChild(messageDiv);
 
-                    sentBox.prepend(emailBox); 
-
+                    // Reset form
                     form.reset();
+
+                    updateEmptyMessage();
                 }
             })
             .catch(error => console.error("Notification error:", error));
@@ -90,25 +108,20 @@
 
     <button type="submit">Send</button>
 </form>
-<h3>Sent</h3>
-<div id="sent-box" class="messages-box">
-    {% for message in sent_messages %} 
-        <div class="email-box" id="email_{{message.id}}" data-read="{{message.read}}">
-            <p class="message-users" id="sender">{{message.sender.email}}</p>
-            <p class="message-users" id="recipient">{{message.recipient.email}}</p>
-            <p id="message-content">{{message.content}}</p>
-            <p id="message-timestamp"><small>{{message.timestamp}}</small></p>
+<div id="threads-box">
+    {% for thread in threads %}
+        <div class="thread-box" id="thread_{{ thread.id }}">
+            {% with latest=thread.latest_message %}
+                {% if latest %}
+                    <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
+                        <p class="message-sender"><strong>{{ latest.sender.email }}</strong></p>
+                        <p class="message-content">{{ latest.content }}</p>
+                        <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
+                    </div>
+                {% endif %}
+            {% endwith %}
         </div>
-    {% endfor %}    
-</div>
-
-<h3>Inbox</h3>
-<div id="inbox-box" class="messages-box">
-    {% for message in received_messages %} 
-        <p>{{message.sender.email}}</p>
-        <p>{{message.recipient.email}}</p>
-        <p>{{message.content}}</p>
-        <p>{{message.timestamp}}</p>
     {% endfor %}
+        <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
 </div>
 {% endblock %}
