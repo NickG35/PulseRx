@@ -104,5 +104,5 @@ class MessageForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        exclude = ['timestamp','read', 'read_time', 'sender', 'recipient']
+        exclude = ['timestamp','read', 'read_time', 'sender', 'recipient', 'thread']
         
