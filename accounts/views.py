@@ -18,6 +18,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count
+from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -220,6 +221,13 @@ def send_messages(request):
             })
         
     return JsonResponse({"success": False}, status=400)
+
+def thread_view(request, thread_id):
+    thread= get_object_or_404(Thread, id=thread_id)
+    messages = thread.messages.all().order_by("timestamp")
+    return render(request, 'threads.html', {
+       'messages': messages
+    })
 
 
 def delete_notification(request):
