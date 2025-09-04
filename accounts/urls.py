@@ -8,6 +8,7 @@ urlpatterns = [
     path('register/<str:role>', views.register_role, name='register_role'),
     path('account_settings', views.account_settings, name='account_settings'),
     path('messages', views.account_messages, name='messages'),
+    path('thread/<int:thread_id>', views.thread_view, name='threads'),
     path('send_messages', views.send_messages, name='send_messages'),
     path('delete_notification', views.delete_notification, name='delete_notification'),
     path('read_notification', views.read_notification, name='read_notification')
