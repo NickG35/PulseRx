@@ -110,17 +110,19 @@
 </form>
 <div id="threads-box">
     {% for thread in threads %}
-        <div class="thread-box" id="thread_{{ thread.id }}">
-            {% with latest=thread.latest_message %}
-                {% if latest %}
-                    <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
-                        <p class="message-sender"><strong>{{ latest.sender.email }}</strong></p>
-                        <p class="message-content">{{ latest.content }}</p>
-                        <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
-                    </div>
-                {% endif %}
-            {% endwith %}
-        </div>
+        <a href="{% url 'threads' thread_id=thread.id%}">
+            <div class="thread-box" id="thread_{{ thread.id }}">
+                {% with latest=thread.latest_message %}
+                    {% if latest %}
+                        <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
+                            <p class="message-sender"><strong>{{ latest.sender.email }}</strong></p>
+                            <p class="message-content">{{ latest.content }}</p>
+                            <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </a>
     {% endfor %}
         <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
 </div>
