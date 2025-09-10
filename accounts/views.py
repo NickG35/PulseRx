@@ -147,9 +147,11 @@ def account_settings(request):
 
 def account_messages(request):
     pharmacy_email = None
+    pharmacy_name = None
     if request.user.role in ['patient']:
         current_patient = PatientProfile.objects.get(user=request.user)
         pharmacy_email = current_patient.pharmacy.user.email
+        pharmacy_name = current_patient.pharmacy
 
     user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
 
@@ -160,7 +162,8 @@ def account_messages(request):
     return render(request, 'messages.html', {
         'form': form,
         'threads': user_threads,
-        'pharmacy_email': pharmacy_email
+        'pharmacy_email': pharmacy_email,
+        'pharmacy_name': pharmacy_name
     })
 
 def send_messages(request):
