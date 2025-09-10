@@ -115,7 +115,12 @@
                 {% with latest=thread.latest_message %}
                     {% if latest %}
                         <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
-                            <p class="message-sender"><strong>{{ latest.sender.email }}</strong></p>
+                            <p class="message-sender"><strong>{{ pharmacy_name }}</strong></p>
+                            {% if latest.sender.first_name == request.user.first_name %}
+                                <span>Me:</span>
+                            {% else %}
+                                <span>{{latest.sender.first_name}} {{latest.sender.last_name}}:</span>
+                            {% endif %}
                             <p class="message-content">{{ latest.content }}</p>
                             <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
                         </div>
