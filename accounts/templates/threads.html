@@ -3,7 +3,11 @@
 {% block content %}
     {% for message in messages %}
         <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
-            <strong>{{ message.sender.username }}</strong>
+            {% if message.sender.first_name == request.user.first_name %}
+                <strong>Me:</strong>
+            {% else %}
+                <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
+            {% endif %}
             <p>{{ message.content }}</p>
             <small>{{ message.timestamp|date:"M d, Y H:i" }}</small>
         </div>
