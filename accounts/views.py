@@ -148,15 +148,19 @@ def account_settings(request):
 def account_messages(request):
     pharmacy_email = None
     pharmacy_name = None
+
     if request.user.role in ['patient']:
         current_patient = PatientProfile.objects.get(user=request.user)
         pharmacy_email = current_patient.pharmacy.user.email
         pharmacy_name = current_patient.pharmacy
 
+        # figure out how to get all the patients in the thread to display in the header, only for pharmacy admin and pharmacist
+
     user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
 
+    for thread in user_threads:
+        thread.patients = thread.participant.filter(role='patient')
 
-    
     form = MessageForm()
         
     return render(request, 'messages.html', {
