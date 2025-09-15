@@ -9,7 +9,12 @@
                 <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
             {% endif %}
             <p>{{ message.content }}</p>
-            <small>{{ message.timestamp|date:"M d, Y H:i" }}</small>
+            <small>{{ message.timestamp }}</small>
         </div>
      {% endfor %}
+        <form action="{% url 'threads' thread_id=thread.id%}" id="message-form" method="post">
+            {% csrf_token %}
+            {{form.as_p}}
+            <button type="submit">Send</button>
+        </form>
 {% endblock %}
