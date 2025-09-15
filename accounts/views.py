@@ -154,8 +154,6 @@ def account_messages(request):
         pharmacy_email = current_patient.pharmacy.user.email
         pharmacy_name = current_patient.pharmacy
 
-        # figure out how to get all the patients in the thread to display in the header, only for pharmacy admin and pharmacist
-
     user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
 
     for thread in user_threads:
@@ -232,9 +230,28 @@ def send_messages(request):
 def thread_view(request, thread_id):
     thread= get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
+
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.thread = thread
+            message.sender = request.user
+            message.recipient = thread.participant.exclude(id=request.user.id).first()
+            message.save()
+            return redirect ('threads', thread_id=thread.id)
+    else:
+        form = MessageForm()
+
     return render(request, 'threads.html', {
-       'messages': messages
+       'thread': thread,
+       'messages': messages,
+       'form': form,
     })
+
+
+    
+
 
 
 def delete_notification(request):
