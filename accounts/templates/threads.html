@@ -1,8 +1,113 @@
 {% extends 'base.html' %}
 
 {% block content %}
+    <script>
+        const empty_message = document.getElementById('noMessage');
+
+        function updateEmptyMessage(){
+            const threadBox = document.querySelectorAll('.thread-box');
+            if (empty_message) {
+                empty_message.style.display = threadBox.length > 0 ? 'none': 'block';
+            }
+        }
+
+        updateEmptyMessage();
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+                return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        const form = document.getElementById('message-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                fetch('/accounts/send_messages', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: new FormData(form)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateEmptyMessage();
+                        let threadBox = document.getElementById(`thread_${data.thread_id}`);
+
+                        if (!threadBox) {
+                            // Create a new thread container
+                            threadBox = document.createElement('div');
+                            threadBox.classList.add('thread-box');
+                            threadBox.id = `thread_${data.thread_id}`;
+
+                            // Add it to threads container
+                            document.getElementById('threads-box').prepend(threadBox);
+                        }
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('message-box');
+                        messageDiv.id = `message_${data.id}`;
+                        messageDiv.dataset.read = data.read;
+
+                        // Differentiate sender/recipient visually
+                        const sender = document.createElement('p');
+                        sender.classList.add('message-sender');
+                        sender.textContent = data.sender;
+
+                        const content = document.createElement('p');
+                        content.classList.add('message-content');
+                        content.textContent = data.content;
+
+                        const timestamp = document.createElement('p');
+                        timestamp.classList.add('message-timestamp');
+                        timestamp.innerHTML = `<small>${data.timestamp}</small>`;
+
+                        messageDiv.appendChild(sender);
+                        messageDiv.appendChild(content);
+                        messageDiv.appendChild(timestamp);
+
+                        // Insert message at bottom of this thread
+                        threadBox.appendChild(messageDiv);
+
+                        // Reset form
+                        form.reset();
+
+                        updateEmptyMessage();
+                        highlightHash();
+                    }
+                })
+                .catch(error => console.error("Notification error:", error));
+            })
+        }
+        
+        function highlightHash(){
+            const hash = window.location.hash;
+            if (hash) {
+                const target = document.querySelector(hash);
+                if (target) {
+                    target.scrollIntoView({ behavior: "smooth", block: "center" });
+                    target.classList.add('highlight');
+                    setTimeout(() => target.classList.remove('highlight'), 1500);
+                }
+            }
+        }
+        window.addEventListener('DOMContentLoaded', highlightHash);
+    </script>
     {% for message in messages %}
-        <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
+        <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
             {% if message.sender.first_name == request.user.first_name %}
                 <strong>Me:</strong>
             {% else %}
