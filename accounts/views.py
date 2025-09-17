@@ -169,11 +169,13 @@ def account_messages(request):
     })
 
 def message_search(request):
-    messages = Message.objects.filter(Q(sender=request.user) | Q(recipient=request.user))
+    thread = Thread.objects.filter(participant=request.user).all()
+    messages = Message.objects.filter(thread__in=thread).all()
+
     query = request.GET.get('q', '').strip()
 
     if query:
-        items = messages.filter(Q(content__icontains=query))
+        items = messages.filter(content__icontains=query)
 
         results= [
             {
