@@ -17,7 +17,7 @@ from django.utils.timezone import localtime
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
@@ -167,6 +167,26 @@ def account_messages(request):
         'pharmacy_email': pharmacy_email,
         'pharmacy_name': pharmacy_name
     })
+
+def message_search(request):
+    messages = Message.objects.filter(Q(sender=request.user) | Q(recipient=request.user))
+    query = request.GET.get('q', '').strip()
+
+    if query:
+        items = messages.filter(Q(content__icontains=query))
+
+        results= [
+            {
+                'content': item.content, 
+                'id': item.id, 
+                'thread_id': item.thread.id
+            } 
+            for item in items
+        ]
+    else:
+        results = []
+        
+    return JsonResponse(results, safe=False)
 
 def send_messages(request):
     if request.method == 'POST':
