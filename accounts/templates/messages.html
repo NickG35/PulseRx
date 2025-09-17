@@ -6,7 +6,7 @@
 
         const input = document.querySelector('.autocomplete-message');
         const results = document.getElementById('autocompleteResults');
-        const hidden_input = document.querySelector('hidden-message');
+        let timeoutId;
 
         input.addEventListener('keyup', function(){
             clearTimeout(timeoutId);
@@ -17,93 +17,46 @@
                 return;
             }
 
-            
-        })
-        const empty_message = document.getElementById('noMessage');
+            timeoutId = setTimeout(() => {
+                fetch(`/accounts/message_search?q=${encodeURIComponent(query)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error status: ${response.status}`);
+                        }
+                        return response.json()
+                    })
+                    .then(data => {
+                        const fragment = document.createDocumentFragment();
 
-        function updateEmptyMessage(){
-            const threadBox = document.querySelectorAll('.thread-box');
-            empty_message.style.display = threadBox.length > 0 ? 'none': 'block';
-        }
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const div = document.createElement('div');
+                                div.classList.add('search-message');
 
-        updateEmptyMessage();
-        
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.startsWith(name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-                return cookieValue;
-        }
-        const csrftoken = getCookie('csrftoken');
+                                const threadUrl = `/accounts/thread/${item.thread_id}`;
+                                const linkMessage = document.createElement('a');
+                                linkMessage.href = `${threadUrl}#message_${item.id}`;
+                                linkMessage.style.display = 'block';
+                                linkMessage.textContent = item.content;
+                                div.appendChild(linkMessage);
 
-        const form = document.getElementById('message-form');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
+                                fragment.appendChild(div);
+                            })
+                        } else {
+                            const div = document.createElement('div');
+                            div.textContent = `No messages found.`
+                            fragment.appendChild(div);
+                        }
 
-            fetch('/accounts/send_messages', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrftoken,
-                },
-                body: new FormData(form)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateEmptyMessage();
-                    let threadBox = document.getElementById(`thread_${data.thread_id}`);
-
-                    if (!threadBox) {
-                        // Create a new thread container
-                        threadBox = document.createElement('div');
-                        threadBox.classList.add('thread-box');
-                        threadBox.id = `thread_${data.thread_id}`;
-
-                        // Add it to threads container
-                        document.getElementById('threads-box').prepend(threadBox);
-                    }
-
-                    const messageDiv = document.createElement('div');
-                    messageDiv.classList.add('message-box');
-                    messageDiv.id = `message_${data.id}`;
-                    messageDiv.dataset.read = data.read;
-
-                    // Differentiate sender/recipient visually
-                    const sender = document.createElement('p');
-                    sender.classList.add('message-sender');
-                    sender.textContent = data.sender;
-
-                    const content = document.createElement('p');
-                    content.classList.add('message-content');
-                    content.textContent = data.content;
-
-                    const timestamp = document.createElement('p');
-                    timestamp.classList.add('message-timestamp');
-                    timestamp.innerHTML = `<small>${data.timestamp}</small>`;
-
-                    messageDiv.appendChild(sender);
-                    messageDiv.appendChild(content);
-                    messageDiv.appendChild(timestamp);
-
-                    // Insert message at bottom of this thread
-                    threadBox.appendChild(messageDiv);
-
-                    // Reset form
-                    form.reset();
-
-                    updateEmptyMessage();
-                }
-            })
-            .catch(error => console.error("Notification error:", error));
-        })
+                        results.innerHTML = '';
+                        results.appendChild(fragment); 
+                    })
+                    .catch(error => {
+                        console.error(`Error fetching message data:`, error);
+                        results.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+                    });
+            }, 300);
+        });
     });
 </script>
 <p>These are my pharmacy messages</p>
@@ -112,9 +65,7 @@
     <input placeholder="search messages..." type="text" class="autocomplete-message" data-url="{% url 'patient_search' %}">
     <input type="hidden" class="hidden-message">
     <div id="autocompleteResults"></div>
-    <ul>
-        <li class="message-results"></li>
-    </ul>
+    <i class="fa-light fa-pen-to-square" style="color: #000000;"></i>
 
 <div id="threads-box">
     {% for thread in threads %}
