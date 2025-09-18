@@ -148,11 +148,20 @@ def account_settings(request):
 def account_messages(request):
     pharmacy_email = None
     pharmacy_name = None
+    patient_thread = None
 
     if request.user.role in ['patient']:
         current_patient = PatientProfile.objects.get(user=request.user)
         pharmacy_email = current_patient.pharmacy.user.email
         pharmacy_name = current_patient.pharmacy
+
+        thread = Thread.objects.filter(participant=request.user).filter(participant=pharmacy_name.user).first()
+
+        if not thread:
+            thread = Thread.objects.create()
+            thread.participant.add(request.user, pharmacy_name.user)
+
+        patient_thread = thread.id
 
     user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
 
@@ -165,7 +174,8 @@ def account_messages(request):
         'form': form,
         'threads': user_threads,
         'pharmacy_email': pharmacy_email,
-        'pharmacy_name': pharmacy_name
+        'pharmacy_name': pharmacy_name,
+        'patient_thread': patient_thread
     })
 
 def message_search(request):
@@ -270,31 +280,7 @@ def thread_view(request, thread_id):
        'messages': messages,
        'form': form,
     })
-
-def new_message(request):
-    thread = Thread.objects.filter(participant=request.user).all()
-    messages = Message.objects.filter(thread__in=thread).all()
-
-    query = request.GET.get('q', '').strip()
-
-    if query:
-        items = messages.filter(recipient__icontains=query)
-
-        results= [
-            {
-                'recipient': item.recipient, 
-                'thread_id': item.thread.id
-            } 
-            for item in items
-        ]
-    else:
-        results = []
         
-    return JsonResponse(results, safe=False)
-        
-
-
-
 def delete_notification(request):
     if request.method == 'POST':
         try:
