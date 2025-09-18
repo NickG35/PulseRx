@@ -271,8 +271,27 @@ def thread_view(request, thread_id):
        'form': form,
     })
 
+def new_message(request):
+    thread = Thread.objects.filter(participant=request.user).all()
+    messages = Message.objects.filter(thread__in=thread).all()
 
-    
+    query = request.GET.get('q', '').strip()
+
+    if query:
+        items = messages.filter(recipient__icontains=query)
+
+        results= [
+            {
+                'recipient': item.recipient, 
+                'thread_id': item.thread.id
+            } 
+            for item in items
+        ]
+    else:
+        results = []
+        
+    return JsonResponse(results, safe=False)
+        
 
 
 
