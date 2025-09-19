@@ -262,6 +262,16 @@ def send_messages(request):
 def thread_view(request, thread_id):
     thread= get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
+    pharmacy_name = None
+
+    if request.user.role in ['patient']:
+        pharmacy_user = thread.participant.exclude(id=request.user.id).first()
+        pharmacy_instance = None
+        pharmacy_name = None
+        if pharmacy_user:
+            pharmacy_instance = PharmacyProfile.objects.get(user=pharmacy_user)
+            if pharmacy_instance:   
+                pharmacy_name = pharmacy_instance.pharmacy_name
 
     if request.method == 'POST':
         form = MessageForm(request.POST)
@@ -279,6 +289,7 @@ def thread_view(request, thread_id):
        'thread': thread,
        'messages': messages,
        'form': form,
+       'pharmacy': pharmacy_name
     })
         
 def delete_notification(request):
