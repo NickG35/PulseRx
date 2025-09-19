@@ -106,6 +106,9 @@
         }
         window.addEventListener('DOMContentLoaded', highlightHash);
     </script>
+    {% if request.user.role == 'patient' %}
+        <h3>{{pharmacy}} Pharmacy</h3>
+    {% endif %}
     {% for message in messages %}
         <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
             {% if message.sender.first_name == request.user.first_name %}
