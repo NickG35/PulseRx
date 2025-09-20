@@ -11,6 +11,7 @@ urlpatterns = [
     path('thread/<int:thread_id>', views.thread_view, name='threads'),
     path('send_messages', views.send_messages, name='send_messages'),
     path('message_search', views.message_search, name='message_search'),
+    path('patient_thread', views.patient_thread, name='patient_thread'),
     path('delete_notification', views.delete_notification, name='delete_notification'),
     path('read_notification', views.read_notification, name='read_notification')
 ]
