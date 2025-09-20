@@ -130,9 +130,13 @@
         </a>
     {% else %}
         <button class="threadSearch" type="button"><i class="fa-regular fa-pen-to-square"></i></button>
-        <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
-        <input type="hidden" class="hidden-patient">
-        <div id="autocompleteResults-patient"></div>
+        <form action="{% url 'patient_thread' %}" method="post">
+            {% csrf_token %}
+            <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
+            <input name="patientID" type="hidden" class="hidden-patient">
+            <div id="autocompleteResults-patient"></div>
+            <button type="submit">Search</button>
+        </form>
     {% endif %}
 
 <div id="threads-box">
