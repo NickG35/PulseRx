@@ -311,6 +311,23 @@ def delete_notification(request):
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
+def patient_thread(request):
+    if request.method == 'POST':
+        patient_id = request.POST.get('patientID')
+        patient_user = CustomAccount.objects.filter(id=patient_id).first()
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy_user = pharmacist.pharmacy.user
+        thread = Thread.objects.filter(
+            Q(participant=pharmacy_user) & Q(participant=patient_user)
+        ).first()
+
+        if not thread:
+            thread = Thread.objects.create()
+            thread.participant.add(pharmacy_user, patient_user)
+        
+        return redirect('threads', thread_id=thread.id)
+
+
 @csrf_exempt
 def read_notification(request):
     if request.method == 'POST':
