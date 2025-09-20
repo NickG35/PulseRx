@@ -25,8 +25,15 @@ def create_prescriptions(request):
     if form.is_valid():
         prescription = form.save(commit=False)
         prescription.prescribed_by = pharmacist
-        prescription.save()
-        return redirect('create_prescriptions')
+        medicine = prescription.medicine
+        if medicine.stock >= prescription.quantity:
+            medicine.stock -= prescription.quantity
+            medicine.save()
+            prescription.save()
+            return redirect('create_prescriptions')
+        else:
+            form.add_error('quantity', 'Not enough stock available.')
+            return render(request, 'create_prescriptions.html', {'form': form})
     else:
         print(form.errors)
     
