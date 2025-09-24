@@ -108,6 +108,8 @@
     </script>
     {% if request.user.role == 'patient' %}
         <h3>{{pharmacy}} Pharmacy</h3>
+    {% else %}
+        <h3>{{patient}}</h3>
     {% endif %}
     {% for message in messages %}
         <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
