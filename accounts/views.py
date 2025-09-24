@@ -9,7 +9,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from pharmacy.models import PharmacyProfile, PharmacistProfile
 from patients.models import ReminderTime, PatientProfile
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 import json
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -146,38 +146,27 @@ def account_settings(request):
     })
 
 def account_messages(request):
-    pharmacy_email = None
+    user_threads = None
     pharmacy_name = None
-    patient_thread = None
-
-    if request.user.role in ['patient']:
-        current_patient = PatientProfile.objects.get(user=request.user)
-        pharmacy_email = current_patient.pharmacy.user.email
-        pharmacy_name = current_patient.pharmacy
-
-        thread = Thread.objects.filter(participant=request.user).filter(participant=pharmacy_name.user).first()
-
-        if not thread:
-            thread = Thread.objects.create()
-            thread.participant.add(request.user, pharmacy_name.user)
-
-        patient_thread = thread.id
-
-    user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
+    if request.user.role in ['pharmacist']:
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy.user
+        user_threads = Thread.objects.filter(participant=pharmacy).order_by('-last_updated').all()
+    else:
+        user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
+        if request.user.role in ['patient']:
+            patient = PatientProfile.objects.get(user=request.user)
+            pharmacy_name = patient.pharmacy.pharmacy_name
 
     for thread in user_threads:
         thread.patients = thread.participant.filter(role='patient')
 
-    form = MessageForm()
         
     return render(request, 'messages.html', {
-        'form': form,
         'threads': user_threads,
-        'pharmacy_email': pharmacy_email,
-        'pharmacy_name': pharmacy_name,
-        'patient_thread': patient_thread
+        'pharmacy_name': pharmacy_name
     })
-
+#figure out why is it creating new threads instead of visiting existing ones.
 def message_search(request):
     thread = Thread.objects.filter(participant=request.user).all()
     messages = Message.objects.filter(thread__in=thread).all()
@@ -205,7 +194,6 @@ def send_messages(request):
         form = MessageForm(request.POST)
 
         recipient = None
-        pharmacists = []
         
         if request.user.role in ['pharmacist', 'pharmacy admin']:
             recipient_id = request.POST.get('recipient')
@@ -215,14 +203,19 @@ def send_messages(request):
                 return JsonResponse({"success": False, "error": "Recipient not found"}, status=400)
         else:
             current_patient = PatientProfile.objects.get(user=request.user)
-            pharmacy = current_patient.pharmacy
             recipient = current_patient.pharmacy.user
-            pharmacists = [p.user for p in PharmacistProfile.objects.filter(pharmacy=pharmacy)]
 
         if form.is_valid():
             message = form.save(commit=False)
-            
-            participants = [request.user, recipient, *pharmacists]
+            pharmacy_user = request.user
+            sender = None
+            if request.user.role in ['patient', 'pharmacy_admin']:
+                sender = request.user
+            if request.user.role in ['pharmacist']:
+                pharmacist = PharmacistProfile.objects.get(user=pharmacy_user)
+                sender = pharmacist.pharmacy.user
+                
+            participants = [sender, recipient]
 
         
             thread = (Thread.objects
@@ -233,7 +226,7 @@ def send_messages(request):
             
             if not thread:
                 thread = Thread.objects.create()
-                thread.participant.add(request.user, recipient, *pharmacists)
+                thread.participant.add(sender, recipient)
 
             message.sender = request.user
             message.recipient = recipient
@@ -263,7 +256,19 @@ def thread_view(request, thread_id):
     thread= get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
     pharmacy_name = None
-
+    patient_name = None
+    if request.user.role in ['pharmacy admin']:
+        patient_user = thread.participant.exclude(id=request.user.id).first()
+        if patient_user:
+            patient_instance = PatientProfile.objects.get(user=patient_user)
+            patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
+    if request.user.role in ['pharmacist']:
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy.user
+        patient_user = thread.participant.exclude(id=pharmacy.id).first()
+        if patient_user:
+            patient_instance = PatientProfile.objects.get(user=patient_user)
+            patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
     if request.user.role in ['patient']:
         pharmacy_user = thread.participant.exclude(id=request.user.id).first()
         pharmacy_instance = None
@@ -289,6 +294,7 @@ def thread_view(request, thread_id):
        'thread': thread,
        'messages': messages,
        'form': form,
+       'patient': patient_name,
        'pharmacy': pharmacy_name
     })
         
@@ -314,17 +320,37 @@ def delete_notification(request):
 def patient_thread(request):
     if request.method == 'POST':
         patient_id = request.POST.get('patientID')
-        patient_user = CustomAccount.objects.filter(id=patient_id).first()
-        pharmacist = PharmacistProfile.objects.get(user=request.user)
-        pharmacy_user = pharmacist.pharmacy.user
-        thread = Thread.objects.filter(
-            Q(participant=pharmacy_user) & Q(participant=patient_user)
-        ).first()
+        try:
+            patient_profile = PatientProfile.objects.get(id=patient_id)
+        except PatientProfile.DoesNotExist:
+            return HttpResponse(f"Patient with id={patient_id} does not exist")
+        
+        patient_user = patient_profile.user
+        pharmacy_user = None
+        if request.user.role in ['pharmacist']:
+            pharmacist = PharmacistProfile.objects.get(user=request.user)
+            pharmacy_user = pharmacist.pharmacy.user
+        elif request.user.role in ['pharmacy_admin']:
+            pharmacy_user = request.user
+        else:
+            patient = PatientProfile.objects.get(user=patient_user)
+            pharmacy_user = patient.pharmacy.user
+
+        if not patient_user or not pharmacy_user:
+            return HttpResponse(f"patient_user={patient_user}, pharmacy_user={pharmacy_user}")
+
+        thread = (
+            Thread.objects.filter(participant=pharmacy_user)
+            .filter(participant=patient_user)
+            .distinct()
+            .first()
+        )
 
         if not thread:
             thread = Thread.objects.create()
-            thread.participant.add(pharmacy_user, patient_user)
-        
+            thread.participant.add(pharmacy_user)
+            thread.participant.add(patient_user)
+
         return redirect('threads', thread_id=thread.id)
 
 
