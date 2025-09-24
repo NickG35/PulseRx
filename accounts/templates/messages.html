@@ -58,60 +58,6 @@
             }, 300);
         });
 
-        const peopleInput = document.querySelector('.autocomplete-people');
-        const peopleResults = document.getElementById('autocompletePeople');
-        let timeoutFlag;
-
-        peopleInput.addEventListener('keyup', function(){
-            clearTimeout(timeoutFlag);
-            const query = this.value.trim();
-
-            if (query.length === 0){
-                peopleResults.innerHTML = '';
-                return;
-            }
-
-            timeoutFlag = setTimeout(() => {
-                fetch(`/accounts/new_message?q=${encodeURIComponent(query)}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error status: ${response.status}`);
-                        }
-                        return response.json()
-                    })
-                    .then(data => {
-                        const fragment = document.createDocumentFragment();
-
-                        if (data.length > 0) {
-                            data.forEach(item => {
-                                const div = document.createElement('div');
-                                div.classList.add('search-people');
-
-                                const threadUrl = `/accounts/thread/${item.thread_id}`;
-                                const linkMessage = document.createElement('a');
-                                linkMessage.href = `${threadUrl}`;
-                                linkMessage.style.display = 'block';
-                                linkMessage.textContent = item.recipient;
-                                div.appendChild(linkMessage);
-
-                                fragment.appendChild(div);
-                            })
-                        } else {
-                            const div = document.createElement('div');
-                            div.textContent = `No messages found.`
-                            fragment.appendChild(div);
-                        }
-
-                        peopleResults.innerHTML = '';
-                        peopleResults.appendChild(fragment); 
-                    })
-                    .catch(error => {
-                        console.error(`Error fetching message data:`, error);
-                        results.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
-                    });
-            }, 300);
-        });
-
         const threadBtn = document.querySelector('.threadSearch');
         threadBtn.addEventListener('click', function(){
             peopleInput.style.display = 'block';
@@ -125,16 +71,18 @@
     <div id="autocompleteResults"></div>
 
     {% if request.user.role == 'patient' %}
-        <a href="{% url 'threads' thread_id=patient_thread %}">
-            <button type="button"><i class="fa-regular fa-pen-to-square"></i></button>
-        </a>
+        <form action="{% url 'patient_thread' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="patientID" value="{{ request.user.id }}">
+            <button type="submit"><i class="fa-regular fa-pen-to-square"></i></button>
+        </form>
     {% else %}
         <button class="threadSearch" type="button"><i class="fa-regular fa-pen-to-square"></i></button>
         <form action="{% url 'patient_thread' %}" method="post">
             {% csrf_token %}
-            <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
+            <input placeholder="search for patients..." type="text" id="autocomplete-people" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
             <input name="patientID" type="hidden" class="hidden-patient">
-            <div id="autocompleteResults-patient"></div>
+            <div class="autocompletePeople" id="autocompleteResults-patient"></div>
             <button type="submit">Search</button>
         </form>
     {% endif %}
@@ -152,7 +100,7 @@
                                 {{ pharmacy_name }} Pharmacy
                             {% else %}
                                 {% for patient in thread.patients %}
-                                    {{ patient.first_name }} {{ patient.last_name }}{% if not forloop.last %}, {% endif %}
+                                    {{ patient.first_name }} {{ patient.last_name }}
                                 {% endfor %}
                             {% endif %}
                             </strong>
