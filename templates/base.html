@@ -162,6 +162,15 @@
                         });
                 }, 300);
             });
+            const form = input.closest("form");
+            if(form) {
+                form.addEventListener("submit", (e) => {
+                    if (!hiddenInput.value) {
+                        e.preventDefault();
+                        alert("please select patient");
+                    }
+                })
+            }
         });
 
         flatpickr(".datepicker", {
