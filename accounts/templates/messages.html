@@ -115,6 +115,22 @@
                         <p class="message-content">{{ latest.content }}</p>
                         <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
                     </div>
+                {% else %}
+                  <div class="message-box no-messages">
+                      <p class="message-sender">
+                          <strong>
+                          {% if request.user.role == 'patient' %}
+                              {{ pharmacy_name }} Pharmacy
+                          {% else %}
+                              {% for patient in thread.patients %}
+                                  {{ patient.first_name }} {{ patient.last_name }}
+                              {% endfor %}
+                          {% endif %}
+                          </strong>
+                      </p>
+                      <p class="message-content">No messages yet</p>
+                      <p class="message-timestamp"><small>{{ thread.created_at }}</small></p>
+                  </div>
                 {% endif %}
             {% endwith %}
         </div>
