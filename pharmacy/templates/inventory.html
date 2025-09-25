@@ -10,7 +10,9 @@
 <div class="med-container">
     {% for drug in page_obj %}
     <div class="med-item">
-      <a href="{% url 'drug_detail' drug_id=drug.id %}">
+      {% if drug.stock > 1 %}
+        <a href="{% url 'drug_detail' drug_id=drug.id %}">
+      {% endif %}
         <div class="image-holder">
           {% if drug.route == "ORAL" %}
           <i id="med-icon" class="fa-solid fa-capsules"></i>
@@ -35,12 +37,19 @@
           {% endif %}
         </div>
       </a>
-      <a href="{% url 'drug_detail' drug_id=drug.id %}">
-        <div class="drug-name">
-          <p class="drug-title">{{drug.name}}({{drug.brand}})</p>
-        </div>
-      </a>
-    </div>
+      {% if drug.stock > 1 %}
+        <a href="{% url 'drug_detail' drug_id=drug.id %}">
+          <div class="drug-name">
+            <p class="drug-title">{{drug.name}}({{drug.brand}})</p>
+          </div>
+        </a>
+      {% endif %}
+      {% if drug.stock|add:0 <= 10 and drug.stock|add:0 >= 1 %}
+        <p>Low Stock</p>
+      {% elif drug.stock|add:0 < 1 %}
+          <p>No Stock</p>
+      {% endif %}
+      </div>
     {% endfor %}
 </div>
 
