@@ -19,6 +19,8 @@ from asgiref.sync import async_to_sync
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.cache import never_cache
+
 
 # Create your views here.
 class CustomLoginView(LoginView):
@@ -145,6 +147,7 @@ def account_settings(request):
         'password_form': password_form,
     })
 
+@never_cache
 def account_messages(request):
     user_threads = None
     pharmacy_name = None
@@ -166,7 +169,7 @@ def account_messages(request):
         'threads': user_threads,
         'pharmacy_name': pharmacy_name
     })
-#figure out why is it creating new threads instead of visiting existing ones.
+
 def message_search(request):
     thread = Thread.objects.filter(participant=request.user).all()
     messages = Message.objects.filter(thread__in=thread).all()
