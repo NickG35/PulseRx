@@ -8,12 +8,12 @@
 <div id="autocompleteResults-medicine"></div>
 
 <div class="med-container">
-    {% for drug in page_obj %}
+  {% for drug in page_obj %}
     <div class="med-item">
       {% if drug.stock > 1 %}
         <a href="{% url 'drug_detail' drug_id=drug.id %}">
       {% endif %}
-        <div class="image-holder">
+        <div class="image-holder {% if drug.stock < 1 %} grayed {% endif %}">
           {% if drug.route == "ORAL" %}
           <i id="med-icon" class="fa-solid fa-capsules"></i>
           {% elif drug.route == "RESPIRATORY (INHALATION)" %}
@@ -43,14 +43,29 @@
             <p class="drug-title">{{drug.name}}({{drug.brand}})</p>
           </div>
         </a>
+      {% else %}
+        <div class="drug-name grayed">
+          <p class="drug-title">{{drug.name}}({{drug.brand}})</p>
+        </div>
       {% endif %}
       {% if drug.stock|add:0 <= 10 and drug.stock|add:0 >= 1 %}
         <p>Low Stock</p>
       {% elif drug.stock|add:0 < 1 %}
           <p>No Stock</p>
+          {% if request.user.role == 'pharmacy_admin' %}
+            <form action="{% url 'resupply' drug_id=drug.id %}" method="post" >
+              {% csrf_token %}
+              <button>Resupply</button>
+            </form>
+          {% else %}
+            <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" >
+              {% csrf_token %}
+              <button>Contact Admin</button>
+            </form>
+          {% endif %}
       {% endif %}
-      </div>
-    {% endfor %}
+    </div>
+  {% endfor %}
 </div>
 
 <div class="pagination">
