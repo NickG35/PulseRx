@@ -106,10 +106,16 @@
         }
         window.addEventListener('DOMContentLoaded', highlightHash);
     </script>
-    {% if request.user.role == 'patient' %}
-        <h3>{{pharmacy}} Pharmacy</h3>
+    {% if other_user %}
+        {% if other_user.role == 'pharmacy admin' and pharmacy %}
+            <h3>{{pharmacy}} Pharmacy</h3>
+        {% elif other_user.role == 'patient' and patient %}
+            <h3>{{patient}}</h3>
+        {% elif other_user.role == 'pharmacist' and pharmacist %}
+            <h3>{{pharmacist}}</h3>
+        {% endif %}
     {% else %}
-        <h3>{{patient}}</h3>
+        <h3>No participant found</h3>
     {% endif %}
     {% for message in messages %}
         <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
