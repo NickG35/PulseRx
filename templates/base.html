@@ -57,10 +57,17 @@
                                 <button class="delete-noti" type="button" data-id="{{noti.id}}">
                                     <i class="bi bi-x"></i>
                                 </button>
+                                {% if noti.reminder %}
                                 <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
                                     <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
                                     <p class="reminder-time"><small>{{noti.time}}</small></p>
                                 </a>
+                                {% else %}
+                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
+                                    <p class="reminder-message">A resupply of a medication has been requested.</p>
+                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
+                                </a>
+                                {% endif %}
                             </div>
                         {% endfor %}
                         {% if not noti %}
