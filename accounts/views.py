@@ -149,20 +149,37 @@ def account_settings(request):
 
 @never_cache
 def account_messages(request):
-    user_threads = None
     pharmacy_name = None
-    if request.user.role in ['pharmacist']:
+    pharmacist = None
+
+    if request.user.role  ==  'pharmacist':
         pharmacist = PharmacistProfile.objects.get(user=request.user)
         pharmacy = pharmacist.pharmacy.user
-        user_threads = Thread.objects.filter(participant=pharmacy).order_by('-last_updated').all()
+        user_threads = Thread.objects.filter(participant=pharmacy).order_by('-last_updated')
     else:
-        user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated').all()
-        if request.user.role in ['patient']:
+        user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated')
+        if request.user.role == 'patient':
             patient = PatientProfile.objects.get(user=request.user)
             pharmacy_name = patient.pharmacy.pharmacy_name
 
     for thread in user_threads:
-        thread.patients = thread.participant.filter(role='patient')
+        if request.user.role == 'pharmacist':
+            # Determine what to display in header
+            patient_user = thread.participant.all().filter(role='patient').first()
+            pharmacy_admin = thread.participant.all().filter(role='pharmacy admin').first()
+
+            if patient_user:
+                # Thread is with a patient → show patient
+                thread.other_participants = [patient_user]
+            elif pharmacy_admin:
+                # Thread is with pharmacy → show pharmacy
+                thread.other_participants = [pharmacy_admin]
+            else:
+                # Fallback (shouldn’t happen)
+                thread.other_participants = []
+        else:
+            # For patients and pharmacy admins: exclude self
+            thread.other_participants = thread.participant.exclude(id=request.user.id)
 
         
     return render(request, 'messages.html', {
@@ -255,46 +272,32 @@ def send_messages(request):
         
     return JsonResponse({"success": False}, status=400)
 
+
 def thread_view(request, thread_id):
-    thread= get_object_or_404(Thread, id=thread_id)
+    thread = get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
 
-    pharmacy_name = None
-    patient_name = None
-    pharmacist_name = None
+    # Determine who to show in the header
+    if request.user.role == 'pharmacist':
 
-    other_user = thread.participant.exclude(id=request.user.id).first()
+        # Try to get a patient participant first
+        patient_user = thread.participant.all().filter(role='patient').first()
+        pharmacy_admin = thread.participant.all().filter(role='pharmacy admin').first()
 
-    if request.user.role == 'pharmacy admin':
-        if other_user:
-            if other_user.role == 'patient':
-                patient_instance = PatientProfile.objects.filter(user=other_user).first()
-                if patient_instance:
-                    patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
-            elif other_user.role == 'pharmacist':
-                pharmacist_instance = PharmacistProfile.objects.filter(user=other_user).first()
-                pharmacist_name = f"{pharmacist_instance.user.first_name} {pharmacist_instance.user.last_name}"
-
-    elif request.user.role == 'pharmacist':
-        pharmacist_instance = PharmacistProfile.objects.filter(user=request.user).first()
-        pharmacist_name = f"{pharmacist_instance.user.first_name} {pharmacist_instance.user.last_name}"
-        pharmacy_user = pharmacist_instance.pharmacy.user
-        patient_user = thread.participant.exclude(id=pharmacy_user.id).first()
-
-        if patient_user and patient_user.role == 'patient':
-            patient_instance = PatientProfile.objects.filter(user=patient_user).first()
-            if patient_instance:
-                patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
+        if patient_user:
+            # Thread with patient → show patient
+            thread.other_participants = [patient_user]
             other_user = patient_user
-        elif other_user.role == 'pharmacy admin':
-            other_user = thread.participant.exclude(id=request.user.id).first() 
-            pharmacy_instance = PharmacyProfile.objects.filter(user=other_user).first()
-            pharmacy_name = f"{pharmacy_instance.pharmacy_name}"
-
-
-    elif request.user.role == 'patient':
-        pharmacy_instance = PharmacyProfile.objects.filter(user=other_user).first() 
-        pharmacy_name = pharmacy_instance.pharmacy_name
+        elif pharmacy_admin:
+            # Thread with pharmacy → show pharmacy
+            thread.other_participants = [pharmacy_admin]
+            other_user = pharmacy_admin
+        else:
+            thread.other_participants = []
+            other_user = None
+    else:
+        thread.other_participants = thread.participant.exclude(id=request.user.id)
+        other_user = thread.other_participants.first()
 
     if request.method == 'POST':
         form = MessageForm(request.POST)
@@ -309,16 +312,12 @@ def thread_view(request, thread_id):
         form = MessageForm()
 
     return render(request, 'threads.html', {
-       'thread': thread,
-       'messages': messages,
-       'form': form,
-       'patient': patient_name,
-       'pharmacy': pharmacy_name,
-       'pharmacist': pharmacist_name,
-       'other_user': other_user
+        'thread': thread,
+        'messages': messages,
+        'form': form,
+        'other_user': other_user
     })
 
-#display pharmacist name to message thread for the resupply message (before it was just showing patient name)
         
 def delete_notification(request):
     if request.method == 'POST':
