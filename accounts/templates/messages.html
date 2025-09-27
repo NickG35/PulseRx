@@ -92,50 +92,36 @@
     <a href="{% url 'threads' thread_id=thread.id %}">
         <div class="thread-box" id="thread_{{ thread.id }}">
             {% with latest=thread.latest_message %}
-                {% if latest %}
-                    <div class="message-box" id="message_{{ latest.id }}" data-read="{{ latest.read }}">
+                    <div class="message-box"  {% if latest %} id="message_{{ latest.id }}" data-read="{{ latest.read }}" {% endif %}>
                         <p class="message-sender">
                             <strong>
-                            {% if request.user.role == 'patient' %}
-                                {{ pharmacy_name }} Pharmacy
-                            {% else %}
-                                {% for patient in thread.patients %}
-                                    {{ patient.first_name }} {{ patient.last_name }}
+                                {% for user in thread.other_participants %}
+                                    {% if user.role == "pharmacy admin" %}
+                                        {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
+                                    {% else %}
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    {% endif %}
                                 {% endfor %}
-                            {% endif %}
                             </strong>
                         </p>
+                        {% if latest %}
+                            {% if latest.sender == request.user %}
+                                <span>Me:</span>
+                            {% else %}
+                                <span>{{ latest.sender.first_name }} {{ latest.sender.last_name }}:</span>
+                            {% endif %}
 
-                        {% if latest.sender == request.user %}
-                            <span>Me:</span>
+                            <p class="message-content">{{ latest.content }}</p>
+                            <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
                         {% else %}
-                            <span>{{ latest.sender.first_name }} {{ latest.sender.last_name }}:</span>
+                            <p class="message-content">No messages yet</p>
+                            <p class="message-timestamp"><small>{{ thread.created_at }}</small></p>
                         {% endif %}
-
-                        <p class="message-content">{{ latest.content }}</p>
-                        <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
                     </div>
-                {% else %}
-                  <div class="message-box no-messages">
-                      <p class="message-sender">
-                          <strong>
-                          {% if request.user.role == 'patient' %}
-                              {{ pharmacy_name }} Pharmacy
-                          {% else %}
-                              {% for patient in thread.patients %}
-                                  {{ patient.first_name }} {{ patient.last_name }}
-                              {% endfor %}
-                          {% endif %}
-                          </strong>
-                      </p>
-                      <p class="message-content">No messages yet</p>
-                      <p class="message-timestamp"><small>{{ thread.created_at }}</small></p>
-                  </div>
-                {% endif %}
             {% endwith %}
         </div>
     </a>
 {% endfor %}
-        <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
+    <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
 </div>
 {% endblock %}
