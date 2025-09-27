@@ -212,7 +212,7 @@ def send_messages(request):
             message = form.save(commit=False)
             pharmacy_user = request.user
             sender = None
-            if request.user.role in ['patient', 'pharmacy_admin']:
+            if request.user.role in ['patient', 'pharmacy admin']:
                 sender = request.user
             if request.user.role in ['pharmacist']:
                 pharmacist = PharmacistProfile.objects.get(user=pharmacy_user)
@@ -258,28 +258,43 @@ def send_messages(request):
 def thread_view(request, thread_id):
     thread= get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
+
     pharmacy_name = None
     patient_name = None
-    if request.user.role in ['pharmacy admin']:
-        patient_user = thread.participant.exclude(id=request.user.id).first()
-        if patient_user:
-            patient_instance = PatientProfile.objects.get(user=patient_user)
-            patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
-    if request.user.role in ['pharmacist']:
-        pharmacist = PharmacistProfile.objects.get(user=request.user)
-        pharmacy = pharmacist.pharmacy.user
-        patient_user = thread.participant.exclude(id=pharmacy.id).first()
-        if patient_user:
-            patient_instance = PatientProfile.objects.get(user=patient_user)
-            patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
-    if request.user.role in ['patient']:
-        pharmacy_user = thread.participant.exclude(id=request.user.id).first()
-        pharmacy_instance = None
-        pharmacy_name = None
-        if pharmacy_user:
-            pharmacy_instance = PharmacyProfile.objects.get(user=pharmacy_user)
-            if pharmacy_instance:   
-                pharmacy_name = pharmacy_instance.pharmacy_name
+    pharmacist_name = None
+
+    other_user = thread.participant.exclude(id=request.user.id).first()
+
+    if request.user.role == 'pharmacy admin':
+        if other_user:
+            if other_user.role == 'patient':
+                patient_instance = PatientProfile.objects.filter(user=other_user).first()
+                if patient_instance:
+                    patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
+            elif other_user.role == 'pharmacist':
+                pharmacist_instance = PharmacistProfile.objects.filter(user=other_user).first()
+                pharmacist_name = f"{pharmacist_instance.user.first_name} {pharmacist_instance.user.last_name}"
+
+    elif request.user.role == 'pharmacist':
+        pharmacist_instance = PharmacistProfile.objects.filter(user=request.user).first()
+        pharmacist_name = f"{pharmacist_instance.user.first_name} {pharmacist_instance.user.last_name}"
+        pharmacy_user = pharmacist_instance.pharmacy.user
+        patient_user = thread.participant.exclude(id=pharmacy_user.id).first()
+
+        if patient_user and patient_user.role == 'patient':
+            patient_instance = PatientProfile.objects.filter(user=patient_user).first()
+            if patient_instance:
+                patient_name = f"{patient_instance.user.first_name} {patient_instance.user.last_name}"
+            other_user = patient_user
+        elif other_user.role == 'pharmacy admin':
+            other_user = thread.participant.exclude(id=request.user.id).first() 
+            pharmacy_instance = PharmacyProfile.objects.filter(user=other_user).first()
+            pharmacy_name = f"{pharmacy_instance.pharmacy_name}"
+
+
+    elif request.user.role == 'patient':
+        pharmacy_instance = PharmacyProfile.objects.filter(user=other_user).first() 
+        pharmacy_name = pharmacy_instance.pharmacy_name
 
     if request.method == 'POST':
         form = MessageForm(request.POST)
@@ -287,7 +302,7 @@ def thread_view(request, thread_id):
             message = form.save(commit=False)
             message.thread = thread
             message.sender = request.user
-            message.recipient = thread.participant.exclude(id=request.user.id).first()
+            message.recipient = other_user
             message.save()
             return redirect ('threads', thread_id=thread.id)
     else:
@@ -298,8 +313,12 @@ def thread_view(request, thread_id):
        'messages': messages,
        'form': form,
        'patient': patient_name,
-       'pharmacy': pharmacy_name
+       'pharmacy': pharmacy_name,
+       'pharmacist': pharmacist_name,
+       'other_user': other_user
     })
+
+#display pharmacist name to message thread for the resupply message (before it was just showing patient name)
         
 def delete_notification(request):
     if request.method == 'POST':
@@ -333,7 +352,7 @@ def patient_thread(request):
         if request.user.role in ['pharmacist']:
             pharmacist = PharmacistProfile.objects.get(user=request.user)
             pharmacy_user = pharmacist.pharmacy.user
-        elif request.user.role in ['pharmacy_admin']:
+        elif request.user.role in ['pharmacy admin']:
             pharmacy_user = request.user
         else:
             patient = PatientProfile.objects.get(user=patient_user)
