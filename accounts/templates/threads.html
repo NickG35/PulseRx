@@ -106,20 +106,23 @@
         }
         window.addEventListener('DOMContentLoaded', highlightHash);
     </script>
-    {% if other_user %}
-        {% if other_user.role == 'pharmacy admin' and pharmacy %}
-            <h3>{{pharmacy}} Pharmacy</h3>
-        {% elif other_user.role == 'patient' and patient %}
-            <h3>{{patient}}</h3>
-        {% elif other_user.role == 'pharmacist' and pharmacist %}
-            <h3>{{pharmacist}}</h3>
-        {% endif %}
+    {% if thread.other_participants %}
+        <h3>
+            {% for user in thread.other_participants %}
+                {% if user.role == "pharmacy admin" %}
+                    {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
+                {% else %}
+                    {{ user.first_name }} {{ user.last_name }}
+                {% endif %}
+            {% endfor %}
+        </h3>
     {% else %}
         <h3>No participant found</h3>
     {% endif %}
+
     {% for message in messages %}
         <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
-            {% if message.sender.first_name == request.user.first_name %}
+             {% if message.sender == request.user %}
                 <strong>Me:</strong>
             {% else %}
                 <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
@@ -127,10 +130,10 @@
             <p>{{ message.content }}</p>
             <small>{{ message.timestamp }}</small>
         </div>
-     {% endfor %}
-        <form action="{% url 'threads' thread_id=thread.id%}" id="message-form" method="post">
-            {% csrf_token %}
-            {{form.as_p}}
-            <button type="submit">Send</button>
-        </form>
+    {% endfor %}
+    <form action="{% url 'threads' thread_id=thread.id%}" id="message-form" method="post">
+        {% csrf_token %}
+        {{form.as_p}}
+        <button type="submit">Send</button>
+    </form>
 {% endblock %}
