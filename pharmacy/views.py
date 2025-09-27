@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile
+from accounts.models import Message, Thread, Notifications
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Count
 
 # Create your views here.
 def pharmacy_home(request):
@@ -20,26 +21,40 @@ def pharmacist_home(request):
     })
 
 def create_prescriptions(request):
-    form = PrescriptionForm(request.POST)
+    form = PrescriptionForm(request.POST or None)
     pharmacist = PharmacistProfile.objects.get(user=request.user)
+
     if form.is_valid():
         prescription = form.save(commit=False)
         prescription.prescribed_by = pharmacist
         medicine = prescription.medicine
-        if medicine.stock >= prescription.quantity:
-            medicine.stock -= prescription.quantity
-            medicine.save()
-            prescription.save()
-            return redirect('create_prescriptions')
-        else:
+
+        # Check stock first
+        if prescription.quantity > medicine.stock:
             form.add_error('quantity', 'Not enough stock available.')
             return render(request, 'create_prescriptions.html', {'form': form})
-    else:
-        print(form.errors)
-    
-    return render(request, 'create_prescriptions.html', {
-        'form': form,
-    })
+
+        # Reduce stock and save
+        medicine.stock -= prescription.quantity
+        medicine.save()
+        prescription.save()
+
+        # Create notifications
+        if 1 <= medicine.stock <= 10:
+            Notifications.objects.create(
+                user=pharmacist.pharmacy.user,
+                message=f"{medicine.name} ({medicine.brand}) is running low."
+            )
+
+        if medicine.stock == 0:
+            Notifications.objects.create(
+                user=pharmacist.pharmacy.user,
+                message=f"{medicine.name} ({medicine.brand}) is out of stock."
+            )
+
+        return redirect('create_prescriptions') 
+
+    return render(request, 'create_prescriptions.html', {'form': form})
 
 def patient_search(request):
     if request.user.role in ['pharmacist']:
@@ -119,3 +134,43 @@ def drug_detail(request, drug_id):
     return render(request, 'drug_detail.html', {
         'drug_info': drug_info
     })
+
+def resupply(drug_id):
+    drug = Drug.objects.get(id=drug_id)
+    drug.stock = 100
+    drug.save()
+    return redirect('inventory')
+
+def contact_admin(request, drug_id):
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy_admin = pharmacist.pharmacy.user
+    participants = [request.user, pharmacy_admin]
+
+    medicine = Drug.objects.get(id=drug_id)
+
+        
+    thread = (Thread.objects
+                .filter(participant__in=participants)
+                .annotate(num_participants=Count('participant'))
+                .filter(num_participants=len(participants))
+                .first())
+            
+    if not thread:
+        thread = Thread.objects.create()
+        thread.participant.add(request.user, pharmacy_admin)
+
+    msg = Message.objects.create(
+        sender=request.user, 
+        recipient=pharmacy_admin, 
+        thread=thread,
+        content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. "
+    )
+
+    Notifications.objects.create(
+        user=pharmacy_admin,
+        message= msg
+    )
+
+    return redirect('inventory')
+
+
