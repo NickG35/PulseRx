@@ -62,6 +62,14 @@
         threadBtn.addEventListener('click', function(){
             peopleInput.style.display = 'block';
         })
+
+        window.addEventListener("pageshow", function (event) {
+            if (event.persisted || performance.getEntriesByType("navigation")[0].type === "back_forward") {
+                const hiddenPatient = document.querySelector(".hidden-patient");
+                if (hiddenPatient) hiddenPatient.value = "";
+                document.getElementById("autocomplete-people").value = "";
+            }
+        });
     });
 </script>
 <p>These are my pharmacy messages</p>
