@@ -15,32 +15,37 @@
 </head>
 
 <nav class="dashboard-nav">
-        {% if request.user.role == 'patient' %}
-            <div class="end-div">
-                <a href="{% url 'patient_home' %}"><h1>PulseRx</h1></a>
-            </div>
-            <div>
-                <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
-                <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
-                <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
-                <a href="{% url 'messages' %}" class="main-link">Messages</a>
-            </div>
-        {% elif request.user.role == 'pharmacist' %}
-            <div class="end-div">
-                <a href="{% url 'pharmacist_home' %}"><h1>PulseRx</h1></a>
-            </div>
-            <div>
-                <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
-                <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
-                <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-                <a href="{% url 'messages' %}" class="main-link">Messages</a>
-            </div>
-        {% else %}
-            <div class="end-div">
-                <a href="{% url 'messages' %}" class="main-link">Messages</a>
-                <a href="{% url 'pharmacy_home' %}"><h1>PulseRx</h1></a>
-            </div>
-        {% endif %}
+    {% if request.user.role == 'patient' %}
+        <div class="end-div">
+            <a href="{% url 'patient_home' %}"><h1>PulseRx</h1></a>
+        </div>
+        <div>
+            <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
+            <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
+            <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+        </div>
+
+    {% elif request.user.role == 'pharmacist' %}
+        <div class="end-div">
+            <a href="{% url 'pharmacist_home' %}"><h1>PulseRx</h1></a>
+        </div>
+        <div>
+            <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
+            <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
+            <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+        </div>
+
+    {% elif request.user.role == 'pharmacy admin' %}
+        <div class="end-div">
+            <a href="{% url 'pharmacy_home' %}"><h1>PulseRx</h1></a>
+        </div>
+        <div>
+            <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+        </div>
+    {% endif %}
         <div class="end-div">
             <div class="dropdown show">
                 <button type="button" id="hidden-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
