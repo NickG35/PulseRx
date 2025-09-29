@@ -226,47 +226,21 @@ def send_messages(request):
             recipient = current_patient.pharmacy.user
 
         if form.is_valid():
-            message = form.save(commit=False)
-            pharmacy_user = request.user
-            sender = None
-            if request.user.role in ['patient', 'pharmacy admin']:
-                sender = request.user
-            if request.user.role in ['pharmacist']:
-                pharmacist = PharmacistProfile.objects.get(user=pharmacy_user)
-                sender = pharmacist.pharmacy.user
-                
-            participants = [sender, recipient]
-
-        
-            thread = (Thread.objects
-                      .filter(participant__in=participants)
-                      .annotate(num_participants=Count('participant'))
-                      .filter(num_participants=len(participants))
-                      .first())
-            
-            if not thread:
-                thread = Thread.objects.create()
-                thread.participant.add(sender, recipient)
-
+            message = form.save(commit=False)   
             message.sender = request.user
             message.recipient = recipient
-            message.thread = thread
             message.save()
 
             created_time_local = timezone.localtime(message.timestamp)
             formatted_time = created_time_local.strftime("%b. %-d, %Y, %-I:%M %p").replace("AM", "a.m.").replace("PM", "p.m.")
 
-            thread.last_updated = timezone.now()
-            thread.save(update_fields=["last_updated"])
+            message.thread.last_updated = timezone.now()
+            message.thread.save(update_fields=["last_updated"])
             return JsonResponse({
                 "success": True,
                 "id": message.id,
                 "content": message.content,
                 "timestamp": formatted_time,
-                "sender": message.sender.email,
-                "thread_id": message.thread.id,
-                "participants": recipient.email,
-                "current_user": request.user.email,
                 "read": message.read,
             })
         
