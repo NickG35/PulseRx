@@ -5,9 +5,9 @@
         const empty_message = document.getElementById('noMessage');
 
         function updateEmptyMessage(){
-            const threadBox = document.querySelectorAll('.thread-box');
+            const messageBox = document.querySelectorAll('.message-box');
             if (empty_message) {
-                empty_message.style.display = threadBox.length > 0 ? 'none': 'block';
+                empty_message.style.display = messageBox.length > 0 ? 'none': 'block';
             }
         }
 
@@ -45,42 +45,32 @@
                 .then(data => {
                     if (data.success) {
                         updateEmptyMessage();
-                        let threadBox = document.getElementById(`thread_${data.thread_id}`);
+                        let messageConvo = document.querySelector('.message-convo');
 
-                        if (!threadBox) {
-                            // Create a new thread container
-                            threadBox = document.createElement('div');
-                            threadBox.classList.add('thread-box');
-                            threadBox.id = `thread_${data.thread_id}`;
+                        // Create a new message container
+                        let messageBox = document.createElement('div');
+                        messageBox.classList.add('message-box');
+                        messageBox.id = `message_${data.id}`;
+                        messageBox.dataset.read = data.read;
 
-                            // Add it to threads container
-                            document.getElementById('threads-box').prepend(threadBox);
-                        }
+                        let messageSender = document.createElement('strong');
+                        messageSender.classList.add('message-sender');
+                        messageSender.textContent = 'Me:';
 
-                        const messageDiv = document.createElement('div');
-                        messageDiv.classList.add('message-box');
-                        messageDiv.id = `message_${data.id}`;
-                        messageDiv.dataset.read = data.read;
+                        let messageContent = document.createElement('p');
+                        messageContent.classList.add('message-content');
+                        messageContent.textContent = `${data.content}`;
 
-                        // Differentiate sender/recipient visually
-                        const sender = document.createElement('p');
-                        sender.classList.add('message-sender');
-                        sender.textContent = data.sender;
+                        let messageTime = document.createElement('small');
+                        messageTime.classList.add('message-time');
+                        messageTime.textContent = `${data.timestamp}`;
 
-                        const content = document.createElement('p');
-                        content.classList.add('message-content');
-                        content.textContent = data.content;
+                        messageBox.appendChild(messageSender);
+                        messageBox.appendChild(messageContent);
+                        messageBox.appendChild(messageTime);
 
-                        const timestamp = document.createElement('p');
-                        timestamp.classList.add('message-timestamp');
-                        timestamp.innerHTML = `<small>${data.timestamp}</small>`;
-
-                        messageDiv.appendChild(sender);
-                        messageDiv.appendChild(content);
-                        messageDiv.appendChild(timestamp);
-
-                        // Insert message at bottom of this thread
-                        threadBox.appendChild(messageDiv);
+                        // Add it to message convo
+                        messageConvo.appendChild(messageBox);
 
                         // Reset form
                         form.reset();
@@ -119,19 +109,21 @@
     {% else %}
         <h3>No participant found</h3>
     {% endif %}
-
-    {% for message in messages %}
-        <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
-             {% if message.sender == request.user %}
-                <strong>Me:</strong>
-            {% else %}
-                <strong>{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
-            {% endif %}
-            <p>{{ message.content }}</p>
-            <small>{{ message.timestamp }}</small>
-        </div>
-    {% endfor %}
-    <form action="{% url 'threads' thread_id=thread.id%}" id="message-form" method="post">
+    <div class="message-convo">
+        {% for message in messages %}
+            <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
+                {% if message.sender == request.user %}
+                    <strong class="message-sender">Me:</strong>
+                {% else %}
+                    <strong class="message-sender">{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
+                {% endif %}
+                <p class="message-content">{{ message.content }}</p>
+                <small class="message-time">{{ message.timestamp }}</small>
+            </div>
+        {% endfor %}
+    </div>
+    <p id="noMessage" {% if messages %} style="display: none;" {% endif %}>No messages yet.</p>
+    <form action="{% url 'send_messages' %}" id="message-form" method="post">
         {% csrf_token %}
         {{form.as_p}}
         <button type="submit">Send</button>
