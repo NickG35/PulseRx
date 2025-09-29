@@ -135,7 +135,7 @@ def drug_detail(request, drug_id):
         'drug_info': drug_info
     })
 
-def resupply(drug_id):
+def resupply(request, drug_id):
     drug = Drug.objects.get(id=drug_id)
     drug.stock = 100
     drug.save()
