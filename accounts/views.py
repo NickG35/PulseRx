@@ -213,29 +213,40 @@ def send_messages(request):
     if request.method == 'POST':
         form = MessageForm(request.POST)
 
-        recipient = None
+        thread_id = request.POST.get('thread_id')
+
+        if not thread_id:
+             return JsonResponse({"success": False, "error": "Thread ID missing"}, status=400)
         
-        if request.user.role in ['pharmacist', 'pharmacy admin']:
-            recipient_id = request.POST.get('recipient')
-            try:
-                recipient = CustomAccount.objects.get(id=recipient_id)
-            except CustomAccount.DoesNotExist:
-                return JsonResponse({"success": False, "error": "Recipient not found"}, status=400)
+        thread = get_object_or_404(Thread, id=thread_id)
+        
+        if request.user.role == 'pharmacist':
+            patient_user = thread.participant.filter(role='patient').first()
+            pharmacy_admin = thread.participant.filter(role='pharmacy admin').first()
+            if patient_user:
+                recipient = patient_user
+            elif pharmacy_admin:
+                recipient = pharmacy_admin
+            else:
+                return JsonResponse({"success": False, "error": "No recipient found"}, status=400)
         else:
-            current_patient = PatientProfile.objects.get(user=request.user)
-            recipient = current_patient.pharmacy.user
+            recipient = thread.participant.exclude(id=request.user.id).first()
+            if not recipient:
+                return JsonResponse({"success": False, "error": "No recipient found"}, status=400)
+
 
         if form.is_valid():
             message = form.save(commit=False)   
             message.sender = request.user
             message.recipient = recipient
+            message.thread = thread
             message.save()
 
             created_time_local = timezone.localtime(message.timestamp)
             formatted_time = created_time_local.strftime("%b. %-d, %Y, %-I:%M %p").replace("AM", "a.m.").replace("PM", "p.m.")
 
-            message.thread.last_updated = timezone.now()
-            message.thread.save(update_fields=["last_updated"])
+            thread.last_updated = timezone.now()
+            thread.save(update_fields=["last_updated"])
             return JsonResponse({
                 "success": True,
                 "id": message.id,
