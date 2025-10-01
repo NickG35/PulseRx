@@ -2,86 +2,89 @@
 
 {% block content %}
     <script>
-        const empty_message = document.getElementById('noMessage');
+        document.addEventListener("DOMContentLoaded", () => {
+            const empty_message = document.getElementById('noMessage');
 
-        function updateEmptyMessage(){
-            const messageBox = document.querySelectorAll('.message-box');
-            if (empty_message) {
-                empty_message.style.display = messageBox.length > 0 ? 'none': 'block';
-            }
-        }
-
-        updateEmptyMessage();
-        
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.startsWith(name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+            function updateEmptyMessage(){
+                const messageBox = document.querySelectorAll('.message-box');
+                if (empty_message) {
+                    empty_message.style.display = messageBox.length > 0 ? 'none': 'block';
                 }
             }
-                return cookieValue;
-        }
-        const csrftoken = getCookie('csrftoken');
 
-        const form = document.getElementById('message-form');
-        if (form) {
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-
-                fetch('/accounts/send_messages', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrftoken,
-                    },
-                    body: new FormData(form)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateEmptyMessage();
-                        let messageConvo = document.querySelector('.message-convo');
-
-                        // Create a new message container
-                        let messageBox = document.createElement('div');
-                        messageBox.classList.add('message-box');
-                        messageBox.id = `message_${data.id}`;
-                        messageBox.dataset.read = data.read;
-
-                        let messageSender = document.createElement('strong');
-                        messageSender.classList.add('message-sender');
-                        messageSender.textContent = 'Me:';
-
-                        let messageContent = document.createElement('p');
-                        messageContent.classList.add('message-content');
-                        messageContent.textContent = `${data.content}`;
-
-                        let messageTime = document.createElement('small');
-                        messageTime.classList.add('message-time');
-                        messageTime.textContent = `${data.timestamp}`;
-
-                        messageBox.appendChild(messageSender);
-                        messageBox.appendChild(messageContent);
-                        messageBox.appendChild(messageTime);
-
-                        // Add it to message convo
-                        messageConvo.appendChild(messageBox);
-
-                        // Reset form
-                        form.reset();
-
-                        updateEmptyMessage();
-                        highlightHash();
+            updateEmptyMessage();
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.startsWith(name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
                     }
+                }
+                    return cookieValue;
+            }
+            const csrftoken = getCookie('csrftoken');
+
+            const form = document.getElementById('message-form');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    console.log("JS intercepted the form, not reloading!");
+
+                    fetch('/accounts/send_messages', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                        },
+                        body: new FormData(form)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateEmptyMessage();
+                            let messageConvo = document.querySelector('.message-convo');
+
+                            // Create a new message container
+                            let messageBox = document.createElement('div');
+                            messageBox.classList.add('message-box');
+                            messageBox.id = `message_${data.id}`;
+                            messageBox.dataset.read = data.read;
+
+                            let messageSender = document.createElement('strong');
+                            messageSender.classList.add('message-sender');
+                            messageSender.textContent = 'Me:';
+
+                            let messageContent = document.createElement('p');
+                            messageContent.classList.add('message-content');
+                            messageContent.textContent = `${data.content}`;
+
+                            let messageTime = document.createElement('small');
+                            messageTime.classList.add('message-time');
+                            messageTime.textContent = `${data.timestamp}`;
+
+                            messageBox.appendChild(messageSender);
+                            messageBox.appendChild(messageContent);
+                            messageBox.appendChild(messageTime);
+
+                            // Add it to message convo
+                            messageConvo.appendChild(messageBox);
+
+                            // Reset form
+                            form.reset();
+
+                            updateEmptyMessage();
+                            highlightHash();
+                        }
+                    })
+                    .catch(error => console.error("Notification error:", error));
                 })
-                .catch(error => console.error("Notification error:", error));
-            })
-        }
+            }
+        });
         
         function highlightHash(){
             const hash = window.location.hash;
@@ -123,9 +126,10 @@
         {% endfor %}
     </div>
     <p id="noMessage" {% if messages %} style="display: none;" {% endif %}>No messages yet.</p>
-    <form action="{% url 'send_messages' %}" id="message-form" method="post">
+    <form action="{% url 'threads' thread_id=thread.id %}" id="message-form" method="post">
         {% csrf_token %}
         {{form.as_p}}
+        <input type="hidden" name="thread_id" value="{{ thread.id }}">
         <button type="submit">Send</button>
     </form>
 {% endblock %}
