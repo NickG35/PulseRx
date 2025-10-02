@@ -102,7 +102,9 @@
     {% if thread.other_participants %}
         <h3>
             {% for user in thread.other_participants %}
-                {% if user.role == "pharmacy admin" %}
+                {% if user.role == "system" %}
+                    Notification System
+                {% elif user.role == "pharmacy admin" %}
                     {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
                 {% else %}
                     {{ user.first_name }} {{ user.last_name }}
@@ -126,10 +128,14 @@
         {% endfor %}
     </div>
     <p id="noMessage" {% if messages %} style="display: none;" {% endif %}>No messages yet.</p>
-    <form action="{% url 'threads' thread_id=thread.id %}" id="message-form" method="post">
+    <form action="{% url 'threads' thread_id=thread.id %}" id="message-form" method="post" {% if other_user.role == 'system'%} style="display: none;" {% endif %}>
         {% csrf_token %}
         {{form.as_p}}
         <input type="hidden" name="thread_id" value="{{ thread.id }}">
         <button type="submit">Send</button>
     </form>
+
+    {% if other_user.role == 'system'%}
+        <small>Cannot reply to this thread</small>
+    {% endif %}
 {% endblock %}
