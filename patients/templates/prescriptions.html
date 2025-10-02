@@ -2,11 +2,26 @@
 
 {% block content %}
     <h1>prescriptions</h1>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
     {% for prescription in prescriptions %}
         <p><a href="{% url 'drug_detail' drug_id=prescription.medicine.id%}">Drug: {{prescription.medicine.name}} ({{prescription.medicine.brand}})</a></p>
         <p>QTY: {{prescription.quantity}}</p>
         <p>Prescribed by: {{prescription.prescribed_by}}</p>
         <p>Created on: {{prescription.prescribed_on}}</p>
         <p>Exp date: {{prescription.expiration_date}}</p>
+        <p>You have {{ prescription.refills_left }} refill(s) left</p>
+        {% if prescription.refills_left > 0 %}
+            <form action="{% url 'refill' prescription_id=prescription.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Refill</button>
+            </form>
+        {% endif %}
     {% endfor %}
 {% endblock %}
