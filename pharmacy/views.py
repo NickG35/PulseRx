@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile
+from accounts.models import CustomAccount
 from accounts.models import Message, Thread, Notifications
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
@@ -23,6 +24,14 @@ def pharmacist_home(request):
 def create_prescriptions(request):
     form = PrescriptionForm(request.POST or None)
     pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = None
+    if request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+        pharmacy = pharmacy
+    else:
+        pharmacy = pharmacist.pharmacy
+
+    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
 
     if form.is_valid():
         prescription = form.save(commit=False)
@@ -39,18 +48,37 @@ def create_prescriptions(request):
         medicine.save()
         prescription.save()
 
+        system_user = CustomAccount.objects.get(role='system')
+        users = [system_user, pharmacy.user] + list(pharmacists) #list of users
+
+        thread = (Thread.objects
+                .filter(participant__in=users)
+                .annotate(num_participants=Count('participant'))
+                .filter(num_participants=len(users))
+                .first())
+            
+        if not thread:
+            thread = Thread.objects.create()
+            thread.participant.add(*users)
+
         # Create notifications
         if 1 <= medicine.stock <= 10:
-            Notifications.objects.create(
-                user=pharmacist.pharmacy.user,
-                message=f"{medicine.name} ({medicine.brand}) is running low."
+            msg = Message.objects.create(
+                sender=system_user,
+                thread=thread,
+                content=f"{medicine.name} ({medicine.brand}) is running low."
             )
+            for u in users:
+                Notifications.objects.create(user=u, message=msg)
 
         if medicine.stock == 0:
-            Notifications.objects.create(
-                user=pharmacist.pharmacy.user,
-                message=f"{medicine.name} ({medicine.brand}) is out of stock."
+            msg = Message.objects.create(
+                sender=system_user,
+                thread=thread,
+                content=f"{medicine.name} ({medicine.brand}) is out of stock."
             )
+            for u in users:
+                Notifications.objects.create(user=u, message=msg)
 
         return redirect('create_prescriptions') 
 
@@ -136,15 +164,10 @@ def drug_detail(request, drug_id):
     })
 
 def resupply(request, drug_id):
-    drug = Drug.objects.get(id=drug_id)
-    drug.stock = 100
-    drug.save()
-    return redirect('inventory')
-
-def contact_admin(request, drug_id):
-    pharmacist = PharmacistProfile.objects.get(user=request.user)
-    pharmacy_admin = pharmacist.pharmacy.user
-    participants = [request.user, pharmacy_admin]
+    pharmacy = PharmacyProfile.objects.get(user=request.user)
+    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+    system_user = CustomAccount.objects.get(role='system')
+    participants = [system_user, request.user] +  list(pharmacists)
 
     medicine = Drug.objects.get(id=drug_id)
 
@@ -157,19 +180,52 @@ def contact_admin(request, drug_id):
             
     if not thread:
         thread = Thread.objects.create()
-        thread.participant.add(request.user, pharmacy_admin)
+        thread.participant.add(*participants)
 
     msg = Message.objects.create(
-        sender=request.user, 
-        recipient=pharmacy_admin, 
+        sender=system_user,
         thread=thread,
-        content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. "
+        content=f"{medicine.name} ({medicine.brand}) has been resupplied."
     )
 
-    Notifications.objects.create(
-        user=pharmacy_admin,
-        message= msg
-    )
+    for u in participants:
+        Notifications.objects.create(user=u, message=msg)
+
+        medicine.stock = 100
+        medicine.save()
+
+    return redirect('inventory')
+
+def contact_admin(request, drug_id):
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = pharmacist.pharmacy
+    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+    system_user = CustomAccount.objects.get(role='system')
+    participants = [system_user, pharmacy.user] +  list(pharmacists)
+
+    medicine = Drug.objects.get(id=drug_id)
+
+        
+    thread = (Thread.objects
+                .filter(participant__in=participants)
+                .annotate(num_participants=Count('participant'))
+                .filter(num_participants=len(participants))
+                .first())
+            
+    if not thread:
+        thread = Thread.objects.create()
+        thread.participant.add(*participants)
+    
+
+    msg = Message.objects.create(
+            sender=system_user,
+            thread=thread,
+            content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. "
+        )
+
+    for u in participants:
+        Notifications.objects.create(user=u, message=msg)
+
 
     return redirect('inventory')
 
