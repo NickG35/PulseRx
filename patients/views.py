@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
 from .models import PatientProfile, MedicationReminder, ReminderTime
+from accounts.models import CustomAccount, Thread, Message, Notifications
 from .forms import ReminderForm, PharmacyForm
 from datetime import datetime, date, timedelta
 from django.http import JsonResponse
@@ -9,6 +10,8 @@ import json
 from accounts.tasks import send_reminder
 from celery import current_app
 from datetime import datetime, date
+from django.contrib import messages
+from django.db.models import Count
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -295,3 +298,29 @@ def edit_reminder(request):
         
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+def refill(request, prescription_id):
+    if request.method == 'POST':
+        prescription = Prescription.objects.get(id=prescription_id)
+        prescription.refills_left -= 1
+        prescription.save()
+        
+        patient = PatientProfile.objects.get(user=request.user)
+        pharmacy = patient.pharmacy
+        pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+        users = [request.user, pharmacy.user] + list(pharmacists) #list of users
+
+        thread = (Thread.objects
+                .filter(participant__in=users)
+                .annotate(num_participants=Count('participant'))
+                .filter(num_participants=len(users))
+                .first())
+            
+        if not thread:
+            thread = Thread.objects.create()
+            thread.participant.add(*users)
+            
+        messages.success(request, "Refill request submitted.")
+        
+        return redirect('prescriptions')
+
