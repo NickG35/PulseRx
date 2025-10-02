@@ -163,6 +163,10 @@ def account_messages(request):
             pharmacy_name = patient.pharmacy.pharmacy_name
 
     for thread in user_threads:
+        system_user = thread.participant.all().filter(role='system').first()
+        if system_user:
+            thread.other_participants = [system_user]
+            continue
         if request.user.role == 'pharmacist':
             # Determine what to display in header
             patient_user = thread.participant.all().filter(role='patient').first()
@@ -262,8 +266,12 @@ def thread_view(request, thread_id):
     thread = get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
 
+    system_user = thread.participant.all().filter(role='system').first()
+    if system_user:
+        thread.other_participants = [system_user]
+        other_user = system_user
     # Determine who to show in the header
-    if request.user.role == 'pharmacist':
+    elif request.user.role == 'pharmacist':
 
         # Try to get a patient participant first
         patient_user = thread.participant.all().filter(role='patient').first()
