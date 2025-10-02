@@ -6,6 +6,7 @@ class CustomAccount(AbstractUser):
         ('pharmacy admin', 'Pharmacy Admin'),
         ('pharmacist', 'Pharmacist'),
         ('patient', 'Patient'),
+        ('system', 'System'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
@@ -19,7 +20,13 @@ class Thread(models.Model):
 
 class Message(models.Model):
     sender = models.ForeignKey(CustomAccount, related_name='sent_messages', on_delete=models.PROTECT)
-    recipient = models.ForeignKey(CustomAccount, related_name='received_messages', on_delete=models.PROTECT)
+    recipient = models.ForeignKey(
+        CustomAccount,
+        on_delete=models.CASCADE,
+        related_name="received_messages",
+        null=True, 
+        blank=True
+    )
     thread = models.ForeignKey(Thread, related_name='messages', on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
