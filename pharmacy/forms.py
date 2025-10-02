@@ -24,7 +24,7 @@ class PrescriptionForm(forms.ModelForm):
 
         class Meta:
             model = Prescription
-            exclude = ['prescribed_by']
+            exclude = ['prescribed_by', 'refills_left']
             widgets = {
               'patient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
               'medicine': forms.HiddenInput(attrs={'class': 'hidden-medicine'}),
