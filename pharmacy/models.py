@@ -44,6 +44,7 @@ class Prescription (models.Model):
     prescribed_by = models.ForeignKey(PharmacistProfile, related_name='pharmacist', on_delete=models.SET_NULL, null=True)
     prescribed_on = models.DateTimeField(auto_now_add=True)
     expiration_date = models.DateField()
+    refills_left = models.IntegerField(default=3)
 
     def __str__(self):
         return f"{self.medicine.name} ({self.medicine.brand})"
