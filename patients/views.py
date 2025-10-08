@@ -12,6 +12,7 @@ from celery import current_app
 from datetime import datetime, date
 from django.contrib import messages
 from django.db.models import Count
+from django.urls import reverse
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -302,13 +303,16 @@ def edit_reminder(request):
 def refill(request, prescription_id):
     if request.method == 'POST':
         prescription = Prescription.objects.get(id=prescription_id)
+
         prescription.refills_left -= 1
         prescription.save()
         
         patient = PatientProfile.objects.get(user=request.user)
         pharmacy = patient.pharmacy
         pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
-        users = [request.user, pharmacy.user] + list(pharmacists) #list of users
+        system_user = CustomAccount.objects.get(role='system')
+        users = [system_user, request.user, pharmacy.user] + list(pharmacists) #list of users
+        notified_users = [pharmacy.user] + list(pharmacists)
 
         thread = (Thread.objects
                 .filter(participant__in=users)
@@ -319,6 +323,16 @@ def refill(request, prescription_id):
         if not thread:
             thread = Thread.objects.create()
             thread.participant.add(*users)
+        
+        msg = Message.objects.create(
+            sender=system_user,
+            thread=thread,
+            content= f"A refill request from {patient.first_name} {patient.last_name} has been sent. ",
+            link=reverse('refill_form', args=[prescription.id])
+        )
+
+        for u in notified_users:
+            Notifications.objects.create(user=u, message=msg)
             
         messages.success(request, "Refill request submitted.")
         
