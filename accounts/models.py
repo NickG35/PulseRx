@@ -19,6 +19,8 @@ class Thread(models.Model):
         return self.messages.last()
 
 class Message(models.Model):
+
+     
     sender = models.ForeignKey(CustomAccount, related_name='sent_messages', on_delete=models.PROTECT)
     recipient = models.ForeignKey(
         CustomAccount,
@@ -32,7 +34,8 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     read = models.BooleanField(default=False)
     read_time = models.DateTimeField(null=True, blank=True)
-
+    link = models.CharField(max_length=300, blank=True, null=True)
+    
     class Meta:
         db_table = 'pharmacy_message' 
 
