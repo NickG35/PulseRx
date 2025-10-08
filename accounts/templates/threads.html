@@ -123,6 +123,9 @@
                     <strong class="message-sender">{{ message.sender.first_name }} {{ message.sender.last_name }}:</strong>
                 {% endif %}
                 <p class="message-content">{{ message.content }}</p>
+                {% if message.link %} 
+                    <a href="{{message.link}}">View here</a>
+                {% endif%}
                 <small class="message-time">{{ message.timestamp }}</small>
             </div>
         {% endfor %}
