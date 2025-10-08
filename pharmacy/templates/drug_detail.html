@@ -11,5 +11,25 @@
     <p>{{drug.dosage}}</p>
     <p>{{drug.route}}</p>
     <p>{{drug.stock}}</p>
+
+    {% if drug.stock <= 10 %}
+        {% if drug.stock|add:0 <= 10 and drug.stock|add:0 >= 1 %}
+          <p>Low Stock</p>
+        {% elif drug.stock|add:0 < 1 %}
+            <p>No Stock</p>
+          {% endif %}
+
+          {% if request.user.role == 'pharmacy admin' %}
+            <form action="{% url 'resupply' drug_id=drug.id %}" method="post" >
+              {% csrf_token %}
+              <button type="submit">Resupply</button>
+            </form>
+          {% else %}
+            <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" >
+              {% csrf_token %}
+              <button type="submit">Contact Admin</button>
+            </form>
+          {% endif %}
+    {% endif %}
 {% endfor %}
 {% endblock %}
