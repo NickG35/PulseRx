@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.core.paginator import Paginator
-from .models import Drug, PharmacyProfile, PharmacistProfile
+from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
 from accounts.models import CustomAccount
 from accounts.models import Message, Thread, Notifications
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
 from django.http import JsonResponse
 from django.db.models import Q, Count
+from django.contrib import messages
 
 # Create your views here.
 def pharmacy_home(request):
@@ -66,7 +68,8 @@ def create_prescriptions(request):
             msg = Message.objects.create(
                 sender=system_user,
                 thread=thread,
-                content=f"{medicine.name} ({medicine.brand}) is running low."
+                content=f"{medicine.name} ({medicine.brand}) is running low.",
+                link = reverse('drug_detail', args=[medicine.id])
             )
             for u in users:
                 Notifications.objects.create(user=u, message=msg)
@@ -75,7 +78,8 @@ def create_prescriptions(request):
             msg = Message.objects.create(
                 sender=system_user,
                 thread=thread,
-                content=f"{medicine.name} ({medicine.brand}) is out of stock."
+                content=f"{medicine.name} ({medicine.brand}) is out of stock.",
+                link = reverse('drug_detail', args=[medicine.id])
             )
             for u in users:
                 Notifications.objects.create(user=u, message=msg)
@@ -185,7 +189,8 @@ def resupply(request, drug_id):
     msg = Message.objects.create(
         sender=system_user,
         thread=thread,
-        content=f"{medicine.name} ({medicine.brand}) has been resupplied."
+        content=f"{medicine.name} ({medicine.brand}) has been resupplied.",
+        link = reverse('drug_detail', args=[drug_id])
     )
 
     for u in participants:
@@ -220,7 +225,8 @@ def contact_admin(request, drug_id):
     msg = Message.objects.create(
             sender=system_user,
             thread=thread,
-            content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. "
+            content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. ",
+            link = reverse('drug_detail', args=[drug_id])
         )
 
     for u in participants:
@@ -228,5 +234,76 @@ def contact_admin(request, drug_id):
 
 
     return redirect('inventory')
+
+def refill_form(request, prescription_id):
+    old_prescription = Prescription.objects.get(id=prescription_id)
+    patient = old_prescription.patient
+
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    
+    if request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+        
+    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+
+    system_user = CustomAccount.objects.get(role='system')
+
+    if request.method == 'POST':
+
+        form = PrescriptionForm(request.POST)
+        if form.is_valid:
+            new_prescription = form.save(commit=False)
+            new_prescription.prescribed_by = pharmacist
+            medicine = new_prescription.medicine
+
+            # Check stock first
+            if new_prescription.quantity > medicine.stock:
+                form.add_error('quantity', 'Not enough stock available.')
+                return render(request, 'create_prescriptions.html', {'form': form})
+            
+            # Reduce stock and save
+            medicine.stock -= new_prescription.quantity
+            medicine.save()
+            new_prescription.save()
+
+            
+            users = [system_user, patient.user, pharmacy.user] + list(pharmacists) #list of users
+            notified_users = [patient.user] + list(pharmacists)
+
+            thread = (Thread.objects
+                    .filter(participant__in=users)
+                    .annotate(num_participants=Count('participant'))
+                    .filter(num_participants=len(users))
+                    .first())
+                
+            if not thread:
+                thread = Thread.objects.create()
+                thread.participant.add(*users)
+            
+            msg = Message.objects.create(
+                sender=system_user,
+                thread=thread,
+                content= f"A refill request has been fulfilled and is ready for pick up.",
+                link=reverse('patient_profile', args=[patient.id]),
+            )
+
+            for u in notified_users:
+                Notifications.objects.create(user=u, message=msg)
+
+            messages.success(request, "Refill completed successfully.")
+            return redirect('inventory')
+    else:
+        form = PrescriptionForm(instance=old_prescription)
+        form.initial['date'] = ''
+    
+    return render(request, 'create_prescriptions.html', {
+        'form': form,
+        'is_refill': True,
+        'old_prescription': old_prescription
+    })
+            
+
 
 
