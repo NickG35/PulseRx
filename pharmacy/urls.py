@@ -5,6 +5,7 @@ urlpatterns = [
     path('admin/dashboard', views.pharmacy_home, name='pharmacy_home'),
     path('pharmacist/dashboard', views.pharmacist_home, name='pharmacist_home'),
     path('create_prescriptions', views.create_prescriptions, name='create_prescriptions'),
+    path('refill_prescriptions/<int:prescription_id>', views.refill_form, name='refill_form'),
     path('patient_search/', views.patient_search, name='patient_search'),
     path('medicine_search/', views.medicine_search, name='medicine_search'),
     path('my_patients', views.my_patients, name='my_patients'),
