@@ -311,8 +311,8 @@ def refill(request, prescription_id):
         pharmacy = patient.pharmacy
         pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
         system_user = CustomAccount.objects.get(role='system')
-        users = [system_user, request.user, pharmacy.user] + list(pharmacists) #list of users
-        notified_users = [pharmacy.user] + list(pharmacists)
+        users = [system_user] + list(pharmacists) #list of users
+        notified_users = list(pharmacists)
 
         thread = (Thread.objects
                 .filter(participant__in=users)
