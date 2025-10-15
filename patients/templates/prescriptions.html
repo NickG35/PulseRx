@@ -20,7 +20,10 @@
         {% if prescription.refills_left > 0 %}
             <form action="{% url 'refill' prescription_id=prescription.id %}" method="post">
                 {% csrf_token %}
-                <button type="submit">Refill</button>
+                <button type="submit" {% if prescription.refill_pending %}disabled{% endif %}>Refill</button>
+                {% if prescription.refill_pending %}
+                Your refill request is under review by your pharmacy team. You will be notified once it has been processed.
+                {% endif %}
             </form>
         {% endif %}
     {% endfor %}
