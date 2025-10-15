@@ -24,17 +24,11 @@ class PrescriptionForm(forms.ModelForm):
 
         class Meta:
             model = Prescription
-            exclude = ['prescribed_by', 'refills_left']
-            widgets = {
-              'patient': forms.HiddenInput(attrs={'class': 'hidden-patient'}),
-              'medicine': forms.HiddenInput(attrs={'class': 'hidden-medicine'}),
-            }
+            exclude = ['prescribed_by', 'refills_left', 'patient', 'medicine']
+        
         
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-        
-            self.fields['patient'].queryset = PatientProfile.objects.all()
-            self.fields['medicine'].queryset = Drug.objects.all()
             
             for field in self.fields.values():
                 field.error_messages = {'required': ''}
