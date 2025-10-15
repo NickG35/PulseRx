@@ -9,6 +9,7 @@ from patients.models import PatientProfile
 from django.http import JsonResponse
 from django.db.models import Q, Count
 from django.contrib import messages
+from django import forms
 
 # Create your views here.
 def pharmacy_home(request):
@@ -25,6 +26,7 @@ def pharmacist_home(request):
 
 def create_prescriptions(request):
     form = PrescriptionForm(request.POST or None)
+    
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = None
     if request.user.role == 'pharmacy admin':
@@ -35,58 +37,70 @@ def create_prescriptions(request):
 
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
 
-    if form.is_valid():
-        prescription = form.save(commit=False)
-        prescription.prescribed_by = pharmacist
-        medicine = prescription.medicine
+    if request.method == "POST":
+        print(request.POST)
+        if form.is_valid():
+            prescription = form.save(commit=False)
+            patient_id = request.POST.get('patient')
+            medicine_id = request.POST.get('medicine')
+            patient_profile = PatientProfile.objects.get(id=patient_id)
+            medicine = Drug.objects.get(id=medicine_id)
 
-        # Check stock first
-        if prescription.quantity > medicine.stock:
-            form.add_error('quantity', 'Not enough stock available.')
-            return render(request, 'create_prescriptions.html', {'form': form})
+            prescription.patient = patient_profile
+            prescription.medicine = medicine
+            prescription.prescribed_by = pharmacist
 
-        # Reduce stock and save
-        medicine.stock -= prescription.quantity
-        medicine.save()
-        prescription.save()
+            # Check stock first
+            if prescription.quantity > medicine.stock:
+                form.add_error('quantity', 'Not enough stock available.')
+                return render(request, 'create_prescriptions.html', {'form': form})
 
-        system_user = CustomAccount.objects.get(role='system')
-        users = [system_user, pharmacy.user] + list(pharmacists) #list of users
+            # Reduce stock and save
+            medicine.stock -= prescription.quantity
+            medicine.save()
+            prescription.save()
 
-        thread = (Thread.objects
-                .filter(participant__in=users)
-                .annotate(num_participants=Count('participant'))
-                .filter(num_participants=len(users))
-                .first())
-            
-        if not thread:
-            thread = Thread.objects.create()
-            thread.participant.add(*users)
+            system_user = CustomAccount.objects.get(role='system')
+            users = [system_user, pharmacy.user] + list(pharmacists) #list of users
 
-        # Create notifications
-        if 1 <= medicine.stock <= 10:
-            msg = Message.objects.create(
-                sender=system_user,
-                thread=thread,
-                content=f"{medicine.name} ({medicine.brand}) is running low.",
-                link = reverse('drug_detail', args=[medicine.id])
-            )
-            for u in users:
-                Notifications.objects.create(user=u, message=msg)
+            thread = (Thread.objects
+                    .filter(participant__in=users)
+                    .annotate(num_participants=Count('participant'))
+                    .filter(num_participants=len(users))
+                    .first())
+                
+            if not thread:
+                thread = Thread.objects.create()
+                thread.participant.add(*users)
 
-        if medicine.stock == 0:
-            msg = Message.objects.create(
-                sender=system_user,
-                thread=thread,
-                content=f"{medicine.name} ({medicine.brand}) is out of stock.",
-                link = reverse('drug_detail', args=[medicine.id])
-            )
-            for u in users:
-                Notifications.objects.create(user=u, message=msg)
+            # Create notifications
+            if 1 <= medicine.stock <= 10:
+                msg = Message.objects.create(
+                    sender=system_user,
+                    thread=thread,
+                    content=f"{medicine.name} ({medicine.brand}) is running low.",
+                    link = reverse('drug_detail', args=[medicine.id])
+                )
+                for u in users:
+                    Notifications.objects.create(user=u, message=msg)
 
-        return redirect('create_prescriptions') 
+            if medicine.stock == 0:
+                msg = Message.objects.create(
+                    sender=system_user,
+                    thread=thread,
+                    content=f"{medicine.name} ({medicine.brand}) is out of stock.",
+                    link = reverse('drug_detail', args=[medicine.id])
+                )
+                for u in users:
+                    Notifications.objects.create(user=u, message=msg)
 
-    return render(request, 'create_prescriptions.html', {'form': form})
+            messages.success(request, "Prescription created successfully.")
+            return redirect('create_prescriptions') 
+        else:
+            messages.error(request, "There was a problem with your submission. Please check the form.")
+            print(form.errors)
+
+    return render(request, 'create_prescriptions.html', {'form': form, 'refill_mode': False})
 
 def patient_search(request):
     if request.user.role in ['pharmacist']:
@@ -238,13 +252,8 @@ def contact_admin(request, drug_id):
 def refill_form(request, prescription_id):
     old_prescription = Prescription.objects.get(id=prescription_id)
     patient = old_prescription.patient
-
-    if request.user.role == 'pharmacist':
-        pharmacist = PharmacistProfile.objects.get(user=request.user)
-        pharmacy = pharmacist.pharmacy
-    
-    if request.user.role == 'pharmacy admin':
-        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = pharmacist.pharmacy
         
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
 
@@ -253,9 +262,11 @@ def refill_form(request, prescription_id):
     if request.method == 'POST':
 
         form = PrescriptionForm(request.POST)
-        if form.is_valid:
+        if form.is_valid():
             new_prescription = form.save(commit=False)
             new_prescription.prescribed_by = pharmacist
+            new_prescription.patient = old_prescription.patient
+            new_prescription.medicine = old_prescription.medicine
             medicine = new_prescription.medicine
 
             # Check stock first
@@ -269,7 +280,7 @@ def refill_form(request, prescription_id):
             new_prescription.save()
 
             
-            users = [system_user, patient.user, pharmacy.user] + list(pharmacists) #list of users
+            users = [system_user, patient.user] + list(pharmacists) #list of users
             notified_users = [patient.user] + list(pharmacists)
 
             thread = (Thread.objects
