@@ -267,6 +267,7 @@ def refill_form(request, prescription_id):
             new_prescription.prescribed_by = pharmacist
             new_prescription.patient = old_prescription.patient
             new_prescription.medicine = old_prescription.medicine
+            new_prescription.refill_pending = False
             medicine = new_prescription.medicine
 
             # Check stock first
