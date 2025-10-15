@@ -45,6 +45,7 @@ class Prescription (models.Model):
     prescribed_on = models.DateTimeField(auto_now_add=True)
     expiration_date = models.DateField()
     refills_left = models.IntegerField(default=3)
+    refill_pending = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.medicine.name} ({self.medicine.brand})"
