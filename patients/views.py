@@ -305,6 +305,7 @@ def refill(request, prescription_id):
         prescription = Prescription.objects.get(id=prescription_id)
 
         prescription.refills_left -= 1
+        prescription.refill_pending = True
         prescription.save()
         
         patient = PatientProfile.objects.get(user=request.user)
