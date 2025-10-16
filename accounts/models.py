@@ -35,6 +35,8 @@ class Message(models.Model):
     read = models.BooleanField(default=False)
     read_time = models.DateTimeField(null=True, blank=True)
     link = models.CharField(max_length=300, blank=True, null=True)
+    prescription = models.ForeignKey('pharmacy.Prescription', null=True, blank=True, on_delete=models.CASCADE)
+    refill_fulfilled = models.BooleanField(null=True, blank=True, default=None)
     
     class Meta:
         db_table = 'pharmacy_message' 
