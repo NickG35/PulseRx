@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.db.models import Q, Count
 from django.contrib import messages
 from django import forms
+from django.utils import timezone
 
 # Create your views here.
 def pharmacy_home(request):
@@ -74,7 +75,7 @@ def create_prescriptions(request):
                 thread.participant.add(*users)
 
             # Create notifications
-            if 1 <= medicine.stock <= 10:
+            if 1 <= medicine.stock <= 30:
                 msg = Message.objects.create(
                     sender=system_user,
                     thread=thread,
@@ -188,6 +189,8 @@ def resupply(request, drug_id):
     participants = [system_user, request.user] +  list(pharmacists)
 
     medicine = Drug.objects.get(id=drug_id)
+    medicine.resupply_pending = False
+    medicine.save()
 
         
     thread = (Thread.objects
@@ -207,6 +210,17 @@ def resupply(request, drug_id):
         link = reverse('drug_detail', args=[drug_id])
     )
 
+    last_request_msg = (
+                Message.objects
+                .filter(drug=medicine, resupply_fulfilled=False)
+                .order_by('-timestamp')
+                .first()
+            )
+
+    if last_request_msg:
+        last_request_msg.resupply_fulfilled = True
+        last_request_msg.save()
+
     for u in participants:
         Notifications.objects.create(user=u, message=msg)
 
@@ -223,6 +237,8 @@ def contact_admin(request, drug_id):
     participants = [system_user, pharmacy.user] +  list(pharmacists)
 
     medicine = Drug.objects.get(id=drug_id)
+    medicine.resupply_pending = True
+    medicine.save()
 
         
     thread = (Thread.objects
@@ -240,7 +256,9 @@ def contact_admin(request, drug_id):
             sender=system_user,
             thread=thread,
             content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. ",
-            link = reverse('drug_detail', args=[drug_id])
+            link = reverse('drug_detail', args=[drug_id]),
+            drug = medicine,
+            resupply_fulfilled = False
         )
 
     for u in participants:
@@ -265,6 +283,7 @@ def refill_form(request, prescription_id):
             prescription = form.save(commit=False)
             prescription.prescribed_by = pharmacist
             prescription.refill_pending = False
+            prescription.refilled_on = timezone.now()
 
             medicine = prescription.medicine
 
@@ -297,8 +316,6 @@ def refill_form(request, prescription_id):
                 thread=thread,
                 content= f"A refill request has been fulfilled and is ready for pick up.",
                 link=reverse('patient_profile', args=[patient.id]),
-                prescription=old_prescription,
-                refill_fulfilled=True
             )
 
             last_request_msg = (
