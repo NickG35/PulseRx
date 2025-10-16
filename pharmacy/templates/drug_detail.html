@@ -12,8 +12,8 @@
     <p>{{drug.route}}</p>
     <p>{{drug.stock}}</p>
 
-    {% if drug.stock <= 10 %}
-        {% if drug.stock|add:0 <= 10 and drug.stock|add:0 >= 1 %}
+    {% if drug.stock <= 30 %}
+        {% if drug.stock|add:0 <= 30 and drug.stock|add:0 >= 1 %}
           <p>Low Stock</p>
         {% elif drug.stock|add:0 < 1 %}
             <p>No Stock</p>
@@ -27,7 +27,13 @@
           {% else %}
             <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" >
               {% csrf_token %}
-              <button type="submit">Contact Admin</button>
+              <button type="submit" {% if drug.resupply_pending %}disabled{% endif %}>
+                Contact Admin
+              </button>
+              
+              {% if drug.resupply_pending %}
+                <p>Your resupply request is under review by your pharmacy admin. You will be notified once it has been processed.</p>
+              {% endif %}
             </form>
           {% endif %}
     {% endif %}
