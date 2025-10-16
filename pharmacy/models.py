@@ -33,6 +33,7 @@ class Drug(models.Model):
     dosage = models.CharField(max_length=100)
     route = models.CharField(max_length=100, blank=True)
     stock = models.IntegerField(default=100)
+    resupply_pending = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.brand}"
@@ -43,6 +44,7 @@ class Prescription (models.Model):
     quantity = models.IntegerField(default=0)
     prescribed_by = models.ForeignKey(PharmacistProfile, related_name='pharmacist', on_delete=models.SET_NULL, null=True)
     prescribed_on = models.DateTimeField(auto_now_add=True)
+    refilled_on = models.DateTimeField(null=True, blank=True)
     expiration_date = models.DateField()
     refills_left = models.IntegerField(default=3)
     refill_pending = models.BooleanField(default=False)
