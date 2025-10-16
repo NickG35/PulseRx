@@ -329,7 +329,9 @@ def refill(request, prescription_id):
             sender=system_user,
             thread=thread,
             content= f"A refill request from {patient.first_name} {patient.last_name} has been sent. ",
-            link=reverse('refill_form', args=[prescription.id])
+            link=reverse('refill_form', args=[prescription.id]),
+            prescription=prescription,
+            refill_fulfilled=False
         )
 
         for u in notified_users:
