@@ -15,6 +15,9 @@
         <p>QTY: {{prescription.quantity}}</p>
         <p>Prescribed by: {{prescription.prescribed_by}}</p>
         <p>Created on: {{prescription.prescribed_on}}</p>
+        {% if prescription.refilled_on %}
+            <p>Refilled on: {{prescription.refilled_on}}</p>
+        {% endif %}
         <p>Exp date: {{prescription.expiration_date}}</p>
         <p>You have {{ prescription.refills_left }} refill(s) left</p>
         {% if prescription.refills_left > 0 %}
@@ -22,7 +25,7 @@
                 {% csrf_token %}
                 <button type="submit" {% if prescription.refill_pending %}disabled{% endif %}>Refill</button>
                 {% if prescription.refill_pending %}
-                Your refill request is under review by your pharmacy team. You will be notified once it has been processed.
+                    Your refill request is under review by your pharmacy team. You will be notified once it has been processed.
                 {% endif %}
             </form>
         {% endif %}
