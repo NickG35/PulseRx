@@ -124,10 +124,10 @@
                 {% endif %}
                 <p class="message-content">{{ message.content }}</p>
                 {% if message.link %}
-                    {% if not message.refill_fullfilled %} 
-                        <a href="{{message.link}}">View here</a>
+                    {% if not message.refill_fulfilled and not message.resupply_refilled %}
+                            <a href="{{message.link}}">View here</a>
                     {% else %}
-                        <p>Refill request already filled.</p>
+                        <p>Request already fulfilled.</p>
                     {% endif %}
                 {% endif %}
                 <small class="message-time">{{ message.timestamp }}</small>
