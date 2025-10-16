@@ -24,7 +24,7 @@ class PrescriptionForm(forms.ModelForm):
 
         class Meta:
             model = Prescription
-            exclude = ['prescribed_by', 'refills_left', 'refill_pending', 'patient', 'medicine']
+            exclude = ['prescribed_by', 'refills_left', 'refilled_on', 'refill_pending', 'patient', 'medicine']
         
         
         def __init__(self, *args, **kwargs):
