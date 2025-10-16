@@ -256,29 +256,27 @@ def refill_form(request, prescription_id):
     pharmacy = pharmacist.pharmacy
         
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
-
     system_user = CustomAccount.objects.get(role='system')
 
     if request.method == 'POST':
 
-        form = PrescriptionForm(request.POST)
+        form = PrescriptionForm(request.POST, instance=old_prescription)
         if form.is_valid():
-            new_prescription = form.save(commit=False)
-            new_prescription.prescribed_by = pharmacist
-            new_prescription.patient = old_prescription.patient
-            new_prescription.medicine = old_prescription.medicine
-            new_prescription.refill_pending = False
-            medicine = new_prescription.medicine
+            prescription = form.save(commit=False)
+            prescription.prescribed_by = pharmacist
+            prescription.refill_pending = False
+
+            medicine = prescription.medicine
 
             # Check stock first
-            if new_prescription.quantity > medicine.stock:
+            if prescription.quantity > medicine.stock:
                 form.add_error('quantity', 'Not enough stock available.')
                 return render(request, 'create_prescriptions.html', {'form': form})
             
             # Reduce stock and save
-            medicine.stock -= new_prescription.quantity
+            medicine.stock -= prescription.quantity
             medicine.save()
-            new_prescription.save()
+            prescription.save()
 
             
             users = [system_user, patient.user] + list(pharmacists) #list of users
@@ -299,7 +297,20 @@ def refill_form(request, prescription_id):
                 thread=thread,
                 content= f"A refill request has been fulfilled and is ready for pick up.",
                 link=reverse('patient_profile', args=[patient.id]),
+                prescription=old_prescription,
+                refill_fulfilled=True
             )
+
+            last_request_msg = (
+                Message.objects
+                .filter(prescription=old_prescription, refill_fulfilled=False)
+                .order_by('-timestamp')
+                .first()
+            )
+
+            if last_request_msg:
+                last_request_msg.refill_fulfilled = True
+                last_request_msg.save()
 
             for u in notified_users:
                 Notifications.objects.create(user=u, message=msg)
