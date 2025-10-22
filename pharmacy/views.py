@@ -331,9 +331,8 @@ def refill_form(request, prescription_id):
 
             for u in notified_users:
                 Notifications.objects.create(user=u, message=msg)
+            return redirect(f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}")
 
-            messages.success(request, "Refill completed successfully.")
-            return redirect('inventory')
     else:
         form = PrescriptionForm(instance=old_prescription)
         form.initial['date'] = ''
