@@ -19,7 +19,7 @@ def patient_home(request):
 
 def prescriptions(request):
     patient = PatientProfile.objects.get(user=request.user)
-    all_prescriptions = Prescription.objects.filter(patient=patient).all()
+    all_prescriptions = patient.prescription.with_latest_ordering()
     return render(request, 'prescriptions.html', {
         'prescriptions': all_prescriptions,
     })
