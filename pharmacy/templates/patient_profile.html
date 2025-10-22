@@ -9,12 +9,17 @@
     <strong>Phone:</strong> {{ patient.phone_number }}<br>
 
 <h2>Prescription History</h2>
-{% for prescription in patient.prescription.all %}
-    <p>Name: {{prescription.medicine.name}}({{prescription.medicine.brand}})</p>
-    <p>QTY: {{prescription.quantity}}</p>
-    <p>Prescribed by: Dr. {{prescription.prescribed_by}}</p>
-    <p>Prescribed on {{prescription.prescribed_on}}</p>
-    <p>Expires: {{prescription.expiration_date}}</p>
+{% for prescription in patient.prescription.with_latest_ordering %}
+    <div id="prescription-{{prescription.id}}" class="prescription-item">
+        <p>Name: {{prescription.medicine.name}}({{prescription.medicine.brand}})</p>
+        <p>QTY: {{prescription.quantity}}</p>
+        <p>Prescribed by: Dr. {{prescription.prescribed_by}}</p>
+        <p>Prescribed on {{prescription.prescribed_on}}</p>
+        {% if prescription.refilled_on %}
+                <p>Refilled on: {{prescription.refilled_on}}</p>
+        {% endif %}
+        <p>Expires: {{prescription.expiration_date}}</p>
+    </div>
 {% empty %}
     <p>No prescriptions yet</p>
 {% endfor %}
