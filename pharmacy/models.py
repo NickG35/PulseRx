@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import CustomAccount
 import uuid
+from django.db.models.functions import Coalesce
 
 def generate_join_code():
     return uuid.uuid4().hex[:6].upper()
@@ -38,6 +39,12 @@ class Drug(models.Model):
     def __str__(self):
         return f"{self.brand}"
 
+class PrescriptionQuerySet(models.QuerySet):
+    def with_latest_ordering(self):
+        return self.annotate(
+            latest_activity=Coalesce('refilled_on', 'prescribed_on')
+        ).order_by('-latest_activity')
+
 class Prescription (models.Model):
     patient = models.ForeignKey('patients.PatientProfile', related_name='prescription', on_delete=models.SET_NULL, null=True)
     medicine = models.ForeignKey(Drug, related_name='drug', on_delete=models.PROTECT)
@@ -48,6 +55,8 @@ class Prescription (models.Model):
     expiration_date = models.DateField()
     refills_left = models.IntegerField(default=3)
     refill_pending = models.BooleanField(default=False)
+
+    objects = PrescriptionQuerySet.as_manager()
 
     def __str__(self):
         return f"{self.medicine.name} ({self.medicine.brand})"
