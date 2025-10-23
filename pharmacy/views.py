@@ -315,7 +315,7 @@ def refill_form(request, prescription_id):
                 sender=system_user,
                 thread=thread,
                 content= f"A refill request has been fulfilled and is ready for pick up.",
-                link=reverse('patient_profile', args=[patient.id]),
+                link=f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}"
             )
 
             last_request_msg = (
