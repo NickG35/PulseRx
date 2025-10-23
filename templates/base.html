@@ -86,7 +86,25 @@
         </div>
 </nav>
 <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
     document.addEventListener('DOMContentLoaded', () => {
+
         const formatters = {
             patient: p => `${p.first_name} ${p.last_name} ID: ${p.id}`,
             medicine: m => `${m.name}(${m.brand}) ID: ${m.id}`
@@ -225,16 +243,58 @@
 
         clickedItem.classList.add('read');
     });
-    
-</script>
-{% if request.user.is_authenticated and request.user.role == 'patient' %}
-<script>
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash;
+        if (hash) {
+            const target = document.querySelector(hash);
+            if (target) {
+                target.classList.add('highlight');
+
+                setTimeout(() => {
+                    target.classList.remove('highlight');
+                }, 1500);
+            }
+        }
+    });
+
     const empty_message = document.getElementById('emptyMessage');
 
     function updateEmptyMessage(){
         const notiDrop = document.querySelectorAll('#noti-dropdown');
         empty_message.style.display = notiDrop.length > 0 ? 'none': 'block';
     }
+
+    document.querySelector('.noti-content').addEventListener('click', function(e){
+        const btn = e.target.closest('.delete-noti');
+        if (!btn) return;
+
+        e.stopPropagation();
+        const notification_id = btn.dataset.id;
+        const noti_div = document.getElementById(`noti_div_${notification_id}`);
+
+        fetch('/accounts/delete_notification', {
+            method: 'POST',
+            headers: {
+                'X-CSRFTOKEN': csrftoken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({notification_id: notification_id})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log(`Deleted notification ${notification_id} successfully`);
+                noti_div?.remove();
+                updateEmptyMessage();
+            }
+        })
+        .catch(error => console.error("Notification error:", error));
+    });
+    
+</script>
+{% if request.user.is_authenticated and request.user.role == 'patient' %}
+<script>
     document.addEventListener('DOMContentLoaded', () => {
         const noti_content = document.querySelector('.noti-content');
 
@@ -299,66 +359,7 @@
         socket.onerror = function(error) {
             console.error('WebSocket error:', error);
         };
-
-        
     });
-    window.addEventListener('DOMContentLoaded', () => {
-        const hash = window.location.hash;
-        if (hash) {
-            const target = document.querySelector(hash);
-            if (target) {
-                target.classList.add('highlight');
-
-                setTimeout(() => {
-                    target.classList.remove('highlight');
-                }, 1500);
-            }
-        }
-    });
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
-
-    document.querySelector('.noti-content').addEventListener('click', function(e){
-        const btn = e.target.closest('.delete-noti');
-        if (!btn) return;
-
-        e.stopPropagation();
-        const notification_id = btn.dataset.id;
-        const noti_div = document.getElementById(`noti_div_${notification_id}`);
-
-        fetch('/accounts/delete_notification', {
-            method: 'POST',
-            headers: {
-                'X-CSRFTOKEN': csrftoken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({notification_id: notification_id})
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log(`Deleted notification ${notification_id} successfully`);
-                noti_div?.remove();
-                updateEmptyMessage();
-            }
-        })
-        .catch(error => console.error("Notification error:", error));
-    });
-    
        
 </script>
 {% endif %}
