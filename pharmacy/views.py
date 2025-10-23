@@ -227,7 +227,8 @@ def resupply(request, drug_id):
         medicine.stock = 100
         medicine.save()
 
-    return redirect('inventory')
+    messages.success(request, "Medication inventory successfully resupplied.")
+    return redirect(reverse('drug_detail', args=[medicine.id]))
 
 def contact_admin(request, drug_id):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
@@ -264,8 +265,7 @@ def contact_admin(request, drug_id):
     for u in participants:
         Notifications.objects.create(user=u, message=msg)
 
-
-    return redirect('inventory')
+    return redirect(reverse('drug_detail', args=[medicine.id]))
 
 def refill_form(request, prescription_id):
     old_prescription = Prescription.objects.get(id=prescription_id)
