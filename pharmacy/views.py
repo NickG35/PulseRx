@@ -29,36 +29,15 @@ def create_prescriptions(request):
     form = PrescriptionForm(request.POST or None)
     
     pharmacist = PharmacistProfile.objects.get(user=request.user)
-    pharmacy = None
-    if request.user.role == 'pharmacy admin':
-        pharmacy = PharmacyProfile.objects.get(user=request.user)
-        pharmacy = pharmacy
-    else:
-        pharmacy = pharmacist.pharmacy
-
+    pharmacy = PharmacyProfile.objects.get(user=request.user) if request.user.role == 'pharmacy admin' else pharmacist.pharmacy
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
 
     if request.method == "POST":
-        print(request.POST)
         if form.is_valid():
             prescription = form.save(commit=False)
-            patient_id = request.POST.get('patient')
-            medicine_id = request.POST.get('medicine')
-            patient_profile = PatientProfile.objects.get(id=patient_id)
-            medicine = Drug.objects.get(id=medicine_id)
-
-            prescription.patient = patient_profile
-            prescription.medicine = medicine
             prescription.prescribed_by = pharmacist
-
-            # Check stock first
-            if prescription.quantity > medicine.stock:
-                form.add_error('quantity', 'Not enough stock available.')
-                return render(request, 'create_prescriptions.html', {'form': form})
-
-            # Reduce stock and save
-            medicine.stock -= prescription.quantity
-            medicine.save()
+            prescription.patient = form.cleaned_data['patient']
+            prescription.medicine = form.cleaned_data['medicine']
             prescription.save()
 
             system_user = CustomAccount.objects.get(role='system')
@@ -74,6 +53,7 @@ def create_prescriptions(request):
                 thread = Thread.objects.create()
                 thread.participant.add(*users)
 
+            medicine = prescription.medicine
             # Create notifications
             if 1 <= medicine.stock <= 30:
                 msg = Message.objects.create(
@@ -101,7 +81,14 @@ def create_prescriptions(request):
             messages.error(request, "There was a problem with your submission. Please check the form.")
             print(form.errors)
 
-    return render(request, 'create_prescriptions.html', {'form': form, 'refill_mode': False})
+    return render(request, 'create_prescriptions.html', {
+        'form': form, 
+        'refill_mode': False,
+        'previous_patient': request.POST.get('patient'),
+        'previous_medicine': request.POST.get('medicine'),
+        'previous_patient_name': request.POST.get('patient_name', ''),
+        'previous_medicine_name': request.POST.get('medicine_name', '')
+    })
 
 def patient_search(request):
     if request.user.role in ['pharmacist']:
