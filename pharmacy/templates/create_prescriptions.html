@@ -14,23 +14,39 @@
     <form method="post">
         {% csrf_token %}
         {% if not is_refill %}
-            <input placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no">
+            {% if form.patient.errors %}
+                {% for error in form.patient.errors %}
+                    <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+            <input name="patient_name" placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
             <div id="autocompleteResults-patient"></div>
 
-            <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no">
+            {% if form.medicine.errors %}
+                {% for error in form.medicine.errors %}
+                    <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+            <input name="medicine_name" placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
             <div id="autocompleteResults-medicine"></div>
 
-            <input type="hidden" name="patient" class="hidden-patient">
-            <input type="hidden" name="medicine" class="hidden-medicine">
+            <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
+            <input type="hidden" name="medicine" class="hidden-medicine" value="{{ previous_medicine|default:'' }}">
         {% else %}
             <input  name="patient" class="hidden-patient" value="{{old_prescription.patient}}" readonly>
             <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
         {% endif %}
 
-        
-        {{form.as_p}}
-        {% for error in field.errors %}
-            <div class="error">{{ error }}</div>
+        {% for error in form.quantity.errors %}
+            <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
+        {% endfor %}
+        <label for="{{ form.quantity.id_for_label }}">Quantity:</label>
+        {{ form.quantity }}
+
+        <label for="{{ form.expiration_date.id_for_label }}">Expiration Date:</label>
+        {{ form.expiration_date }}
+        {% for error in form.expiration_date.errors %}
+            <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
         {% endfor %}
         <button type="submit">Submit</button>
     </form>
