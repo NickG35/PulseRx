@@ -14,6 +14,49 @@ class PharmacistProfileForm(forms.ModelForm):
         exclude = ['user','pharmacy']
 
 class PrescriptionForm(forms.ModelForm):
+        patient = forms.CharField(required=False, widget=forms.HiddenInput())
+        medicine = forms.CharField(required=False, widget=forms.HiddenInput())
+        class Meta:
+             model = Prescription
+             fields = ['quantity', 'expiration_date', 'patient', 'medicine']
+        
+        def clean(self):
+            cleaned_data = super().clean()
+            patient_id = self.data.get('patient')
+            medicine_id = self.data.get('medicine')
+
+             # Validate Patient
+            if not patient_id:
+                self.add_error('patient', 'Please enter a patient.')
+            else:
+                try:
+                    patient = PatientProfile.objects.get(id=patient_id)
+                    cleaned_data['patient'] = patient
+                except PatientProfile.DoesNotExist:
+                    self.add_error('patient', 'Invalid patient selected.')
+            
+            if not medicine_id:
+              self.add_error('medicine', 'Please enter a medication.')
+            else:
+                try:
+                    medicine = Drug.objects.get(id=medicine_id)
+                    cleaned_data['medicine'] = medicine
+                except Drug.DoesNotExist:
+                    self.add_error('medicine', 'Invalid medication selected.')
+            
+            quantity = cleaned_data.get('quantity')
+            medicine = cleaned_data.get('medicine')
+
+            if quantity is not None:
+                if quantity < 1:
+                    self.add_error('quantity', 'Please enter a valid quantity.')
+                elif medicine and quantity > medicine.stock:
+                    self.add_error('quantity', 'Not enough stock available.')
+
+            return cleaned_data
+
+
+
         expiration_date = forms.DateField(
             input_formats=['%m-%d-%Y'],
             widget=forms.DateInput(attrs={
@@ -21,6 +64,10 @@ class PrescriptionForm(forms.ModelForm):
                  'placeholder': 'MM-DD-YYYY'
             })
         )
+
+        patient = forms.CharField(required=False, widget=forms.HiddenInput())
+        medicine = forms.CharField(required=False, widget=forms.HiddenInput())
+
 
         class Meta:
             model = Prescription
