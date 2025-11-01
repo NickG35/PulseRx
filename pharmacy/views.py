@@ -11,6 +11,8 @@ from django.db.models import Q, Count
 from django.contrib import messages
 from django import forms
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 # Create your views here.
 def pharmacy_home(request):
@@ -211,8 +213,26 @@ def resupply(request, drug_id):
     for u in participants:
         Notifications.objects.create(user=u, message=msg)
 
-        medicine.stock = 100
-        medicine.save()
+    channel_layer = get_channel_layer()
+    notification_payload = {
+        "type": "send_notification",
+        "notification": {
+            "id": msg.id,
+            "type": "message",
+            "sender": system_user.first_name,
+            "thread_id": thread.id,
+            "content": msg.content,
+            "timestamp": msg.timestamp.strftime("%b %d, %I: %M %p"),
+        }
+    }
+
+    for u in participants:
+        async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
+    
+    async_to_sync(channel_layer.group_send)(f"pharmacy_{pharmacy.id}", notification_payload)
+
+    medicine.stock = 100
+    medicine.save()
 
     messages.success(request, "Medication inventory successfully resupplied.")
     return redirect(reverse('drug_detail', args=[medicine.id]))
@@ -251,6 +271,24 @@ def contact_admin(request, drug_id):
 
     for u in participants:
         Notifications.objects.create(user=u, message=msg)
+    
+    channel_layer = get_channel_layer()
+    notification_payload = {
+        "type": "send_notification",
+        "notification": {
+            "id": msg.id,
+            "type": "message",
+            "sender": system_user.first_name,
+            "thread_id": thread.id,
+            "content": msg.content,
+            "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+        }
+    }
+
+    for u in participants:
+        async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
+    
+    async_to_sync(channel_layer.group_send)(f"pharmacy_{pharmacy.id}", notification_payload)
 
     return redirect(reverse('drug_detail', args=[medicine.id]))
 
@@ -318,6 +356,25 @@ def refill_form(request, prescription_id):
 
             for u in notified_users:
                 Notifications.objects.create(user=u, message=msg)
+            
+            channel_layer = get_channel_layer()
+            notification_payload = {
+                "type": "send_notification",
+                "notification": {
+                    "id": msg.id,
+                    "type": "message",
+                    "sender": system_user.first_name,
+                    "thread_id": thread.id,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                }
+            }
+
+            for u in notified_users:
+                async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
+            
+            async_to_sync(channel_layer.group_send)(f"pharmacy_{pharmacy.id}", notification_payload)
+
             return redirect(f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}")
 
     else:
