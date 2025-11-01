@@ -344,7 +344,7 @@ def refill(request, prescription_id):
             "type": "send_notification",
             "notification": {
                 "id": msg.id,
-                "type": "message",
+                "type": "refill_request",
                 "sender": system_user.first_name,
                 "thread_id": thread.id,
                 "content": msg.content,
