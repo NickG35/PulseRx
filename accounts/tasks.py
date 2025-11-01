@@ -4,6 +4,7 @@ from channels.layers import get_channel_layer
 from accounts.models import Notifications
 from patients.models import MedicationReminder, ReminderTime
 from django.utils import timezone
+from asgiref.sync import async_to_sync
 
 @shared_task
 def send_reminder(time_id):
@@ -30,6 +31,7 @@ def send_reminder(time_id):
                 "type": "send_notification",
                 "notification": {
                     "id": notif.id,
+                    "type": "reminder",
                     "reminder_id": reminder.id,
                     "reminder": reminder.prescription.medicine.name,
                     "is_read": notif.is_read,
