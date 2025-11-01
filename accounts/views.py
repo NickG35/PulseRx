@@ -243,18 +243,8 @@ def thread_view(request, thread_id):
     else:
         thread.other_participants = thread.participant.exclude(id=request.user.id)
         other_user = thread.other_participants.first()
-
-    if request.method == 'POST':
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            message = form.save(commit=False)
-            message.thread = thread
-            message.sender = request.user
-            message.recipient = other_user
-            message.save()
-            return redirect ('threads', thread_id=thread.id)
-    else:
-        form = MessageForm()
+        
+    form = MessageForm()
 
     return render(request, 'threads.html', {
         'thread': thread,
