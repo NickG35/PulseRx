@@ -218,7 +218,7 @@ def resupply(request, drug_id):
         "type": "send_notification",
         "notification": {
             "id": msg.id,
-            "type": "message",
+            "type": "resupply",
             "sender": system_user.first_name,
             "thread_id": thread.id,
             "content": msg.content,
@@ -277,7 +277,7 @@ def contact_admin(request, drug_id):
         "type": "send_notification",
         "notification": {
             "id": msg.id,
-            "type": "message",
+            "type": "resupply_request",
             "sender": system_user.first_name,
             "thread_id": thread.id,
             "content": msg.content,
@@ -362,7 +362,7 @@ def refill_form(request, prescription_id):
                 "type": "send_notification",
                 "notification": {
                     "id": msg.id,
-                    "type": "message",
+                    "type": "refill",
                     "sender": system_user.first_name,
                     "thread_id": thread.id,
                     "content": msg.content,
