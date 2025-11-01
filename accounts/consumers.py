@@ -20,8 +20,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
+
+        has_pharmacist_profile = await sync_to_async(
+            lambda: hasattr(self.user, "pharmacistprofile")
+        )()
+
+        if has_pharmacist_profile:
+            pharmacy_id = await sync_to_async(
+                lambda: self.user.pharmacistprofile.pharmacy.id
+            )()
+            await self.channel_layer.group_add(
+                f"pharmacy_{pharmacy_id}",
+                self.channel_name
+            )
+            
         await self.accept()
-        print(self.scope['user'])
 
     
     async def disconnect(self, close_code):
@@ -41,10 +54,13 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
 class MessageConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        self.user = self.scope["user"] 
         self.thread_id = self.scope['url_route']['kwargs']['thread_id']
         self.room_group_name = f'thread_{self.thread_id}'
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+
+        print(f"Connected user: {self.user.id}, group: user_{self.user.id}")
     
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
@@ -71,21 +87,30 @@ class MessageConsumer(AsyncWebsocketConsumer):
             }
         )
 
+        print("Sender:", user)
+        print("Recipient:", recipient)
+        print("Thread:", thread.id)
+
         channel_layer = get_channel_layer()
-        await channel_layer.group_send(
-            f"user_{recipient.id}",
-            {
-                "type": "send_notification",
-                "notification": {
-                    "id": message.id,
-                    "type": "message",
-                    "sender": f"{user.first_name} {user.last_name}",
-                    "thread_id": thread.id,
-                    "content": content,
-                    "timestamp": timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
-                }
+       
+        notification_payload = {
+            "type": "send_notification",
+            "notification": {
+                "id": message.id,
+                "type": "message",
+                "sender": f"{user.first_name} {user.last_name}",
+                "thread_id": thread.id,
+                "content": content,
+                "timestamp": timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
             }
-        )
+        }
+
+        await channel_layer.group_send(f"user_{recipient.id}", notification_payload)
+
+        pharmacy_profile = await sync_to_async(lambda: getattr(recipient, "pharmacyprofile", None))()
+        if pharmacy_profile:
+            pharmacy_id = pharmacy_profile.id
+            await channel_layer.group_send(f"pharmacy_{pharmacy_id}", notification_payload)
 
 
 
@@ -111,11 +136,22 @@ class MessageConsumer(AsyncWebsocketConsumer):
             timestamp=timezone.now(),
         )
     
-    async def create_notification(self, recipient, message):
-        await Notifications.objects.acreate(
+    @sync_to_async
+    def create_notification(self, recipient, message):
+        Notifications.objects.acreate(
             user=recipient, 
             message=message,
             is_read=False
         )
+
+        if hasattr(recipient, "pharmacyprofile"):
+            pharmacy = recipient.pharmacyprofile
+            pharmacists = pharmacy.pharmacists.select_related("user")
+            for pharmacist in pharmacists:
+                Notifications.objects.create(
+                    user=pharmacist.user,
+                    message=message,
+                    is_read=False
+                )
 
 
