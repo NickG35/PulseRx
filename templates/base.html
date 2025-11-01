@@ -69,7 +69,7 @@
                                 </a>
                                 {% else %}
                                 <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                    <p class="reminder-message">{{noti.message.content}}.</p>
+                                    <p class="reminder-message">{{noti.message.sender.first_name}} {{noti.message.sender.last_name}} has sent you a new message.</p>
                                     <p class="reminder-time"><small>{{noti.time}}</small></p>
                                 </a>
                                 {% endif %}
@@ -284,7 +284,7 @@
     });
     
 </script>
-{% if request.user.is_authenticated and request.user.role == 'patient' %}
+{% if request.user.is_authenticated %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const noti_content = document.querySelector('.noti-content');
@@ -312,32 +312,48 @@
                 const delete_button = document.createElement('button');
                 delete_button.classList.add('delete-noti');
                 delete_button.dataset.id = `${notification.id}`;
-
                 const delete_icon = document.createElement('i');
                 delete_icon.classList.add('bi', 'bi-x');
                 delete_button.appendChild(delete_icon);
+                wrapperDiv.appendChild(delete_button);
 
-                const reminderUrl = "{% url 'reminders' %}";
                 const dropdownItem = document.createElement('a');
                 dropdownItem.classList.add('dropdown-item', 'notiDrop');
                 dropdownItem.id = 'noti-dropdown';
-                dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
                 dropdownItem.dataset.id = `${notification.id}`;
                 dropdownItem.dataset.read = `${notification.is_read}`;
 
-                const reminderMessage = document.createElement('p');
-                reminderMessage.textContent = `Time to take your ${notification.reminder}`;
-                reminderMessage.classList.add('reminder-message');
+                if (notification.type === "reminder" ) {
+                    const reminderUrl = "{% url 'reminders' %}";
+                    dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
 
-                const reminderTime = document.createElement('p');
-                reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
-                reminderTime.classList.add('reminder-time');
+                    const reminderMessage = document.createElement('p');
+                    reminderMessage.textContent = `Time to take your ${notification.reminder}`;
+                    reminderMessage.classList.add('reminder-message');
 
-                dropdownItem.appendChild(reminderMessage);
-                dropdownItem.appendChild(reminderTime);
-                wrapperDiv.appendChild(delete_button);
+                    const reminderTime = document.createElement('p');
+                    reminderTime.innerHTML = `<small>${notification.created_time}</small>`;
+                    reminderTime.classList.add('reminder-time');
+
+                    dropdownItem.appendChild(reminderMessage);
+                    dropdownItem.appendChild(reminderTime);
+                } else if (notification.type === "message") {
+                    const threadUrl = "{% url 'threads' thread_id=0 %}".replace('0', notification.thread_id);
+                    dropdownItem.href = `${threadUrl}#message_${notification.id}`;
+
+                    const messageContent = document.createElement('p');
+                    messageContent.textContent = `${notification.sender} has sent you a new message.`;
+                    messageContent.classList.add('message-message');
+
+                    const messageTime = document.createElement('p');
+                    messageTime.innerHTML = `<small>${notification.timestamp}</small>`;
+                    messageTime.classList.add('message-time');
+
+                    dropdownItem.appendChild(messageContent);
+                    dropdownItem.appendChild(messageTime);
+                }
+                
                 wrapperDiv.appendChild(dropdownItem);
-
                 noti_content.prepend(wrapperDiv);
 
                 updateEmptyMessage();
