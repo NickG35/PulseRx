@@ -13,6 +13,8 @@ from datetime import datetime, date
 from django.contrib import messages
 from django.db.models import Count
 from django.urls import reverse
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -336,6 +338,25 @@ def refill(request, prescription_id):
 
         for u in notified_users:
             Notifications.objects.create(user=u, message=msg)
+            
+        channel_layer = get_channel_layer()
+        notification_payload = {
+            "type": "send_notification",
+            "notification": {
+                "id": msg.id,
+                "type": "message",
+                "sender": system_user.first_name,
+                "thread_id": thread.id,
+                "content": msg.content,
+                "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+            }
+        }
+
+        for u in notified_users:
+            async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
+        
+        async_to_sync(channel_layer.group_send)(f"pharmacy_{pharmacy.id}", notification_payload)
+
             
         messages.success(request, "Refill request submitted.")
         
