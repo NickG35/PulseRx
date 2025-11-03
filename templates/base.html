@@ -219,8 +219,7 @@
         });
     });
 
-    const dropdown = document.querySelector('.dropdown-menu');
-    dropdown.addEventListener('click', (event) => {
+    document.addEventListener('click', (event) => {
         const clickedItem = event.target.closest('.notiDrop');
 
         if(!clickedItem) return;
