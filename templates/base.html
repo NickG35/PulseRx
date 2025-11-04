@@ -338,7 +338,7 @@
                     dropdownItem.appendChild(reminderTime);
                 } else {
                     const threadUrl = "{% url 'threads' thread_id=0 %}".replace('0', notification.thread_id);
-                    dropdownItem.href = `${threadUrl}#message_${notification.id}`;
+                    dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
 
                     const messageContent = document.createElement('p');
                     if (notification.type === "message"){
