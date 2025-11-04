@@ -258,16 +258,8 @@ def contact_admin(request, drug_id):
     medicine.resupply_pending = True
     medicine.save()
 
-        
-    thread = (Thread.objects
-                .filter(participant__in=participants)
-                .annotate(num_participants=Count('participant'))
-                .filter(num_participants=len(participants))
-                .first())
-            
-    if not thread:
-        thread = Thread.objects.create()
-        thread.participant.add(*participants)
+    thread = Thread.objects.create()
+    thread.participant.add(*participants)
     
 
     msg = Message.objects.create(
@@ -292,6 +284,7 @@ def contact_admin(request, drug_id):
             "type": "resupply_request",
             "sender": system_user.first_name,
             "thread_id": thread.id,
+            "message_id": msg.id,
             "content": msg.content,
             "timestamp": formatted_timestamp,
         }
