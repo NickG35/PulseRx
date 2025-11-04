@@ -155,7 +155,14 @@ def account_messages(request):
     if request.user.role  ==  'pharmacist':
         pharmacist = PharmacistProfile.objects.get(user=request.user)
         pharmacy = pharmacist.pharmacy.user
-        user_threads = Thread.objects.filter(participant__in=[request.user,pharmacy]).distinct().order_by('-last_updated')
+        user_threads = (
+        Thread.objects.filter(
+            Q(participant=request.user) |                     # threads pharmacist is directly in
+            Q(participant=pharmacy, participant__role='patient')  # threads between pharmacy and patients
+        )
+        .distinct()
+        .order_by('-last_updated')
+    )
     else:
         user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated')
         if request.user.role == 'patient':
