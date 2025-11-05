@@ -50,7 +50,9 @@
             <div class="dropdown show">
                 <button type="button" id="hidden-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i id="noti-bell" class="bi bi-bell position-relative fs-4">
-                        <span class="position-absolute bg-danger rounded-circle noti-dot"></span>
+                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{unread_count}}
+                        </span>
                     </i>
                 </button>
               
@@ -307,6 +309,12 @@
             if (data.notification) {
                 const notification = data.notification; 
                 console.log("Notification ID:", notification.id)
+
+                const badge = document.getElementById("notification-badge");
+                if (badge) {
+                    badge.textContent = notification.unread_count
+                    badge.style.display = notification.unread_count > 0 ? "inline-block" : "none";
+                }
 
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.id = `noti_div_${notification.id}`;
