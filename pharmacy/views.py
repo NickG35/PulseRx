@@ -204,11 +204,11 @@ def resupply(request, drug_id):
     )
 
     last_request_msg = (
-                Message.objects
-                .filter(drug=medicine, resupply_fulfilled=False)
-                .order_by('-timestamp')
-                .first()
-            )
+        Message.objects
+        .filter(drug=medicine, resupply_fulfilled=False)
+        .order_by('-timestamp')
+        .first()
+    )
 
     if last_request_msg:
         last_request_msg.resupply_fulfilled = True
@@ -290,7 +290,6 @@ def refill_form(request, prescription_id):
     system_user = CustomAccount.objects.get(role='system')
 
     if request.method == 'POST':
-
         form = PrescriptionForm(request.POST, instance=old_prescription)
         if form.is_valid():
             prescription = form.save(commit=False)
@@ -351,7 +350,7 @@ def refill_form(request, prescription_id):
             }
 
             async_to_sync(channel_layer.group_send)(f"user_{patient.user.id}", notification_payload)
-
+            
             return redirect(f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}")
 
     else:
