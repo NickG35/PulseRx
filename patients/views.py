@@ -314,18 +314,11 @@ def refill(request, prescription_id):
         pharmacy = patient.pharmacy
         pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
         system_user = CustomAccount.objects.get(role='system')
-        users = [system_user] + list(pharmacists) #list of users
+        users = [system_user] + list(pharmacists)
         notified_users = list(pharmacists)
 
-        thread = (Thread.objects
-                .filter(participant__in=users)
-                .annotate(num_participants=Count('participant'))
-                .filter(num_participants=len(users))
-                .first())
-            
-        if not thread:
-            thread = Thread.objects.create()
-            thread.participant.add(*users)
+        thread = Thread.objects.create()
+        thread.participant.add(*users)
         
         msg = Message.objects.create(
             sender=system_user,
@@ -335,30 +328,27 @@ def refill(request, prescription_id):
             prescription=prescription,
             refill_fulfilled=False
         )
-
-        for u in notified_users:
-            Notifications.objects.create(user=u, message=msg)
-            
         channel_layer = get_channel_layer()
-        notification_payload = {
-            "type": "send_notification",
-            "notification": {
-                "id": msg.id,
-                "type": "refill_request",
-                "sender": system_user.first_name,
-                "thread_id": thread.id,
-                "content": msg.content,
-                "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
-            }
-        }
 
         for u in notified_users:
+            notification_obj = Notifications.objects.create(user=u, message=msg)
+            
+            notification_payload = {
+                "type": "send_notification",
+                "notification": {
+                    "id": notification_obj.id,
+                    "type": "refill_request",
+                    "sender": system_user.first_name,
+                    "thread_id": thread.id,
+                    "message_id": msg.id,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                }
+            }
+
             async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
-        
-        async_to_sync(channel_layer.group_send)(f"pharmacy_{pharmacy.id}", notification_payload)
 
             
         messages.success(request, "Refill request submitted.")
-        
         return redirect('prescriptions')
 
