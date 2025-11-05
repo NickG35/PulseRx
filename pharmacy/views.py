@@ -33,6 +33,8 @@ def create_prescriptions(request):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = PharmacyProfile.objects.get(user=request.user) if request.user.role == 'pharmacy admin' else pharmacist.pharmacy
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+    notified_pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy).exclude(id=request.user.id)
+    notification_obj = None
 
     if request.method == "POST":
         if form.is_valid():
@@ -56,17 +58,13 @@ def create_prescriptions(request):
 
             system_user = CustomAccount.objects.get(role='system')
             users = [system_user, pharmacy.user] + list(pharmacists) #list of users
+            notified_users = [pharmacy.user] + list(pharmacists)
 
-            thread = (Thread.objects
-                    .filter(participant__in=users)
-                    .annotate(num_participants=Count('participant'))
-                    .filter(num_participants=len(users))
-                    .first())
-                
-            if not thread:
-                thread = Thread.objects.create()
-                thread.participant.add(*users)
+            thread = Thread.objects.create()
+            thread.participant.add(*users)
 
+            channel_layer = get_channel_layer()
+            
             # Create notifications
             if 1 <= medicine.stock <= 30:
                 msg = Message.objects.create(
@@ -74,9 +72,32 @@ def create_prescriptions(request):
                     thread=thread,
                     content=f"{medicine.name} ({medicine.brand}) is running low.",
                     link = reverse('drug_detail', args=[medicine.id])
+                ) 
+
+                for u in notified_users:
+                    notification_obj = Notifications.objects.create(user=u, message=msg)
+
+                    notification_payload = {
+                        "type": "send_notification",
+                        "notification": {
+                            "id": notification_obj.id,
+                            "type": "low_stock",
+                            "sender": system_user.first_name,
+                            "thread_id": thread.id,
+                            "message_id": msg.id,
+                            "content": msg.content,
+                            "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                        }
+                    }
+
+                    if u in notified_pharmacists:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{u.id}", notification_payload
+                        )
+
+                async_to_sync(channel_layer.group_send)(
+                    f"pharmacy_{pharmacy.id}", notification_payload
                 )
-                for u in users:
-                    Notifications.objects.create(user=u, message=msg)
 
             if medicine.stock == 0:
                 msg = Message.objects.create(
@@ -85,11 +106,36 @@ def create_prescriptions(request):
                     content=f"{medicine.name} ({medicine.brand}) is out of stock.",
                     link = reverse('drug_detail', args=[medicine.id])
                 )
-                for u in users:
+
+                for u in notified_users:
                     Notifications.objects.create(user=u, message=msg)
 
+                    notification_payload = {
+                        "type": "send_notification",
+                        "notification": {
+                            "id": notification_obj.id,
+                            "type": "out_of_stock",
+                            "sender": system_user.first_name,
+                            "thread_id": thread.id,
+                            "message_id": msg.id,
+                            "content": msg.content,
+                            "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                        }
+                    }
+
+                    if u in notified_pharmacists:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{u.id}", notification_payload
+                        )
+
+                async_to_sync(channel_layer.group_send)(
+                    f"pharmacy_{pharmacy.id}", notification_payload
+                )
+
             messages.success(request, "Prescription created successfully.")
-            return redirect('create_prescriptions') 
+            return redirect(
+                f"{reverse('patient_profile', args=[prescription.patient.id])}#prescription-{prescription.id}"
+            )
         else:
             messages.error(request, "There was a problem with your submission. Please check the form.")
             print(form.errors)
@@ -350,7 +396,7 @@ def refill_form(request, prescription_id):
             }
 
             async_to_sync(channel_layer.group_send)(f"user_{patient.user.id}", notification_payload)
-            
+
             return redirect(f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}")
 
     else:
