@@ -33,8 +33,11 @@
             <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
             <input type="hidden" name="medicine" class="hidden-medicine" value="{{ previous_medicine|default:'' }}">
         {% else %}
-            <input  name="patient" class="hidden-patient" value="{{old_prescription.patient}}" readonly>
-            <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
+            <input  name="patient_shown" class="hidden-patient" value="{{old_prescription.patient.user.first_name}} {{old_prescription.patient.user.last_name}} ID: {{old_prescription.patient.id}}" readonly>
+            <input  name="medicine_shown" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
+
+            <input  name="patient" class="hidden-patient" value="{{old_prescription.patient.id}}" hidden>
+            <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine.id}}" hidden>
         {% endif %}
 
         {% for error in form.quantity.errors %}
