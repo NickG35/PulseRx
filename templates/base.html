@@ -69,7 +69,11 @@
                                 </a>
                                 {% else %}
                                 <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                    <p class="reminder-message">{{noti.message.content}}</p>
+                                    {% if noti.message.sender.role != "system" %}
+                                        <p class="reminder-message">{{noti.message.sender.first_name}} {{noti.message.sender.last_name}} has sent you a new message.</p>
+                                    {% else %}
+                                        <p class="reminder-message">{{noti.message.content}}</p>
+                                    {% endif %}
                                     <p class="reminder-time"><small>{{noti.time}}</small></p>
                                 </a>
                                 {% endif %}
