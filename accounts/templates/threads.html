@@ -91,6 +91,11 @@
                     {% endif %}
                 {% endif %}
                 <small class="message-time">{{ message.timestamp }}</small>
+                {% if message.read %}
+                    <p>Read</p>
+                {% else %}
+                    <p>Delivered</p>
+                {% endif %}
             </div>
         {% endfor %}
     </div>
