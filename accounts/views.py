@@ -150,53 +150,35 @@ def account_settings(request):
 @never_cache
 def account_messages(request):
     pharmacy_name = None
-    pharmacist = None
+    user_threads = Thread.objects.none()
 
-    if request.user.role  ==  'pharmacist':
+    if request.user.role == 'pharmacist':
+        # Pharmacist sees all threads between the pharmacy and patients
         pharmacist = PharmacistProfile.objects.get(user=request.user)
-        pharmacy = pharmacist.pharmacy.user
-        user_threads = (
-        Thread.objects.filter(
-            Q(participant=request.user) |                     # threads pharmacist is directly in
-            Q(participant=pharmacy, participant__role='patient')  # threads between pharmacy and patients
-        )
-        .distinct()
-        .order_by('-last_updated')
-    )
+        pharmacy_user = pharmacist.pharmacy.user
+
+        user_threads = Thread.objects.filter(participant=pharmacy_user).exclude(participant__role='system').distinct().order_by('-last_updated')
+
+        for thread in user_threads:
+            patient_user = thread.participant.filter(role='patient').first()
+            thread.other_participants = [patient_user] if patient_user else []
+
     else:
-        user_threads = Thread.objects.filter(participant=request.user).order_by('-last_updated')
+        # Patients/admins see their own threads
+        user_threads = Thread.objects.filter(participant=request.user).exclude(participant__role='system').order_by('-last_updated')
         if request.user.role == 'patient':
             patient = PatientProfile.objects.get(user=request.user)
             pharmacy_name = patient.pharmacy.pharmacy_name
 
-    for thread in user_threads:
-        system_user = thread.participant.all().filter(role='system').first()
-        if system_user:
-            thread.other_participants = [system_user]
-            continue
-        if request.user.role == 'pharmacist':
-            # Determine what to display in header
-            patient_user = thread.participant.all().filter(role='patient').first()
-            pharmacy_admin = thread.participant.all().filter(role='pharmacy admin').first()
-
-            if patient_user:
-                # Thread is with a patient → show patient
-                thread.other_participants = [patient_user]
-            elif pharmacy_admin:
-                # Thread is with pharmacy → show pharmacy
-                thread.other_participants = [pharmacy_admin]
-            else:
-                # Fallback (shouldn’t happen)
-                thread.other_participants = []
-        else:
-            # For patients and pharmacy admins: exclude self
+        for thread in user_threads:
             thread.other_participants = thread.participant.exclude(id=request.user.id)
 
-        
+
     return render(request, 'messages.html', {
         'threads': user_threads,
         'pharmacy_name': pharmacy_name
     })
+
 
 def message_search(request):
     thread = Thread.objects.filter(participant=request.user).all()
