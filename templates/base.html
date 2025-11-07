@@ -23,7 +23,7 @@
             <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
             <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
             <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span>{% endif %}</a>
         </div>
 
     {% elif request.user.role == 'pharmacist' %}
@@ -34,7 +34,7 @@
             <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
             <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
             <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
         </div>
 
     {% elif request.user.role == 'pharmacy admin' %}
@@ -43,7 +43,7 @@
         </div>
         <div>
             <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
         </div>
     {% endif %}
         <div class="end-div">
@@ -70,7 +70,7 @@
                                     <p class="reminder-time"><small>{{noti.time}}</small></p>
                                 </a>
                                 {% else %}
-                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
+                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" {% if noti.message.sender.role != "system" %} href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" {% else %} href="{{noti.message.link}}" {% endif %} data-read="{{noti.is_read}}" data-id="{{noti.id}}">
                                     {% if noti.message.sender.role != "system" %}
                                         <p class="reminder-message">{{noti.message.sender.first_name}} {{noti.message.sender.last_name}} has sent you a new message.</p>
                                     {% else %}
@@ -350,7 +350,11 @@
                     dropdownItem.appendChild(reminderTime);
                 } else {
                     const threadUrl = "{% url 'threads' thread_id=0 %}".replace('0', notification.thread_id);
-                    dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
+                    if (notification.sender.role === 'system') {
+                        dropdownItem.href = `${notification.link}`;
+                    } else {
+                        dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
+                    }
 
                     const messageContent = document.createElement('p');
                     if (notification.type === "message"){
