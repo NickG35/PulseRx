@@ -105,9 +105,7 @@
                         <p class="message-sender">
                             <strong>
                                 {% for user in thread.other_participants %}
-                                    {% if user.role == "system" %}
-                                        Notification System
-                                    {% elif user.role == "pharmacy admin" %}
+                                    {% if user.role == "pharmacy admin" %}
                                         {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
                                     {% else %}
                                         {{ user.first_name }} {{ user.last_name }}
@@ -115,6 +113,7 @@
                                 {% endfor %}
                             </strong>
                         </p>
+                        
                         {% if latest %}
                             {% if latest.sender == request.user %}
                                 <span>Me:</span>
