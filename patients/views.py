@@ -342,7 +342,8 @@ def refill(request, prescription_id):
                     "thread_id": thread.id,
                     "message_id": msg.id,
                     "content": msg.content,
-                    "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                    "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                    "link": msg.link
                 }
             }
 
