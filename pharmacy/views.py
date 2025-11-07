@@ -29,12 +29,9 @@ def pharmacist_home(request):
 
 def create_prescriptions(request):
     form = PrescriptionForm(request.POST or None)
-    
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = PharmacyProfile.objects.get(user=request.user) if request.user.role == 'pharmacy admin' else pharmacist.pharmacy
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
-    notified_pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy).exclude(id=request.user.id)
-    notification_obj = None
 
     if request.method == "POST":
         if form.is_valid():
@@ -51,6 +48,8 @@ def create_prescriptions(request):
                     'form': form
                 })
             
+            new_stock = medicine.stock - prescription.quantity
+
             medicine.stock -= prescription.quantity
             medicine.save()
             prescription.save()
@@ -58,15 +57,12 @@ def create_prescriptions(request):
 
             system_user = CustomAccount.objects.get(role='system')
             users = [system_user, pharmacy.user] + list(pharmacists) #list of users
-            notified_users = [pharmacy.user] + list(pharmacists)
-
             thread = Thread.objects.create()
             thread.participant.add(*users)
-
             channel_layer = get_channel_layer()
             
             # Create notifications
-            if 1 <= medicine.stock <= 30:
+            if 1 <= new_stock <= 30:
                 msg = Message.objects.create(
                     sender=system_user,
                     thread=thread,
@@ -74,7 +70,7 @@ def create_prescriptions(request):
                     link = reverse('drug_detail', args=[medicine.id])
                 ) 
 
-                for u in notified_users:
+                for u in [pharmacy.user] + list(pharmacists):
                     notification_obj = Notifications.objects.create(user=u, message=msg)
 
                     notification_payload = {
@@ -86,20 +82,17 @@ def create_prescriptions(request):
                             "thread_id": thread.id,
                             "message_id": msg.id,
                             "content": msg.content,
-                            "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                            "link": msg.link
                         }
                     }
 
-                    if u in notified_pharmacists:
+                    if u.id != request.user.id:
                         async_to_sync(channel_layer.group_send)(
                             f"user_{u.id}", notification_payload
                         )
 
-                async_to_sync(channel_layer.group_send)(
-                    f"pharmacy_{pharmacy.id}", notification_payload
-                )
-
-            if medicine.stock == 0:
+            elif new_stock == 0:
                 msg = Message.objects.create(
                     sender=system_user,
                     thread=thread,
@@ -107,8 +100,8 @@ def create_prescriptions(request):
                     link = reverse('drug_detail', args=[medicine.id])
                 )
 
-                for u in notified_users:
-                    Notifications.objects.create(user=u, message=msg)
+                for u in [pharmacy.user] + list(pharmacists):
+                    notification_obj = Notifications.objects.create(user=u, message=msg)
 
                     notification_payload = {
                         "type": "send_notification",
@@ -119,18 +112,40 @@ def create_prescriptions(request):
                             "thread_id": thread.id,
                             "message_id": msg.id,
                             "content": msg.content,
-                            "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                            "link": msg.link
                         }
                     }
 
-                    if u in notified_pharmacists:
+                    if u.id != request.user.id:
                         async_to_sync(channel_layer.group_send)(
                             f"user_{u.id}", notification_payload
                         )
+            
+            msg = Message.objects.create(
+                sender=system_user,
+                thread=thread,
+                content= f"You have a new prescription.",
+                link=f"{reverse('patient_profile', args=[prescription.patient.id])}#prescription-{prescription.id}"
+            )
 
-                async_to_sync(channel_layer.group_send)(
-                    f"pharmacy_{pharmacy.id}", notification_payload
-                )
+            notification_obj = Notifications.objects.create(user=prescription.patient.user, message=msg)
+            
+            notification_payload = {
+                "type": "send_notification",
+                "notification": {
+                    "id": notification_obj.id,
+                    "type": "create_prescription",
+                    "sender": system_user.first_name,
+                    "thread_id": thread.id,
+                    "message_id": msg.id,
+                    "content": msg.content,
+                    "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                    "link": msg.link
+                }
+            }
+
+            async_to_sync(channel_layer.group_send)(f"user_{prescription.patient.user.id}", notification_payload)
 
             messages.success(request, "Prescription created successfully.")
             return redirect(
@@ -262,7 +277,7 @@ def resupply(request, drug_id):
 
     channel_layer = get_channel_layer()
 
-    for user in pharmacists:
+    for user in list(pharmacists):
         notification_obj = Notifications.objects.create(user=user, message=msg)
 
         notification_payload = {
@@ -274,7 +289,8 @@ def resupply(request, drug_id):
                 "thread_id": thread.id,
                 "message_id": msg.id,
                 "content": msg.content,
-                "timestamp": msg.timestamp.strftime("%b %d, %I: %M %p"),
+                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                "link": msg.link
             }
         }
 
@@ -322,6 +338,7 @@ def contact_admin(request, drug_id):
             "message_id": msg.id,
             "content": msg.content,
             "timestamp": formatted_timestamp,
+            "link": msg.link
         }
     }
 
@@ -333,6 +350,8 @@ def refill_form(request, prescription_id):
     old_prescription = Prescription.objects.get(id=prescription_id)
     patient = old_prescription.patient
     pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = pharmacist.pharmacy
+    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
     system_user = CustomAccount.objects.get(role='system')
 
     if request.method == 'POST':
@@ -350,6 +369,8 @@ def refill_form(request, prescription_id):
                 form.add_error('quantity', 'Not enough stock available.')
                 return render(request, 'create_prescriptions.html', {'form': form})
             
+            new_stock = medicine.stock - prescription.quantity
+
             # Reduce stock and save
             medicine.stock -= prescription.quantity
             medicine.save()
@@ -357,9 +378,71 @@ def refill_form(request, prescription_id):
 
             
             users = [system_user, patient.user]
-
             thread = Thread.objects.create()
             thread.participant.add(*users)
+            channel_layer = get_channel_layer()
+
+            if 1 <= new_stock <= 30:
+                msg = Message.objects.create(
+                    sender=system_user,
+                    thread=thread,
+                    content=f"{medicine.name} ({medicine.brand}) is running low.",
+                    link = reverse('drug_detail', args=[medicine.id])
+                ) 
+
+                for u in [pharmacy.user] + list(pharmacists):
+                    notification_obj = Notifications.objects.create(user=u, message=msg)
+
+                    notification_payload = {
+                        "type": "send_notification",
+                        "notification": {
+                            "id": notification_obj.id,
+                            "type": "low_stock",
+                            "sender": system_user.first_name,
+                            "thread_id": thread.id,
+                            "message_id": msg.id,
+                            "content": msg.content,
+                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                            "link": msg.link
+                        }
+                    }
+
+                    if u.id != request.user.id:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{u.id}", notification_payload
+                        )
+            
+            elif new_stock == 0:
+                msg = Message.objects.create(
+                    sender=system_user,
+                    thread=thread,
+                    content=f"{medicine.name} ({medicine.brand}) is out of stock.",
+                    link = reverse('drug_detail', args=[medicine.id])
+                )
+
+                for u in [pharmacy.user] + list(pharmacists):
+                    notification_obj = Notifications.objects.create(user=u, message=msg)
+
+                    notification_payload = {
+                        "type": "send_notification",
+                        "notification": {
+                            "id": notification_obj.id,
+                            "type": "out_of_stock",
+                            "sender": system_user.first_name,
+                            "thread_id": thread.id,
+                            "message_id": msg.id,
+                            "content": msg.content,
+                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                            "link": msg.link
+                        }
+                    }
+
+                    if u.id != request.user.id:
+                        async_to_sync(channel_layer.group_send)(
+                            f"user_{u.id}", notification_payload
+                        )
+                    
+
             
             msg = Message.objects.create(
                 sender=system_user,
@@ -391,7 +474,8 @@ def refill_form(request, prescription_id):
                     "thread_id": thread.id,
                     "message_id": msg.id,
                     "content": msg.content,
-                    "timestamp": msg.timestamp.strftime("%b %d, %I:%M %p"),
+                    "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                    "link": msg.link
                 }
             }
 
