@@ -23,7 +23,7 @@
             <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
             <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
             <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span>{% endif %}</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span>{% endif %}</a>
         </div>
 
     {% elif request.user.role == 'pharmacist' %}
@@ -34,7 +34,7 @@
             <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
             <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
             <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
         </div>
 
     {% elif request.user.role == 'pharmacy admin' %}
@@ -43,7 +43,7 @@
         </div>
         <div>
             <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
+            <a href="{% url 'messages' %}" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
         </div>
     {% endif %}
         <div class="end-div">
@@ -314,6 +314,12 @@
                 if (badge) {
                     badge.textContent = notification.unread_count
                     badge.style.display = notification.unread_count > 0 ? "inline-block" : "none";
+                }
+
+                const message_badge = document.getElementById("message-badge");
+                if (message_badge) {
+                    message_badge.textContent = notification.unread_messages
+                    message_badge.style.display = notification.unread_messages > 0 ? "inline-block" : "none";
                 }
 
                 const wrapperDiv = document.createElement('div');
