@@ -207,6 +207,8 @@ def thread_view(request, thread_id):
     thread = get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
 
+    thread.messages.filter(recipient=request.user, read=False).update(read=True, read_time=timezone.now())
+
     system_user = thread.participant.all().filter(role='system').first()
     if system_user:
         thread.other_participants = [system_user]
