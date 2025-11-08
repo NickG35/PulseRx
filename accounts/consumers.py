@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from .models import Message, Thread, Notifications
 from asgiref.sync import sync_to_async
 
-User = get_user_model
+User = get_user_model()
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -49,10 +49,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         notification = event['notification']
 
         unread_count = await sync_to_async(
-            Notifications.objects.filter(user=self.user, is_read=False).count
+            lambda: Notifications.objects.filter(user=self.user, is_read=False).count()
         )()
 
+        unread_messages = await sync_to_async(lambda: (
+            Message.objects.filter(
+                recipient=self.user.pharmacistprofile.pharmacy.user if self.user.role == 'pharmacist' else self.user,
+                read=False
+            )
+            .exclude(sender__role='system')
+            .count()
+        ))()
+
         notification["unread_count"] = unread_count
+        notification["unread_messages"] = unread_messages
         
         await self.send(text_data=json.dumps({
             "notification": notification
@@ -78,9 +88,9 @@ class MessageConsumer(AsyncWebsocketConsumer):
         user = self.scope["user"]
 
         thread = await self.get_thread(self.thread_id)
-        message = await self.create_message(thread, user, content)
-
         recipient = await self.get_other_participant(thread, user)
+
+        message = await self.create_message(thread, user, recipient, content)
 
         await self.create_notification(recipient, message)
 
@@ -135,17 +145,18 @@ class MessageConsumer(AsyncWebsocketConsumer):
     def get_other_participant(self, thread, user):
         return thread.participant.exclude(id=user.id).first()
 
-    async def create_message(self, thread, sender, content):
+    async def create_message(self, thread, sender, recipient, content):
         return await Message.objects.acreate(
             thread=thread,
             sender=sender,
+            recipient=recipient,
             content=content,
             timestamp=timezone.now(),
         )
     
     @sync_to_async
     def create_notification(self, recipient, message):
-        Notifications.objects.acreate(
+        Notifications.objects.create(
             user=recipient, 
             message=message,
             is_read=False
