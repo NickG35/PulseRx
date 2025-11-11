@@ -82,7 +82,7 @@
     {% if request.user.role == 'patient' %}
         <form action="{% url 'patient_thread' %}" method="post" style="display:inline;">
             {% csrf_token %}
-            <input type="hidden" name="patientID" value="{{ request.user.id }}">
+            <input type="hidden" name="patientID" value="{{ patient.id }}">
             <button type="submit"><i class="fa-regular fa-pen-to-square"></i></button>
         </form>
     {% else %}
