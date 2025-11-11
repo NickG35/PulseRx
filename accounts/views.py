@@ -150,6 +150,7 @@ def account_settings(request):
 @never_cache
 def account_messages(request):
     pharmacy_name = None
+    patient = None
     user_threads = Thread.objects.none()
 
     if request.user.role == 'pharmacist':
@@ -176,7 +177,8 @@ def account_messages(request):
 
     return render(request, 'messages.html', {
         'threads': user_threads,
-        'pharmacy_name': pharmacy_name
+        'pharmacy_name': pharmacy_name,
+        'patient': patient
     })
 
 
@@ -213,24 +215,6 @@ def thread_view(request, thread_id):
     if system_user:
         thread.other_participants = [system_user]
         other_user = system_user
-    # Determine who to show in the header
-    elif request.user.role == 'pharmacist':
-
-        # Try to get a patient participant first
-        patient_user = thread.participant.all().filter(role='patient').first()
-        pharmacy_admin = thread.participant.all().filter(role='pharmacy admin').first()
-
-        if patient_user:
-            # Thread with patient → show patient
-            thread.other_participants = [patient_user]
-            other_user = patient_user
-        elif pharmacy_admin:
-            # Thread with pharmacy → show pharmacy
-            thread.other_participants = [pharmacy_admin]
-            other_user = pharmacy_admin
-        else:
-            thread.other_participants = []
-            other_user = None
     else:
         thread.other_participants = thread.participant.exclude(id=request.user.id)
         other_user = thread.other_participants.first()
@@ -267,24 +251,33 @@ def delete_notification(request):
 def patient_thread(request):
     if request.method == 'POST':
         patient_id = request.POST.get('patientID')
+
         try:
             patient_profile = PatientProfile.objects.get(id=patient_id)
         except PatientProfile.DoesNotExist:
             return HttpResponse(f"Patient with id={patient_id} does not exist")
         
         patient_user = patient_profile.user
-        pharmacy_user = None
-        if request.user.role in ['pharmacist']:
-            pharmacist = PharmacistProfile.objects.get(user=request.user)
-            pharmacy_user = pharmacist.pharmacy.user
-        elif request.user.role in ['pharmacy admin']:
-            pharmacy_user = request.user
-        else:
-            patient = PatientProfile.objects.get(user=patient_user)
-            pharmacy_user = patient.pharmacy.user
 
+        pharmacy = None
+        pharmacy_user = None
+
+        if request.user.role == 'pharmacy admin':
+            pharmacy_user = request.user
+            pharmacy = PharmacyProfile.objects.get(user=request.user)
+
+        elif request.user.role == 'pharmacist':
+            pharmacist_profile = PharmacistProfile.objects.get(user=request.user)
+            pharmacy = pharmacist_profile.pharmacy
+            pharmacy_user = pharmacy.user
+        else:
+            pharmacy = patient_profile.pharmacy
+            pharmacy_user = pharmacy.user
+        
         if not patient_user or not pharmacy_user:
             return HttpResponse(f"patient_user={patient_user}, pharmacy_user={pharmacy_user}")
+
+
 
         thread = (
             Thread.objects.filter(participant=pharmacy_user)
@@ -295,8 +288,12 @@ def patient_thread(request):
 
         if not thread:
             thread = Thread.objects.create()
-            thread.participant.add(pharmacy_user)
-            thread.participant.add(patient_user)
+            thread.participant.add(pharmacy_user, patient_user)
+            
+            pharmacists = pharmacy.pharmacists.select_related('user').all()
+            pharmacist_users = [p.user for p in pharmacists]
+            if pharmacist_users:
+                thread.participant.add(*pharmacist_users)
 
         return redirect('threads', thread_id=thread.id)
 
