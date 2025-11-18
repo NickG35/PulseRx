@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Message, Notifications, CustomAccount, Thread
+from .models import Message, Notifications, CustomAccount, Thread, ReadStatus
 from .forms import UserRegistrationForm, LoginForm, AccountUpdateForm, PasswordUpdateForm, MessageForm
 from pharmacy.forms import PharmacyProfileForm, PharmacistProfileForm
 from patients.forms import PatientProfileForm
@@ -151,29 +151,43 @@ def account_settings(request):
 def account_messages(request):
     pharmacy_name = None
     patient = None
-    user_threads = Thread.objects.none()
+  
+    user_threads = (
+        Thread.objects.filter(participant=request.user)
+        .exclude(participant__role='system')
+        .distinct()
+        .order_by('-last_updated')
+    )
 
-    if request.user.role == 'pharmacist':
-        # Pharmacist sees all threads between the pharmacy and patients
-        pharmacist = PharmacistProfile.objects.get(user=request.user)
-        pharmacy_user = pharmacist.pharmacy.user
-
-        user_threads = Thread.objects.filter(participant=pharmacy_user).exclude(participant__role='system').distinct().order_by('-last_updated')
-
-        for thread in user_threads:
-            patient_user = thread.participant.filter(role='patient').first()
-            thread.other_participants = [patient_user] if patient_user else []
-
-    else:
-        # Patients/admins see their own threads
-        user_threads = Thread.objects.filter(participant=request.user).exclude(participant__role='system').order_by('-last_updated')
+    for thread in user_threads:
         if request.user.role == 'patient':
-            patient = PatientProfile.objects.get(user=request.user)
-            pharmacy_name = patient.pharmacy.pharmacy_name
+            # Patients → see only the pharmacy admin
+            other_user = thread.participant.filter(role='pharmacy admin').first()
+        elif request.user.role in ['pharmacy admin', 'pharmacist']:
+            # Admins & pharmacists → see the patient
+            other_user = thread.participant.filter(role='patient').first()
 
-        for thread in user_threads:
-            thread.other_participants = thread.participant.exclude(id=request.user.id)
+        thread.other_participants = [other_user] if other_user else []
 
+        latest = thread.latest_message
+        thread.latest_msg = latest
+
+        if latest:
+            read_status = ReadStatus.objects.filter(
+                message=latest,
+                user=request.user
+            ).first()
+
+            thread.user_read = read_status.read if read_status else False
+            thread.unread_count = ReadStatus.objects.filter(
+                message__thread=thread,
+                user=request.user,
+                read=False
+            ).count()
+        else:
+            thread.user_read = True
+            thread.unread_count = 0
+            thread.latest_msg = None
 
     return render(request, 'messages.html', {
         'threads': user_threads,
@@ -209,12 +223,33 @@ def thread_view(request, thread_id):
     thread = get_object_or_404(Thread, id=thread_id)
     messages = thread.messages.all().order_by("timestamp")
 
-    thread.messages.filter(recipient=request.user, read=False).update(read=True, read_time=timezone.now())
+    ReadStatus.objects.filter(
+        message__thread=thread,
+        user=request.user,
+        read=False
+    ).update(read=True)
+
+    read_status = ReadStatus.objects.filter(
+        message__in=messages,
+        user=request.user
+    ).values_list('message_id', 'read')
+    read_map = dict(read_status)
+    for message in messages:
+        message.user_read = read_map.get(message.id, False)
 
     system_user = thread.participant.all().filter(role='system').first()
+
     if system_user:
         thread.other_participants = [system_user]
         other_user = system_user
+    elif request.user.role in ['pharmacy admin', 'pharmacist']:
+        # Show the patient participant
+        other_user = thread.participant.filter(role='patient').first()
+        thread.other_participants = [other_user] if other_user else []
+    elif request.user.role == 'patient':
+        # Show the pharmacy admin
+        other_user = thread.participant.filter(role='pharmacy admin').first()
+        thread.other_participants = [other_user] if other_user else []
     else:
         thread.other_participants = thread.participant.exclude(id=request.user.id)
         other_user = thread.other_participants.first()
