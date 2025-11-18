@@ -3,7 +3,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from django.contrib.auth import get_user_model
-from .models import Message, Thread, Notifications
+from .models import Message, Thread, Notifications, ReadStatus
 from asgiref.sync import sync_to_async
 
 User = get_user_model()
@@ -53,11 +53,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         )()
 
         unread_messages = await sync_to_async(lambda: (
-            Message.objects.filter(
-                recipient=self.user.pharmacistprofile.pharmacy.user if self.user.role == 'pharmacist' else self.user,
+            ReadStatus.objects.filter(
+                user=self.user,
                 read=False
             )
-            .exclude(sender__role='system')
             .count()
         ))()
 
@@ -145,14 +144,21 @@ class MessageConsumer(AsyncWebsocketConsumer):
     def get_other_participant(self, thread, user):
         return thread.participant.exclude(id=user.id).first()
 
-    async def create_message(self, thread, sender, recipient, content):
-        return await Message.objects.acreate(
+    @sync_to_async
+    def create_message(self, thread, sender, recipient, content):
+        message = Message.objects.create(
             thread=thread,
             sender=sender,
             recipient=recipient,
             content=content,
             timestamp=timezone.now(),
         )
+
+        participants = thread.participant.exclude(id=sender.id)
+        for participant in participants:
+            ReadStatus.objects.create(message=message, user=participant, read=False)
+        
+        return message
     
     @sync_to_async
     def create_notification(self, recipient, message):
