@@ -15,8 +15,9 @@ class Thread(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
+    @property
     def latest_message(self):
-        return self.messages.last()
+         return self.messages.order_by('-timestamp').first()
 
 class Message(models.Model):
 
@@ -32,8 +33,6 @@ class Message(models.Model):
     thread = models.ForeignKey(Thread, related_name='messages', on_delete=models.CASCADE)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    read = models.BooleanField(default=False)
-    read_time = models.DateTimeField(null=True, blank=True)
     link = models.CharField(max_length=300, blank=True, null=True)
     prescription = models.ForeignKey('pharmacy.Prescription', null=True, blank=True, on_delete=models.CASCADE)
     refill_fulfilled = models.BooleanField(null=True, blank=True, default=None)
@@ -42,6 +41,19 @@ class Message(models.Model):
     
     class Meta:
         db_table = 'pharmacy_message' 
+
+class ReadStatus(models.Model):
+    message = models.ForeignKey('Message', on_delete=models.CASCADE, related_name='read_statuses')
+    user = models.ForeignKey('CustomAccount', on_delete=models.CASCADE)
+    read = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('message', 'user')
+
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name} - {self.message.id} - {'Read' if self.read else 'Unread'}"
+
+
 
 
 class Notifications(models.Model):
