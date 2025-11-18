@@ -63,7 +63,7 @@
             {% for user in thread.other_participants %}
                 {% if user.role == "system" %}
                     Notification System
-                {% elif user.role == "pharmacy admin" %}
+                {% elif user.role == "pharmacy admin" or user.role == "pharmacist" %}
                     {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
                 {% else %}
                     {{ user.first_name }} {{ user.last_name }}
@@ -76,7 +76,7 @@
 
     <div class="message-convo">
         {% for message in messages %}
-            <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.read }}">
+            <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.user_read }}">
                 {% if message.sender == request.user %}
                     <strong class="message-sender">Me:</strong>
                 {% else %}
@@ -91,11 +91,6 @@
                     {% endif %}
                 {% endif %}
                 <small class="message-time">{{ message.timestamp }}</small>
-                {% if message.read %}
-                    <p>Read</p>
-                {% else %}
-                    <p>Delivered</p>
-                {% endif %}
             </div>
         {% endfor %}
     </div>
