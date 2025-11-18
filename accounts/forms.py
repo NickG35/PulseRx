@@ -104,5 +104,5 @@ class MessageForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        exclude = ['timestamp','read', 'read_time', 'sender', 'recipient', 'thread', 'link', 'prescription', 'refill_fulfilled', 'drug', 'resupply_fulfilled']
+        exclude = ['timestamp','sender', 'recipient', 'thread', 'link', 'prescription', 'refill_fulfilled', 'drug', 'resupply_fulfilled']
         
