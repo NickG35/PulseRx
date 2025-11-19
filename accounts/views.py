@@ -151,6 +151,9 @@ def account_settings(request):
 def account_messages(request):
     pharmacy_name = None
     patient = None
+
+    if request.user.role == 'patient':
+        patient = PatientProfile.objects.get(user=request.user)
   
     user_threads = (
         Thread.objects.filter(participant=request.user)
@@ -160,15 +163,8 @@ def account_messages(request):
     )
 
     for thread in user_threads:
-        if request.user.role == 'patient':
-            # Patients → see only the pharmacy admin
-            other_user = thread.participant.filter(role='pharmacy admin').first()
-        elif request.user.role in ['pharmacy admin', 'pharmacist']:
-            # Admins & pharmacists → see the patient
-            other_user = thread.participant.filter(role='patient').first()
-
-        thread.other_participants = [other_user] if other_user else []
-
+        
+        thread.other_participants = thread.participant.exclude(id=request.user.id)
         latest = thread.latest_message
         thread.latest_msg = latest
 
