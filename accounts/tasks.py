@@ -1,10 +1,8 @@
 from celery import shared_task
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from accounts.models import Notifications
+from accounts.utils import send_notification_with_counts
 from patients.models import MedicationReminder, ReminderTime
 from django.utils import timezone
-from asgiref.sync import async_to_sync
 
 @shared_task
 def send_reminder(time_id):
@@ -23,20 +21,16 @@ def send_reminder(time_id):
         created_time_local = timezone.localtime(notif.time)
         formatted_time = created_time_local.strftime("%b. %-d, %Y, %-I:%M %p").replace("AM", "a.m.").replace("PM", "p.m.")
 
-
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{reminder.user.user.id}",
-            {
-                "type": "send_notification",
-                "notification": {
-                    "id": notif.id,
-                    "type": "reminder",
-                    "reminder_id": reminder.id,
-                    "reminder": reminder.prescription.medicine.name,
-                    "is_read": notif.is_read,
-                    "created_time": formatted_time
-                }
+        # Send notification with automatic unread counts
+        send_notification_with_counts(
+            user=reminder.user.user,
+            notification_data={
+                "id": notif.id,
+                "type": "reminder",
+                "reminder_id": reminder.id,
+                "reminder": reminder.prescription.medicine.name,
+                "is_read": notif.is_read,
+                "created_time": formatted_time
             }
         )
 
