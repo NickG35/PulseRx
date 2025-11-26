@@ -2,10 +2,16 @@
 
 {% block content %}
     <script>
+        // Disable browser's automatic scroll restoration
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const threadId = document.querySelector('input[name="thread_id"]').value;
             const messageConvo = document.querySelector('.message-convo');
             const empty_message = document.getElementById('noMessage');
+            const newMessageBubble = document.getElementById('new-message-bubble');
 
             function updateEmptyMessage(){
                 const messageBox = document.querySelectorAll('.message-box');
@@ -13,9 +19,40 @@
             }
 
             updateEmptyMessage();
-            
+
             const protocol = window.location.protocol === "https:" ? "wss": "ws";
             const socket = new WebSocket(`${protocol}://${window.location.host}/ws/messages/${threadId}/`);
+
+            function isScrolledToBottom() {
+                return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 5;
+            }
+
+            function isLastMessageVisible() {
+                const messages = document.querySelectorAll('.message-box');
+                if (messages.length === 0) return true;
+
+                const lastMessage = messages[messages.length - 1];
+                const rect = lastMessage.getBoundingClientRect();
+
+                return (
+                    rect.top >= 0 &&
+                    rect.bottom <= window.innerHeight
+                );
+            }
+
+            function scrollToBottom(instant = false) {
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: instant ? 'instant' : 'smooth'
+                });
+            }
+
+            scrollToBottom(true); // Instant scroll to bottom on page load
+
+            function highlightMessage(msgEl, duration=1500) {
+                msgEl.classList.add('highlight');
+                setTimeout(() => msgEl.classList.remove('highlight'), duration);
+            }
 
             socket.onopen = () => console.log("Connected to message WebSocket");
 
@@ -24,10 +61,11 @@
 
                 const messageBox = document.createElement('div');
                 messageBox.classList.add('message-box');
+                messageBox.id = `message_${data.id}`;
 
                 let messageSender = document.createElement('strong');
                 messageSender.classList.add('message-sender');
-                messageSender.textContent = data.sender === "{{ request.user.first_name }} {{ request.user.last_name }}" ? 'Me:' : `${data.sender}:`; 
+                messageSender.textContent = data.sender === "{{ reqest.user.first_name }} {{ request.user.last_name }}" ? 'Me:' : `${data.sender}:`; 
 
                 let messageContent = document.createElement('p');
                 messageContent.classList.add('message-content');
@@ -43,8 +81,29 @@
 
                 messageConvo.appendChild(messageBox);
                 updateEmptyMessage();
+
+                const isSender = data.sender === "{{ request.user.first_name }} {{ request.user.last_name }}";
+
+                if (isScrolledToBottom() || isLastMessageVisible()){
+                    scrollToBottom(true); // Use instant scroll to stay at bottom without animation
+                    newMessageBubble.style.display = 'none';
+                } else if (!isSender) {
+                    // Only show bubble for received messages that are off-screen
+                    newMessageBubble.style.display = 'block';
+                }
             }
 
+            newMessageBubble.addEventListener('click', () => {
+                scrollToBottom();
+                newMessageBubble.style.display = 'none';
+            });
+
+            // Hide bubble when user scrolls and messages come into view
+            window.addEventListener('scroll', () => {
+                if (isScrolledToBottom() || isLastMessageVisible()) {
+                    newMessageBubble.style.display = 'none';
+                }
+            });
 
             const form = document.getElementById('message-form');
             form.addEventListener('submit', (e) => {
@@ -54,10 +113,13 @@
                 socket.send(JSON.stringify({content}));
                 form.reset();
             });
+
+            
         });
 
                
     </script>
+    <p class="current_thread" style="display:None;" data-current-thread="{{thread.id}}"></p>
     {% if thread.other_participants %}
         <h3>
             {% for user in thread.other_participants %}
@@ -75,6 +137,7 @@
     {% endif %}
 
     <div class="message-convo">
+        <div id="new-message-bubble">New messages</div>
         {% for message in messages %}
             <div class="message-box" id="message_{{ message.id }}" data-read="{{ message.user_read }}">
                 {% if message.sender == request.user %}
@@ -104,7 +167,7 @@
         <button type="submit">Send</button>
     </form>
 
-    {% if other_user.role == 'system'%}
+    {% if other_user.role == 'system'%}u
         <small>Cannot reply to this thread</small>
     {% endif %}
 
