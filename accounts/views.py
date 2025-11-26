@@ -225,6 +225,24 @@ def thread_view(request, thread_id):
         read=False
     ).update(read=True)
 
+    Notifications.objects.filter(
+        user=request.user,
+        message__thread=thread,
+    ).delete()
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"user_{request.user.id}",
+        {
+            "type": "send_notification",
+            "notification": {
+                "id": 0, 
+                "unread_count": Notifications.objects.filter(user=request.user, is_read=False).count(),
+                "unread_messages": ReadStatus.objects.filter(user=request.user, read=False).count(),
+            },
+        }
+    )
+
     read_status = ReadStatus.objects.filter(
         message__in=messages,
         user=request.user
