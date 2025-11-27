@@ -164,7 +164,15 @@ def account_messages(request):
 
     for thread in user_threads:
         
-        thread.other_participants = thread.participant.exclude(id=request.user.id)
+        if request.user.role == 'patient':
+            pharmacy_admin = thread.participant.filter(role='pharmacy admin').first()
+            thread.other_participants = [pharmacy_admin] if pharmacy_admin else []
+        elif request.user.role in ['pharmacy admin', 'pharmacist']:
+            patient_user = thread.participant.filter(role='patient').first()
+            thread.other_participants = [patient_user] if patient_user else []
+        else:
+            thread.other_participants = thread.participant.exclude(id=request.user.id)
+
         latest = thread.latest_message
         thread.latest_msg = latest
 
