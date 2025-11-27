@@ -71,6 +71,100 @@
                 document.getElementById("autocomplete-people").value = "";
             }
         });
+
+        // Listen for new notifications from base.html
+        document.addEventListener('newNotification', (event) => {
+            const notification = event.detail;
+
+            // Only handle message notifications (not reminders or system notifications)
+            if (notification.thread_id && notification.message_id && !notification.type) {
+                updateOrCreateThread(notification);
+            }
+        });
+
+        function updateOrCreateThread(notification) {
+            const threadBox = document.getElementById(`thread_${notification.thread_id}`);
+
+            if (threadBox) {
+                // Thread exists - update it
+                updateThreadPreview(notification, threadBox);
+            } else {
+                // Thread doesn't exist - create it
+                createNewThread(notification);
+            }
+        }
+
+        function updateThreadPreview(notification, threadBox) {
+            // Update the message content
+            const messageContent = threadBox.querySelector('.message-content');
+            if (messageContent) {
+                messageContent.textContent = notification.content;
+            }
+
+            // Update the sender
+            const senderSpan = threadBox.querySelector('.message-box span');
+            if (senderSpan) {
+                const isMe = notification.sender === "{{ request.user.first_name }} {{ request.user.last_name }}";
+                senderSpan.textContent = isMe ? 'Me:' : `${notification.sender}:`;
+            }
+
+            // Update the timestamp
+            const messageTimestamp = threadBox.querySelector('.message-timestamp small');
+            if (messageTimestamp) {
+                messageTimestamp.textContent = notification.timestamp;
+            }
+
+            // Move thread to top
+            const threadsBox = document.getElementById('threads-box');
+            const threadLink = threadBox.closest('a');
+            if (threadsBox && threadLink) {
+                threadsBox.insertBefore(threadLink, threadsBox.firstChild);
+            }
+        }
+
+        function createNewThread(notification) {
+            const threadsBox = document.getElementById('threads-box');
+            const noMessage = document.getElementById('noMessage');
+
+            if (!threadsBox) return;
+
+            // Determine thread name based on user role and notification data
+            let threadName = notification.sender;
+
+            // Create new thread element
+            const threadLink = document.createElement('a');
+            threadLink.href = `/accounts/thread/${notification.thread_id}`;
+
+            const threadDiv = document.createElement('div');
+            threadDiv.className = 'thread-box';
+            threadDiv.id = `thread_${notification.thread_id}`;
+
+            const messageBox = document.createElement('div');
+            messageBox.className = 'message-box';
+            messageBox.id = `message_${notification.message_id}`;
+
+            const isMe = notification.sender === "{{ request.user.first_name }} {{ request.user.last_name }}";
+
+            messageBox.innerHTML = `
+                <p class="message-sender">
+                    <strong>${threadName}</strong>
+                </p>
+                <span>${isMe ? 'Me:' : notification.sender + ':'}</span>
+                <p class="message-content">${notification.content}</p>
+                <p class="message-timestamp"><small>${notification.timestamp}</small></p>
+            `;
+
+            threadDiv.appendChild(messageBox);
+            threadLink.appendChild(threadDiv);
+
+            // Insert at top of threads list
+            threadsBox.insertBefore(threadLink, threadsBox.firstChild);
+
+            // Hide "No messages yet" message
+            if (noMessage) {
+                noMessage.style.display = 'none';
+            }
+        }
     });
 </script>
 <p>These are my pharmacy messages</p>
