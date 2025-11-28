@@ -65,7 +65,7 @@
 
                 let messageSender = document.createElement('strong');
                 messageSender.classList.add('message-sender');
-                messageSender.textContent = data.sender === "{{ reqest.user.first_name }} {{ request.user.last_name }}" ? 'Me:' : `${data.sender}:`; 
+                messageSender.textContent = data.sender === "{{ request.user.first_name }} {{ request.user.last_name }}" ? 'Me:' : `${data.sender}:`; 
 
                 let messageContent = document.createElement('p');
                 messageContent.classList.add('message-content');
