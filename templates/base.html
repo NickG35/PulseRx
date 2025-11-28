@@ -69,6 +69,11 @@
                                     <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
                                     <p class="reminder-time"><small>{{noti.time}}</small></p>
                                 </a>
+                                {% elif noti.content %}
+                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{{noti.link}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
+                                    <p class="reminder-message">{{noti.content}}</p>
+                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
+                                </a>
                                 {% else %}
                                 <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" {% if noti.message.sender.role != "system" %} href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" {% else %} href="{{noti.message.link}}" {% endif %} data-read="{{noti.is_read}}" data-id="{{noti.id}}">
                                     {% if noti.message.sender.role != "system" %}
@@ -379,6 +384,12 @@
             } else if (notification.unread_messages !== undefined) {
                 updateMessageBadge(notification.unread_messages);  // Normal update
             }
+
+            // Dispatch custom event for other pages (like messages.html) to listen to
+            const notificationEvent = new CustomEvent('newNotification', {
+                detail: notification
+            });
+            document.dispatchEvent(notificationEvent);
         };
 
         // --------------------------
@@ -435,12 +446,7 @@
             }
             // System notification (prescription, refill, etc.) - has content field
             else if (notification.type && notification.content) {
-                const threadUrl = "{% url 'threads' thread_id=0 %}".replace(
-                    "0",
-                    notification.thread_id
-                );
-
-                dropdownItem.href = notification.link || `${threadUrl}#message_${notification.message_id}`;
+                dropdownItem.href = notification.link || '#';
 
                 dropdownItem.innerHTML = `
                     <p class='message-message'>${notification.content}</p>
