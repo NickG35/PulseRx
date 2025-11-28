@@ -298,10 +298,28 @@ def delete_notification(request):
                 notification = Notifications.objects.get(id=noti_id)
             except ObjectDoesNotExist:
                 return JsonResponse({"error": "Notification not found"}, status=404)
-            
+
             notification.delete()
+
+            # Calculate fresh counts after deletion
+            unread_count = Notifications.objects.filter(user=request.user, is_read=False).count()
+            unread_messages = ReadStatus.objects.filter(user=request.user, read=False).count()
+
+            # Send count-only update via WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{request.user.id}",
+                {
+                    "type": "send_notification",
+                    "notification": {
+                        "unread_count": unread_count,
+                        "unread_messages": unread_messages,
+                    }
+                }
+            )
+
             return JsonResponse({"success": True})
-        
+
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
 
@@ -364,6 +382,24 @@ def read_notification(request):
             notification = Notifications.objects.get(id=noti_id)
             notification.is_read = True
             notification.save()
+
+            # Calculate fresh counts after marking as read
+            unread_count = Notifications.objects.filter(user=request.user, is_read=False).count()
+            unread_messages = ReadStatus.objects.filter(user=request.user, read=False).count()
+
+            # Send count-only update via WebSocket
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{request.user.id}",
+                {
+                    "type": "send_notification",
+                    "notification": {
+                        "unread_count": unread_count,
+                        "unread_messages": unread_messages,
+                    }
+                }
+            )
+
             return JsonResponse({"success": True})
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
