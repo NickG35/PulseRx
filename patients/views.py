@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
 from .models import PatientProfile, MedicationReminder, ReminderTime
-from accounts.models import CustomAccount, Thread, Message, Notifications
+from accounts.models import CustomAccount, Notifications
+from accounts.utils import send_notification_with_counts
 from .forms import ReminderForm, PharmacyForm
 from datetime import datetime, date, timedelta
 from django.http import JsonResponse
@@ -9,12 +10,8 @@ from django.utils import timezone
 import json
 from accounts.tasks import send_reminder
 from celery import current_app
-from datetime import datetime, date
 from django.contrib import messages
-from django.db.models import Count
 from django.urls import reverse
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 
 def patient_home(request):
     return render(request, 'patient_home.html')
@@ -309,47 +306,34 @@ def refill(request, prescription_id):
         prescription.refills_left -= 1
         prescription.refill_pending = True
         prescription.save()
-        
+
         patient = PatientProfile.objects.get(user=request.user)
         pharmacy = patient.pharmacy
         pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
-        system_user = CustomAccount.objects.get(role='system')
-        users = [system_user] + list(pharmacists)
-        notified_users = list(pharmacists)
 
-        thread = Thread.objects.create()
-        thread.participant.add(*users)
-        
-        msg = Message.objects.create(
-            sender=system_user,
-            thread=thread,
-            content= f"A refill request from {patient.first_name} {patient.last_name} has been sent. ",
-            link=reverse('refill_form', args=[prescription.id]),
-            prescription=prescription,
-            refill_fulfilled=False
-        )
-        channel_layer = get_channel_layer()
+        content = f"A refill request from {patient.first_name} {patient.last_name} has been sent."
+        link = reverse('refill_form', args=[prescription.id])
 
-        for u in notified_users:
-            notification_obj = Notifications.objects.create(user=u, message=msg)
-            
-            notification_payload = {
-                "type": "send_notification",
-                "notification": {
+        for u in pharmacists:
+            notification_obj = Notifications.objects.create(
+                user=u,
+                content=content,
+                link=link,
+                prescription=prescription
+            )
+
+            # Send notification with automatic unread counts
+            send_notification_with_counts(
+                user=u,
+                notification_data={
                     "id": notification_obj.id,
                     "type": "refill_request",
-                    "sender": system_user.first_name,
-                    "thread_id": thread.id,
-                    "message_id": msg.id,
-                    "content": msg.content,
-                    "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                    "link": msg.link
+                    "content": content,
+                    "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+                    "link": link
                 }
-            }
+            )
 
-            async_to_sync(channel_layer.group_send)(f"user_{u.id}", notification_payload)
-
-            
         messages.success(request, "Refill request submitted.")
         return redirect('prescriptions')
 
