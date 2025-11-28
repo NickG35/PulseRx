@@ -3,16 +3,14 @@ from django.urls import reverse
 from django.core.paginator import Paginator
 from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
 from accounts.models import CustomAccount
-from accounts.models import Message, Thread, Notifications
+from accounts.models import Message, Thread, Notifications, ReadStatus
+from accounts.utils import send_notification_with_counts
 from .forms import PrescriptionForm
 from patients.models import PatientProfile
 from django.http import JsonResponse
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.contrib import messages
-from django import forms
 from django.utils import timezone
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
 
 # Create your views here.
 def pharmacy_home(request):
@@ -59,8 +57,6 @@ def create_prescriptions(request):
             users = [system_user, pharmacy.user] + list(pharmacists) #list of users
             thread = Thread.objects.create()
             thread.participant.add(*users)
-            channel_layer = get_channel_layer()
-            
             # Create notifications
             if 1 <= new_stock <= 30:
                 msg = Message.objects.create(
@@ -68,28 +64,25 @@ def create_prescriptions(request):
                     thread=thread,
                     content=f"{medicine.name} ({medicine.brand}) is running low.",
                     link = reverse('drug_detail', args=[medicine.id])
-                ) 
+                )
 
                 for u in [pharmacy.user] + list(pharmacists):
                     notification_obj = Notifications.objects.create(user=u, message=msg)
 
-                    notification_payload = {
-                        "type": "send_notification",
-                        "notification": {
-                            "id": notification_obj.id,
-                            "type": "low_stock",
-                            "sender": system_user.first_name,
-                            "thread_id": thread.id,
-                            "message_id": msg.id,
-                            "content": msg.content,
-                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                            "link": msg.link
-                        }
-                    }
-
                     if u.id != request.user.id:
-                        async_to_sync(channel_layer.group_send)(
-                            f"user_{u.id}", notification_payload
+                        # Send notification with automatic unread counts
+                        send_notification_with_counts(
+                            user=u,
+                            notification_data={
+                                "id": notification_obj.id,
+                                "type": "low_stock",
+                                "sender": system_user.first_name,
+                                "thread_id": thread.id,
+                                "message_id": msg.id,
+                                "content": msg.content,
+                                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                                "link": msg.link
+                            }
                         )
 
             elif new_stock == 0:
@@ -103,23 +96,20 @@ def create_prescriptions(request):
                 for u in [pharmacy.user] + list(pharmacists):
                     notification_obj = Notifications.objects.create(user=u, message=msg)
 
-                    notification_payload = {
-                        "type": "send_notification",
-                        "notification": {
-                            "id": notification_obj.id,
-                            "type": "out_of_stock",
-                            "sender": system_user.first_name,
-                            "thread_id": thread.id,
-                            "message_id": msg.id,
-                            "content": msg.content,
-                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                            "link": msg.link
-                        }
-                    }
-
                     if u.id != request.user.id:
-                        async_to_sync(channel_layer.group_send)(
-                            f"user_{u.id}", notification_payload
+                        # Send notification with automatic unread counts
+                        send_notification_with_counts(
+                            user=u,
+                            notification_data={
+                                "id": notification_obj.id,
+                                "type": "out_of_stock",
+                                "sender": system_user.first_name,
+                                "thread_id": thread.id,
+                                "message_id": msg.id,
+                                "content": msg.content,
+                                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                                "link": msg.link
+                            }
                         )
             
             msg = Message.objects.create(
@@ -130,10 +120,11 @@ def create_prescriptions(request):
             )
 
             notification_obj = Notifications.objects.create(user=prescription.patient.user, message=msg)
-            
-            notification_payload = {
-                "type": "send_notification",
-                "notification": {
+
+            # Send notification with automatic unread counts
+            send_notification_with_counts(
+                user=prescription.patient.user,
+                notification_data={
                     "id": notification_obj.id,
                     "type": "create_prescription",
                     "sender": system_user.first_name,
@@ -143,9 +134,7 @@ def create_prescriptions(request):
                     "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
                     "link": msg.link
                 }
-            }
-
-            async_to_sync(channel_layer.group_send)(f"user_{prescription.patient.user.id}", notification_payload)
+            )
 
             messages.success(request, "Prescription created successfully.")
             return redirect(
@@ -246,55 +235,40 @@ def drug_detail(request, drug_id):
 def resupply(request, drug_id):
     pharmacy = PharmacyProfile.objects.get(user=request.user)
     pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
-    system_user = CustomAccount.objects.get(role='system')
-    participants = [system_user] +  list(pharmacists)
 
     medicine = Drug.objects.get(id=drug_id)
     medicine.resupply_pending = False
     medicine.stock = 100
     medicine.save()
 
-    thread = Thread.objects.create()
-    thread.participant.add(*participants)
+    content = f"{medicine.name} ({medicine.brand}) has been resupplied."
+    link = reverse('drug_detail', args=[drug_id])
 
-    msg = Message.objects.create(
-        sender=system_user,
-        thread=thread,
-        content=f"{medicine.name} ({medicine.brand}) has been resupplied.",
-        link = reverse('drug_detail', args=[drug_id])
-    )
-
-    last_request_msg = (
-        Message.objects
-        .filter(drug=medicine, resupply_fulfilled=False)
-        .order_by('-timestamp')
-        .first()
-    )
-
-    if last_request_msg:
-        last_request_msg.resupply_fulfilled = True
-        last_request_msg.save()
-
-    channel_layer = get_channel_layer()
+    # Delete old resupply request notifications
+    Notifications.objects.filter(
+        drug=medicine,
+        content__icontains="resupply request"
+    ).delete()
 
     for user in list(pharmacists):
-        notification_obj = Notifications.objects.create(user=user, message=msg)
+        notification_obj = Notifications.objects.create(
+            user=user,
+            content=content,
+            link=link,
+            drug=medicine
+        )
 
-        notification_payload = {
-            "type": "send_notification",
-            "notification": {
+        # Send notification with automatic unread counts
+        send_notification_with_counts(
+            user=user,
+            notification_data={
                 "id": notification_obj.id,
                 "type": "resupply",
-                "sender": system_user.first_name,
-                "thread_id": thread.id,
-                "message_id": msg.id,
-                "content": msg.content,
-                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                "link": msg.link
+                "content": content,
+                "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+                "link": link
             }
-        }
-
-        async_to_sync(channel_layer.group_send)(f"user_{user.id}", notification_payload)
+        )
 
     messages.success(request, "Medication inventory successfully resupplied.")
     return redirect(reverse('drug_detail', args=[medicine.id]))
@@ -302,47 +276,32 @@ def resupply(request, drug_id):
 def contact_admin(request, drug_id):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = pharmacist.pharmacy
-    system_user = CustomAccount.objects.get(role='system')
-    participants = [system_user, pharmacy.user]
 
     medicine = Drug.objects.get(id=drug_id)
     medicine.resupply_pending = True
     medicine.save()
 
-    thread = Thread.objects.create()
-    thread.participant.add(*participants)
-    
+    content = f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory."
+    link = reverse('drug_detail', args=[drug_id])
 
-    msg = Message.objects.create(
-            sender=system_user,
-            thread=thread,
-            content= f"A resupply of {medicine.name} ({medicine.brand}) has been requested due to low inventory. ",
-            link = reverse('drug_detail', args=[drug_id]),
-            drug = medicine,
-            resupply_fulfilled = False
-        )
+    notification_obj = Notifications.objects.create(
+        user=pharmacy.user,
+        content=content,
+        link=link,
+        drug=medicine
+    )
 
-    timestamp_local = timezone.localtime(msg.timestamp)
-    formatted_timestamp = timestamp_local.strftime("%b %d, %I:%M %p")
-
-    notification_obj = Notifications.objects.create(user=pharmacy.user, message=msg)
-    
-    channel_layer = get_channel_layer()
-    notification_payload = {
-        "type": "send_notification",
-        "notification": {
+    # Send notification with automatic unread counts
+    send_notification_with_counts(
+        user=pharmacy.user,
+        notification_data={
             "id": notification_obj.id,
             "type": "resupply_request",
-            "sender": system_user.first_name,
-            "thread_id": thread.id,
-            "message_id": msg.id,
-            "content": msg.content,
-            "timestamp": formatted_timestamp,
-            "link": msg.link
+            "content": content,
+            "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+            "link": link
         }
-    }
-
-    async_to_sync(channel_layer.group_send)(f"user_{pharmacy.user.id}", notification_payload)
+    )
 
     return redirect(reverse('drug_detail', args=[medicine.id]))
 
@@ -380,7 +339,6 @@ def refill_form(request, prescription_id):
             users = [system_user, patient.user]
             thread = Thread.objects.create()
             thread.participant.add(*users)
-            channel_layer = get_channel_layer()
 
             if 1 <= new_stock <= 30:
                 msg = Message.objects.create(
@@ -388,30 +346,27 @@ def refill_form(request, prescription_id):
                     thread=thread,
                     content=f"{medicine.name} ({medicine.brand}) is running low.",
                     link = reverse('drug_detail', args=[medicine.id])
-                ) 
+                )
 
                 for u in [pharmacy.user] + list(pharmacists):
                     notification_obj = Notifications.objects.create(user=u, message=msg)
 
-                    notification_payload = {
-                        "type": "send_notification",
-                        "notification": {
-                            "id": notification_obj.id,
-                            "type": "low_stock",
-                            "sender": system_user.first_name,
-                            "thread_id": thread.id,
-                            "message_id": msg.id,
-                            "content": msg.content,
-                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                            "link": msg.link
-                        }
-                    }
-
                     if u.id != request.user.id:
-                        async_to_sync(channel_layer.group_send)(
-                            f"user_{u.id}", notification_payload
+                        # Send notification with automatic unread counts
+                        send_notification_with_counts(
+                            user=u,
+                            notification_data={
+                                "id": notification_obj.id,
+                                "type": "low_stock",
+                                "sender": system_user.first_name,
+                                "thread_id": thread.id,
+                                "message_id": msg.id,
+                                "content": msg.content,
+                                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                                "link": msg.link
+                            }
                         )
-            
+
             elif new_stock == 0:
                 msg = Message.objects.create(
                     sender=system_user,
@@ -423,63 +378,50 @@ def refill_form(request, prescription_id):
                 for u in [pharmacy.user] + list(pharmacists):
                     notification_obj = Notifications.objects.create(user=u, message=msg)
 
-                    notification_payload = {
-                        "type": "send_notification",
-                        "notification": {
-                            "id": notification_obj.id,
-                            "type": "out_of_stock",
-                            "sender": system_user.first_name,
-                            "thread_id": thread.id,
-                            "message_id": msg.id,
-                            "content": msg.content,
-                            "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                            "link": msg.link
-                        }
-                    }
-
                     if u.id != request.user.id:
-                        async_to_sync(channel_layer.group_send)(
-                            f"user_{u.id}", notification_payload
+                        # Send notification with automatic unread counts
+                        send_notification_with_counts(
+                            user=u,
+                            notification_data={
+                                "id": notification_obj.id,
+                                "type": "out_of_stock",
+                                "sender": system_user.first_name,
+                                "thread_id": thread.id,
+                                "message_id": msg.id,
+                                "content": msg.content,
+                                "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
+                                "link": msg.link
+                            }
                         )
                     
 
-            
-            msg = Message.objects.create(
-                sender=system_user,
-                thread=thread,
-                content= f"A refill request has been fulfilled and is ready for pick up.",
-                link=f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}"
+            # Delete old refill request notifications for this prescription
+            Notifications.objects.filter(
+                prescription=old_prescription,
+                content__icontains="refill request"
+            ).delete()
+
+            content = f"A refill request has been fulfilled and is ready for pick up."
+            link = f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}"
+
+            notification_obj = Notifications.objects.create(
+                user=patient.user,
+                content=content,
+                link=link,
+                prescription=prescription
             )
 
-            last_request_msg = (
-                Message.objects
-                .filter(prescription=old_prescription, refill_fulfilled=False)
-                .order_by('-timestamp')
-                .first()
-            )
-
-            if last_request_msg:
-                last_request_msg.refill_fulfilled = True
-                last_request_msg.save()
-
-            notification_obj = Notifications.objects.create(user=patient.user, message=msg)
-            
-            channel_layer = get_channel_layer()
-            notification_payload = {
-                "type": "send_notification",
-                "notification": {
+            # Send notification with automatic unread counts
+            send_notification_with_counts(
+                user=patient.user,
+                notification_data={
                     "id": notification_obj.id,
                     "type": "refill",
-                    "sender": system_user.first_name,
-                    "thread_id": thread.id,
-                    "message_id": msg.id,
-                    "content": msg.content,
-                    "timestamp": timezone.localtime(msg.timestamp).strftime("%b %d, %I:%M %p"),
-                    "link": msg.link
+                    "content": content,
+                    "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+                    "link": link
                 }
-            }
-
-            async_to_sync(channel_layer.group_send)(f"user_{patient.user.id}", notification_payload)
+            )
 
             return redirect(f"{reverse('patient_profile', args=[patient.id])}#prescription-{prescription.id}")
 
