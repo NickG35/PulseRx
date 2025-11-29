@@ -462,6 +462,15 @@
                         return;
                     }
 
+                    // Check for duplicate times
+                    const timeValues = updated_times.map(t => t.time);
+                    const uniqueTimeValues = new Set(timeValues);
+
+                    if (timeValues.length !== uniqueTimeValues.size) {
+                        alert('You have duplicate reminder times. Please ensure each time is unique.');
+                        return;
+                    }
+
                     fetch('/patient/edit_reminder', {
                         method: "POST",
                         headers: {
@@ -474,7 +483,14 @@
                                 days: dayInput.value
                             })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.error || 'Update failed');
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success){
                             editable_buttons.forEach(el => {
@@ -492,7 +508,7 @@
 
                             const times = data.times;
                             console.log(times);
-                            
+
                             times.forEach(time => {
                                 const timeDivs = document.querySelectorAll(`.original_${reminder_id}[data-time-id="${time.id}"]`);
                                 timeDivs.forEach(div => {
@@ -506,11 +522,12 @@
 
                             console.log(`Reminder ${reminder_id} is updated`);
                         } else {
-                            console.log('error: reminder cannot be updated');
+                            alert(data.error || 'Error: reminder cannot be updated');
                         }
                     })
                     .catch(error => {
-                        console.error("Error", error)
+                        console.error("Error", error);
+                        alert(error.message || 'An error occurred while updating the reminder');
                     });
                 })
             })
