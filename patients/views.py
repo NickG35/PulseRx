@@ -165,11 +165,8 @@ def toggle_reminder(request):
                     eta = timezone.make_aware(
                         datetime.combine(date.today(), time_entry.time)
                     )
-                    if eta < now:
+                    if eta <= now:
                         eta += timedelta(days=1)
-                    
-                    if eta.hour == now.hour and eta.minute == now.minute:
-                        eta = now + timedelta(seconds=1)
                     
                     task = send_reminder.apply_async(
                         args=[time_entry.id],
@@ -210,11 +207,8 @@ def unarchive(request):
                 eta = timezone.make_aware(
                     datetime.combine(date.today(), time_entry.time)
                 )
-                if eta < now:
+                if eta <= now:
                     eta += timedelta(days=1)
-                
-                if eta.hour == now.hour and eta.minute == now.minute:
-                    eta = now + timedelta(seconds=1)
                 
                 task = send_reminder.apply_async(
                     args=[time_entry.id],
@@ -260,6 +254,18 @@ def edit_reminder(request):
                 try:
                     time_entry = ReminderTime.objects.get(id=time_id, reminder=reminder)
                     parsed_time = datetime.strptime(new_time, "%H:%M").time().replace(second=0, microsecond=0)
+
+                    # Check if another ReminderTime already has this time for this reminder
+                    duplicate = ReminderTime.objects.filter(
+                        reminder=reminder,
+                        time=parsed_time
+                    ).exclude(id=time_id).exists()
+
+                    if duplicate:
+                        return JsonResponse({
+                            "error": f"You already have a reminder set for {parsed_time.strftime('%I:%M %p')}"
+                        }, status=400)
+
                     time_entry.time = parsed_time
 
                     if time_entry.task_id:
@@ -267,15 +273,12 @@ def edit_reminder(request):
                             current_app.control.revoke(time_entry.task_id, terminate=True)
                         except Exception:
                             pass
-                    
+
                     now = timezone.localtime()
                     eta = timezone.make_aware(datetime.combine(date.today(), parsed_time))
-                    if eta < now:
+                    if eta <= now:
                         eta += timedelta(days=1)
-                    
-                    if eta.hour == now.hour and eta.minute == now.minute:
-                        eta = now + timedelta(seconds=1)
-                        
+
 
                     task = send_reminder.apply_async((time_entry.id,), eta=eta)
                     time_entry.task_id = task.id
