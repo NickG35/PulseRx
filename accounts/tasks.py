@@ -13,6 +13,7 @@ def send_reminder(time_id):
         return
 
     if reminder.is_active and reminder.days_left() > 0 and reminder_time.is_active:
+        # Create notification
         notif = Notifications.objects.create(
             user=reminder.user.user,
             reminder=reminder
