@@ -379,7 +379,15 @@ def read_notification(request):
         try:
             data = json.loads(request.body)
             noti_id = data.get('notification_id')
-            notification = Notifications.objects.get(id=noti_id)
+
+            if not noti_id:
+                return JsonResponse({"error": "missing notification id"}, status=400)
+
+            try:
+                notification = Notifications.objects.get(id=noti_id)
+            except ObjectDoesNotExist:
+                return JsonResponse({"error": "Notification not found"}, status=404)
+
             notification.is_read = True
             notification.save()
 
