@@ -258,9 +258,40 @@
             if (!clickedItem) return;
 
             const notification_id = clickedItem.dataset.id;
-            const data = JSON.stringify({ notification_id: notification_id });
-            navigator.sendBeacon('/accounts/read_notification', new Blob([data], { type: 'application/json' }));
-            clickedItem.classList.add('read');
+            const isUnread = clickedItem.dataset.read === 'False';
+
+            // OPTIMISTIC UPDATE: Update UI immediately before server responds
+            if (isUnread) {
+                // Mark notification as read visually
+                clickedItem.classList.add('read');
+                clickedItem.dataset.read = 'True';
+
+                // Decrement the badge count immediately
+                const notifBadge = document.getElementById("notification-badge");
+                if (notifBadge) {
+                    const currentCount = parseInt(notifBadge.textContent) || 0;
+                    const newCount = Math.max(0, currentCount - 1);
+                    notifBadge.textContent = newCount;
+                    notifBadge.style.display = newCount > 0 ? "inline-block" : "none";
+                }
+            }
+
+            // Send request to server (WebSocket will send authoritative count back)
+            fetch('/accounts/read_notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ notification_id: notification_id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // WebSocket will send the authoritative count, so we don't need to do anything here
+                if (!data.success) {
+                    console.error('Failed to mark notification as read:', data.error);
+                }
+            })
+            .catch(error => console.error('Error marking notification as read:', error));
 
             // Scroll to message if on the same page
             const href = clickedItem.getAttribute('href');
