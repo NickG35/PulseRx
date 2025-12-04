@@ -1,6 +1,89 @@
-{% extends 'base.html' %}
-
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 
 <h2>Welcome patient!</h2>
+
+<div class="row">
+  <div class="col-sm-6 mb-sm-0 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Reminders</h5>
+        {% if active_reminders %}
+          {% for reminder in active_reminders %}
+            <div class="mb-2">
+                <strong>{{ reminder.prescription.medicine.name }}</strong>
+                {% if reminder.next_time %}
+                  <p class="text-muted small mb-0">
+                    Next: 
+                    {% if reminder.next_date == today %}
+                          Today at {{ reminder.next_time|time:"g:i A" }}
+                        {% elif reminder.next_date == tomorrow %}
+                          Tomorrow at {{ reminder.next_time|time:"g:i A" }}
+                        {% else %}
+                          {{ reminder.next_date|date:"M j" }} at {{ reminder.next_time|time:"g:i A" }}
+                        {% endif %}
+                      </p>
+                    {% endif %}
+                <small class="text-muted">{{ reminder.days_left }} days left</small>
+            </div>
+            {% if not forloop.last %} <hr> {% endif %}
+          {% endfor %}
+        {% else %}
+            <p class="card-text">No active reminders</p>
+        {% endif %}
+       
+        <a href="{% url 'reminders' %}" class="btn btn-primary">Manage</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Messages</h5>
+        {% if recent_messages %}
+          {% for message in recent_messages %}
+            <div class="mb-2">
+              <strong>
+                {{ message.sender.first_name }} {{ message.sender.last_name }}
+              </strong>
+              <p class="text-muted small mb-0">
+                {{ message.content|truncatechars:50 }}
+              </p>
+              <small class="text-muted"
+                >{{ message.friendly_time }}</small
+              >
+            </div>
+            {% if not forloop.last %}
+            <hr />
+            {% endif %} 
+          {% endfor %}
+          <a href="{% url 'threads' thread_id=recent_messages.0.thread.id %}" class="btn btn-primary">View Thread</a>
+        {% else %}
+            <p class="card-text">No messages.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 mb-sm-0 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Prescriptions</h5>
+        <p class="card-text">
+          With supporting text below as a natural lead-in to additional content.
+        </p>
+        <a href="#" class="btn btn-primary">Go somewhere</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">My Pharmacy</h5>
+        <p class="card-text">
+          With supporting text below as a natural lead-in to additional content.
+        </p>
+        <a href="#" class="btn btn-primary">Go somewhere</a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
