@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect
 from pharmacy.models import Prescription
 from .models import PatientProfile, MedicationReminder, ReminderTime
-from accounts.models import CustomAccount, Notifications
+from accounts.models import CustomAccount, Notifications, Message, Thread
 from accounts.utils import send_notification_with_counts
+from django.db.models import Prefetch
 from .forms import ReminderForm, PharmacyForm
 from datetime import datetime, date, timedelta
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.timezone import now as tz_now
 import json
 from accounts.tasks import send_reminder
 from celery import current_app
@@ -14,7 +16,67 @@ from django.contrib import messages
 from django.urls import reverse
 
 def patient_home(request):
-    return render(request, 'patient_home.html')
+    patient = PatientProfile.objects.get(user=request.user)
+
+    #prescription preview
+    recent_prescriptions = patient.prescription.with_latest_ordering()[:3]
+
+    #reminders
+    active_reminders = MedicationReminder.objects.filter(
+        user=patient, is_archived=False, is_active=True
+    ).select_related('prescription__medicine').prefetch_related('times')[:3]
+
+    for reminder in active_reminders:
+        now = timezone.localtime().time()
+        times_today = reminder.times.filter(is_active=True).order_by('time')
+        reminder.next_time = next((t.time for t in times_today if t.time > now),
+                                  times_today.first().time if times_today.exists() else None)
+
+        if reminder.next_time:
+            if any(t.time > now for t in times_today):
+                reminder.next_date = date.today()
+            else:
+                reminder.next_date = date.today() + timedelta(days=1)
+
+    #messages - 3 most recent unread
+    user_threads = Thread.objects.filter(participant=request.user)
+    recent_messages = Message.objects.filter(
+        thread__in=user_threads
+    ).exclude(
+        sender__role='system'
+    ).select_related('sender').order_by('-timestamp')[:3]
+
+    for message in recent_messages:
+        delta = tz_now() - message.timestamp
+        if delta.days == 0:
+            message.friendly_time = f"{message.timestamp.strftime('%-I:%M %p')}"
+        elif delta.days == 1:
+            message.friendly_time = "Yesterday"
+        elif delta.days < 7:
+            message.friendly_time = f"{delta.days} days ago"
+        elif delta.days < 28:
+            weeks = delta.days // 7
+            message.friendly_time = f"{weeks} week{'s' if weeks > 1 else ''} ago"
+        elif delta.days < 365:
+            months = delta.days // 30
+            message.friendly_time = f"{months} month{'s' if months > 1 else ''} ago"
+        else:
+            years = delta.days // 365
+            message.friendly_time = f"{years} year{'s' if years > 1 else ''} ago"
+
+    #pharmacy
+    pharmacy = patient.pharmacy
+
+    context = {
+        'recent_prescriptions': recent_prescriptions,
+        'active_reminders': active_reminders,
+        'recent_messages': recent_messages,
+        'pharmacy': pharmacy,
+        'today': date.today(),
+        'tomorrow': date.today() + timedelta(days=1),
+    }
+
+    return render(request, 'patient_home.html', context)
 
 def prescriptions(request):
     patient = PatientProfile.objects.get(user=request.user)
