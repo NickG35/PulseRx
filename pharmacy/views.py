@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.core.paginator import Paginator
-from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription
+from django.views.decorators.cache import never_cache
+from .models import Drug, PharmacyProfile, PharmacistProfile, Prescription, generate_join_code
 from accounts.models import CustomAccount
 from accounts.models import Message, Thread, Notifications, ReadStatus
 from accounts.utils import send_notification_with_counts
@@ -10,6 +11,9 @@ from patients.models import PatientProfile
 from django.http import JsonResponse
 from django.db.models import Q
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponseForbidden
 from django.utils import timezone
 
 # Create your views here.
@@ -18,6 +22,24 @@ def pharmacy_home(request):
     return render(request, 'pharmacy_home.html', {
         'pharmacy': pharmacy,
     })
+
+@login_required
+def regenerate_code(request):
+    if request.method == 'POST':
+        pharmacy = get_object_or_404(PharmacyProfile, user=request.user)
+        new_code = generate_join_code()
+
+        while PharmacyProfile.objects.filter(join_code=new_code).exists():
+            new_code = generate_join_code()
+        
+        pharmacy.join_code = new_code
+        pharmacy.save()
+
+        messages.success(request, f"New join code successfully generated.")
+        return redirect('pharmacy_home')
+    
+    return redirect('pharmacy_home')
+
 
 def pharmacist_home(request):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
@@ -217,6 +239,7 @@ def patient_profile(request, patient_id):
         'patient': patient
     })
 
+@never_cache
 def inventory(request):
     drugs = Drug.objects.all()
     paginator = Paginator(drugs, 20)
@@ -226,6 +249,7 @@ def inventory(request):
         'page_obj': page_obj
     })
 
+@never_cache
 def drug_detail(request, drug_id):
     drug_info = Drug.objects.filter(id=drug_id).all()
     return render(request, 'drug_detail.html', {
@@ -233,45 +257,50 @@ def drug_detail(request, drug_id):
     })
 
 def resupply(request, drug_id):
-    pharmacy = PharmacyProfile.objects.get(user=request.user)
-    pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
+    if request.method == 'POST':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+        pharmacists = CustomAccount.objects.filter(pharmacistprofile__pharmacy=pharmacy)
 
-    medicine = Drug.objects.get(id=drug_id)
-    medicine.resupply_pending = False
-    medicine.stock = 100
-    medicine.save()
+        medicine = Drug.objects.get(id=drug_id)
 
-    content = f"{medicine.name} ({medicine.brand}) has been resupplied."
-    link = reverse('drug_detail', args=[drug_id])
+        if medicine.stock <= 30:
+            medicine.resupply_pending = False
+            medicine.stock = 100
+            medicine.save()
 
-    # Delete old resupply request notifications
-    Notifications.objects.filter(
-        drug=medicine,
-        content__icontains="resupply request"
-    ).delete()
+            content = f"{medicine.name} ({medicine.brand}) has been resupplied."
+            link = reverse('drug_detail', args=[drug_id])
 
-    for user in list(pharmacists):
-        notification_obj = Notifications.objects.create(
-            user=user,
-            content=content,
-            link=link,
-            drug=medicine
-        )
+            # Delete old resupply request notifications
+            Notifications.objects.filter(
+                drug=medicine,
+                content__icontains="resupply request"
+            ).delete()
 
-        # Send notification with automatic unread counts
-        send_notification_with_counts(
-            user=user,
-            notification_data={
-                "id": notification_obj.id,
-                "type": "resupply",
-                "content": content,
-                "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
-                "link": link
-            }
-        )
+            for user in list(pharmacists):
+                notification_obj = Notifications.objects.create(
+                    user=user,
+                    content=content,
+                    link=link,
+                    drug=medicine
+            )
 
-    messages.success(request, "Medication inventory successfully resupplied.")
-    return redirect(reverse('drug_detail', args=[medicine.id]))
+            # Send notification with automatic unread counts
+            send_notification_with_counts(
+                user=user,
+                notification_data={
+                    "id": notification_obj.id,
+                    "type": "resupply",
+                    "content": content,
+                    "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+                    "link": link
+                }
+            )
+            messages.success(request, "Medication inventory successfully resupplied.")
+        else:
+            messages.info(request, "Stock is already sufficient.")
+
+        return redirect(reverse('drug_detail', args=[medicine.id]))
 
 def contact_admin(request, drug_id):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
