@@ -2,6 +2,13 @@
 
 {% block content %}
 <h2>Inventory</h2>
+{% if messages %}
+<ul class="messages">
+    {% for message in messages %}
+    <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="yes">
 <input type="hidden" class="hidden-medicine">
