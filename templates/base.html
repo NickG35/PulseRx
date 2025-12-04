@@ -1,516 +1,629 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %} PulseRx {% endblock %}</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
-    <script src="https://kit.fontawesome.com/8b6abeeef6.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{% static 'styles.css' %}" />
+    <script
+      src="https://kit.fontawesome.com/8b6abeeef6.js"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-</head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    />
+  </head>
 
-<nav class="dashboard-nav">
+  <nav class="dashboard-nav">
     {% if request.user.role == 'patient' %}
-        <div class="end-div">
-            <a href="{% url 'patient_home' %}"><h1>PulseRx</h1></a>
-        </div>
-        <div>
-            <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
-            <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
-            <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
-            <a href="{% url 'messages' %}" id="message-link" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span>{% endif %}</a>
-        </div>
+    <div class="end-div">
+      <a href="{% url 'patient_home' %}"><h1>PulseRx</h1></a>
+    </div>
+    <div>
+      <a href="{% url 'prescriptions' %}" class="main-link">Prescriptions</a>
+      <a href="{% url 'my_pharmacy' %}" class="main-link">My Pharmacy</a>
+      <a href="{% url 'reminders' %}" class="main-link">Reminders</a>
+      <a href="{% url 'messages' %}" id="message-link" class="main-link"
+        >Messages {% if unread_messages > 0 %}<span
+          id="message-badge"
+          class="badge bg-secondary"
+          >{{unread_messages}}</span
+        >{% endif %}</a
+      >
+    </div>
 
     {% elif request.user.role == 'pharmacist' %}
-        <div class="end-div">
-            <a href="{% url 'pharmacist_home' %}"><h1>PulseRx</h1></a>
-        </div>
-        <div>
-            <a href="{% url 'create_prescriptions' %}" class="main-link">Create Prescriptions</a>
-            <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
-            <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" id="message-link" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
-        </div>
+    <div class="end-div">
+      <a href="{% url 'pharmacist_home' %}"><h1>PulseRx</h1></a>
+    </div>
+    <div>
+      <a href="{% url 'create_prescriptions' %}" class="main-link"
+        >Create Prescriptions</a
+      >
+      <a href="{% url 'my_patients' %}" class="main-link">My Patients</a>
+      <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
+      <a href="{% url 'messages' %}" id="message-link" class="main-link"
+        >Messages {% if unread_messages > 0 %}<span
+          id="message-badge"
+          class="badge bg-secondary"
+          >{{unread_messages}}</span
+        >
+        {% endif %}</a
+      >
+    </div>
 
     {% elif request.user.role == 'pharmacy admin' %}
-        <div class="end-div">
-            <a href="{% url 'pharmacy_home' %}"><h1>PulseRx</h1></a>
-        </div>
-        <div>
-            <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
-            <a href="{% url 'messages' %}" id="message-link" class="main-link">Messages {% if unread_messages > 0 %}<span id="message-badge" class="badge bg-secondary">{{unread_messages}}</span> {% endif %}</a>
-        </div>
+    <div class="end-div">
+      <a href="{% url 'pharmacy_home' %}"><h1>PulseRx</h1></a>
+    </div>
+    <div>
+      <a href="{% url 'inventory' %}" class="main-link">Inventory</a>
+      <a href="{% url 'messages' %}" id="message-link" class="main-link"
+        >Messages {% if unread_messages > 0 %}<span
+          id="message-badge"
+          class="badge bg-secondary"
+          >{{unread_messages}}</span
+        >
+        {% endif %}</a
+      >
+    </div>
     {% endif %}
-        <div class="end-div">
-            <div class="dropdown show">
-                <button type="button" id="hidden-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i id="noti-bell" class="bi bi-bell position-relative fs-4">
-                        <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: {% if unread_count > 0 %}inline-block{% else %}none{% endif %}">
-                            {{unread_count}}
-                        </span>
-                    </i>
-                </button>
-              
-                <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                    <h5>Notifications</h5>
-                    <div class="noti-content">
-                        {% for noti in notifications %}
-                            <div id="noti_div_{{noti.id}}" class="dropdown-item">
-                                <button class="delete-noti" type="button" data-id="{{noti.id}}">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                                {% if noti.reminder %}
-                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                    <p class="reminder-message">Time to take your {{noti.reminder.medicine_name}}</p>
-                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
-                                </a>
-                                {% elif noti.content %}
-                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" href="{{noti.link}}" data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                    <p class="reminder-message">{{noti.content}}</p>
-                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
-                                </a>
-                                {% else %}
-                                <a id="noti-dropdown" class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop" {% if noti.message.sender.role != "system" %} href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}" {% else %} href="{{noti.message.link}}" {% endif %} data-read="{{noti.is_read}}" data-id="{{noti.id}}">
-                                    {% if noti.message.sender.role != "system" %}
-                                        <p class="reminder-message">{{noti.message.sender.first_name}} {{noti.message.sender.last_name}} has sent you a new message.</p>
-                                    {% else %}
-                                        <p class="reminder-message">{{noti.message.content}}</p>
-                                    {% endif %}
-                                    <p class="reminder-time"><small>{{noti.time}}</small></p>
-                                </a>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                        {% if not noti %}
-                            <span id="emptyMessage" {% if notifications %} style="display: none;" {% endif %}>No notifications to display</span>
-                        {% endif %}
-                    </div>
-                </div>
+    <div class="end-div">
+      <div class="dropdown show">
+        <button
+          type="button"
+          id="hidden-dropdown"
+          data-bs-toggle="dropdown"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
+          <i id="noti-bell" class="bi bi-bell position-relative fs-4">
+            <span
+              id="notification-badge"
+              class="position-absolute start-100 translate-middle badge rounded-pill bg-danger top-0"
+              style="display: {% if unread_count > 0 %}inline-block{% else %}none{% endif %}"
+            >
+              {{unread_count}}
+            </span>
+          </i>
+        </button>
+
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+          <h5>Notifications</h5>
+          <div class="noti-content">
+            {% for noti in notifications %}
+            <div id="noti_div_{{noti.id}}" class="dropdown-item">
+              <button class="delete-noti" type="button" data-id="{{noti.id}}">
+                <i class="bi bi-x"></i>
+              </button>
+              {% if noti.reminder %}
+              <a
+                id="noti-dropdown"
+                class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
+                href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}"
+                data-read="{{noti.is_read}}"
+                data-id="{{noti.id}}"
+              >
+                <p class="reminder-message">
+                  Time to take your {{noti.reminder.medicine_name}}
+                </p>
+                <p class="reminder-time"><small>{{noti.time}}</small></p>
+              </a>
+              {% elif noti.content %}
+              <a
+                id="noti-dropdown"
+                class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
+                href="{{noti.link}}"
+                data-read="{{noti.is_read}}"
+                data-id="{{noti.id}}"
+              >
+                <p class="reminder-message">{{noti.content}}</p>
+                <p class="reminder-time"><small>{{noti.time}}</small></p>
+              </a>
+              {% else %}
+              <a
+                id="noti-dropdown"
+                class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
+                {%
+                if
+                noti.message.sender.role
+                !="system"
+                %}
+                href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}"
+                {%
+                else
+                %}
+                href="{{noti.message.link}}"
+                {%
+                endif
+                %}
+                data-read="{{noti.is_read}}"
+                data-id="{{noti.id}}"
+              >
+                {% if noti.message.sender.role != "system" %}
+                <p class="reminder-message">
+                  {{noti.message.sender.first_name}}
+                  {{noti.message.sender.last_name}} has sent you a new message.
+                </p>
+                {% else %}
+                <p class="reminder-message">{{noti.message.content}}</p>
+                {% endif %}
+                <p class="reminder-time"><small>{{noti.time}}</small></p>
+              </a>
+              {% endif %}
             </div>
-            <a href="{% url 'account_settings' %}" class="main-link">Settings</a>
-            <a href="{% url 'logout' %}">Logout</a>
+            {% endfor %} {% if not noti %}
+            <span
+              id="emptyMessage"
+              {%
+              if
+              notifications
+              %}
+              style="display: none"
+              {%
+              endif
+              %}
+              >No notifications to display</span
+            >
+            {% endif %}
+          </div>
         </div>
-</nav>
-<script>
+      </div>
+      <a href="{% url 'account_settings' %}" class="main-link">Settings</a>
+      <a href="{% url 'logout' %}">Logout</a>
+    </div>
+  </nav>
+  <script>
     function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
         }
-        return cookieValue;
+      }
+      return cookieValue;
     }
 
-    const csrftoken = getCookie('csrftoken');
+    const csrftoken = getCookie("csrftoken");
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const formatters = {
+        patient: (p) => `${p.first_name} ${p.last_name} ID: ${p.id}`,
+        medicine: (m) => `${m.name}(${m.brand}) ID: ${m.id}`,
+      };
 
-        const formatters = {
-            patient: p => `${p.first_name} ${p.last_name} ID: ${p.id}`,
-            medicine: m => `${m.name}(${m.brand}) ID: ${m.id}`
-        }
+      const linkGenerators = {
+        patient: (item) => `/pharmacy/patient_profile/${item.id}`,
+        medicine: (item) => `/pharmacy/drug_detail/${item.id}`,
+      };
 
-        const linkGenerators = {
-            patient: item => `/pharmacy/patient_profile/${item.id}`,  
-            medicine: item => `/pharmacy/drug_detail/${item.id}`
-        };
+      const inputs = document.querySelectorAll(".autocomplete-input");
 
+      inputs.forEach((input) => {
+        const type = input.dataset.type;
+        const url = input.dataset.url;
+        const email = input.dataset.email === "yes";
+        const searchType = input.dataset.link === "yes";
+        const resultsContainer = document.getElementById(
+          `autocompleteResults-${type}`,
+        );
+        const hiddenInput = document.querySelector(`.hidden-${type}`);
+        let timeoutId;
 
-        const inputs = document.querySelectorAll('.autocomplete-input');
-        
-        inputs.forEach(input => {
-            const type = input.dataset.type;
-            const url = input.dataset.url;
-            const email = input.dataset.email === "yes";
-            const searchType = input.dataset.link === 'yes';
-            const resultsContainer = document.getElementById(`autocompleteResults-${type}`);
-            const hiddenInput = document.querySelector(`.hidden-${type}`);
-            let timeoutId;
+        input.addEventListener("keyup", function () {
+          clearTimeout(timeoutId);
+          const query = this.value.trim();
 
-            input.addEventListener('keyup', function(){
-                clearTimeout(timeoutId)
-                const query = this.value.trim();
+          if (query.length === 0) {
+            resultsContainer.innerHTML = "";
+            return;
+          }
 
-                if (query.length === 0) {
-                    resultsContainer.innerHTML = ''
-                    return;
+          timeoutId = setTimeout(() => {
+            fetch(
+              `${url}?q=${encodeURIComponent(query)}&email=${email ? "yes" : "no"}`,
+            )
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error(`HTTP error status: ${response.status}`);
                 }
+                return response.json();
+              })
+              .then((data) => {
+                const fragment = document.createDocumentFragment();
 
-                timeoutId = setTimeout(() => {
-                    fetch(`${url}?q=${encodeURIComponent(query)}&email=${email ? 'yes': 'no'}`)
-                        .then(response => {
-                            if (!response.ok){
-                                throw new Error(`HTTP error status: ${response.status}`);
-                            }
-                            return response.json()
-                        })
-                        .then(data => {
-                            const fragment = document.createDocumentFragment();
+                if (data.length > 0) {
+                  data.forEach((item) => {
+                    const div = document.createElement("div");
+                    div.classList.add("search-item");
 
-                            if(data.length > 0) {
-                                data.forEach(item => {
-                                    const div = document.createElement('div');
-                                    div.classList.add('search-item');
-
-                                    if (searchType){
-                                        const searchLink = document.createElement('a');
-                                        searchLink.href = linkGenerators[type](item);
-                                        searchLink.style.display = 'block';
-                                        searchLink.textContent = formatters[type](item);
-                                        div.appendChild(searchLink)
-                                    } else {
-                                        div.textContent = formatters[type](item);
-                                        if(email) {
-                                            div.textContent = `${item.first_name} ${item.last_name} ${item.email}`
-                                        }
-                                        div.addEventListener('click', () => {    
-                                            input.value = formatters[type](item);
-                                            if(email) {
-                                                input.value = `${item.first_name} ${item.last_name} ${item.email}`
-                                            }
-                                            resultsContainer.innerHTML = '';
-                                            hiddenInput.value = item.id;
-                                            console.log(hiddenInput); console.log(hiddenInput.value);
-
-                                        })
-                                    }
-                                    fragment.appendChild(div);
-                                });
-                            } else {
-                                const div = document.createElement('div');
-                                div.textContent = `No ${type} found.`;
-                                div.classList.add('no-results');
-                                fragment.appendChild(div);
-                            }
-
-                            resultsContainer.innerHTML = '';
-                            resultsContainer.appendChild(fragment);
-                        })
-                        .catch(error => {
-                            console.error(`Error fetching ${type} data:`, error);
-                            resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
-                        });
-                }, 300);
-            });
-        });
-
-        flatpickr(".datepicker", {
-            dateFormat: "m-d-Y",
-            allowInput: true
-        });
-
-        const dropdown = document.getElementById('hidden-dropdown');
-        const bellIcon = document.getElementById('noti-bell');
-
-        const setIcon = (isFilled) => {
-            bellIcon.classList.toggle('bi-bell-fill', isFilled);
-            bellIcon.classList.toggle('bi-bell', !isFilled);
-        };
-
-        dropdown.addEventListener('shown.bs.dropdown', () => setIcon(true));
-        dropdown.addEventListener('hidden.bs.dropdown', () => setIcon(false));
-
-        dropdown.addEventListener('mouseenter', () => {
-            if (!dropdown.classList.contains('show')) setIcon(true);
-        });
-
-        dropdown.addEventListener('mouseleave', () => {
-            if (!dropdown.classList.contains('show')) setIcon(false);
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        // Unified scroll & highlight function
-        function scrollToMessage(hash) {
-            if (!hash) return;
-            const target = document.querySelector(hash);
-            if (!target) return;
-
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.classList.add('highlight');
-
-            const observer = new IntersectionObserver((entries, obs) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        setTimeout(() => target.classList.remove('highlight'), 500);
-                        obs.disconnect();
+                    if (searchType) {
+                      const searchLink = document.createElement("a");
+                      searchLink.href = linkGenerators[type](item);
+                      searchLink.style.display = "block";
+                      searchLink.textContent = formatters[type](item);
+                      div.appendChild(searchLink);
+                    } else {
+                      div.textContent = formatters[type](item);
+                      if (email) {
+                        div.textContent = `${item.first_name} ${item.last_name} ${item.email}`;
+                      }
+                      div.addEventListener("click", () => {
+                        input.value = formatters[type](item);
+                        if (email) {
+                          input.value = `${item.first_name} ${item.last_name} ${item.email}`;
+                        }
+                        resultsContainer.innerHTML = "";
+                        hiddenInput.value = item.id;
+                        console.log(hiddenInput);
+                        console.log(hiddenInput.value);
+                      });
                     }
-                });
-            }, {threshold: 0.8});
-
-            observer.observe(target);
-        }
-           
-
-        document.querySelector('.noti-content').addEventListener('click', (event) => {
-            const clickedItem = event.target.closest('.notiDrop');
-            if (!clickedItem) return;
-
-            const notification_id = clickedItem.dataset.id;
-            const isUnread = clickedItem.dataset.read === 'False';
-
-            // OPTIMISTIC UPDATE: Update UI immediately before server responds
-            if (isUnread) {
-                // Mark notification as read visually
-                clickedItem.classList.add('read');
-                clickedItem.dataset.read = 'True';
-
-                // Decrement the badge count immediately
-                const notifBadge = document.getElementById("notification-badge");
-                if (notifBadge) {
-                    const currentCount = parseInt(notifBadge.textContent) || 0;
-                    const newCount = Math.max(0, currentCount - 1);
-                    notifBadge.textContent = newCount;
-                    notifBadge.style.display = newCount > 0 ? "inline-block" : "none";
+                    fragment.appendChild(div);
+                  });
+                } else {
+                  const div = document.createElement("div");
+                  div.textContent = `No ${type} found.`;
+                  div.classList.add("no-results");
+                  fragment.appendChild(div);
                 }
-            }
 
-            // Send request to server (WebSocket will send authoritative count back)
-            fetch('/accounts/read_notification', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ notification_id: notification_id })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // WebSocket will send the authoritative count, so we don't need to do anything here
-                if (!data.success) {
-                    console.error('Failed to mark notification as read:', data.error);
-                }
-            })
-            .catch(error => console.error('Error marking notification as read:', error));
+                resultsContainer.innerHTML = "";
+                resultsContainer.appendChild(fragment);
+              })
+              .catch((error) => {
+                console.error(`Error fetching ${type} data:`, error);
+                resultsContainer.innerHTML = `<div class="error-message">Error loading results. Please try again.</div>`;
+              });
+          }, 300);
+        });
+      });
 
-            // Scroll to message if on the same page
-            const href = clickedItem.getAttribute('href');
-            if (href && href.includes('#')) {
-                const hash = href.substring(href.indexOf('#'));
-                scrollToMessage(hash);
+      flatpickr(".datepicker", {
+        dateFormat: "m-d-Y",
+        allowInput: true,
+      });
+
+      const dropdown = document.getElementById("hidden-dropdown");
+      const bellIcon = document.getElementById("noti-bell");
+
+      const setIcon = (isFilled) => {
+        bellIcon.classList.toggle("bi-bell-fill", isFilled);
+        bellIcon.classList.toggle("bi-bell", !isFilled);
+      };
+
+      dropdown.addEventListener("shown.bs.dropdown", () => setIcon(true));
+      dropdown.addEventListener("hidden.bs.dropdown", () => setIcon(false));
+
+      dropdown.addEventListener("mouseenter", () => {
+        if (!dropdown.classList.contains("show")) setIcon(true);
+      });
+
+      dropdown.addEventListener("mouseleave", () => {
+        if (!dropdown.classList.contains("show")) setIcon(false);
+      });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Unified scroll & highlight function
+      function scrollToMessage(hash) {
+        if (!hash) return;
+        const target = document.querySelector(hash);
+        if (!target) return;
+
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("highlight");
+
+        const observer = new IntersectionObserver(
+          (entries, obs) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                setTimeout(() => target.classList.remove("highlight"), 500);
+                obs.disconnect();
+              }
+            });
+          },
+          { threshold: 0.8 },
+        );
+
+        observer.observe(target);
+      }
+
+      document
+        .querySelector(".noti-content")
+        .addEventListener("click", (event) => {
+          const clickedItem = event.target.closest(".notiDrop");
+          if (!clickedItem) return;
+
+          const notification_id = clickedItem.dataset.id;
+          const isUnread = clickedItem.dataset.read === "False";
+
+          // OPTIMISTIC UPDATE: Update UI immediately before server responds
+          if (isUnread) {
+            // Mark notification as read visually
+            clickedItem.classList.add("read");
+            clickedItem.dataset.read = "True";
+
+            // Decrement the badge count immediately
+            const notifBadge = document.getElementById("notification-badge");
+            if (notifBadge) {
+              const currentCount = parseInt(notifBadge.textContent) || 0;
+              const newCount = Math.max(0, currentCount - 1);
+              notifBadge.textContent = newCount;
+              notifBadge.style.display = newCount > 0 ? "inline-block" : "none";
             }
+          }
+
+          // Send request to server (WebSocket will send authoritative count back)
+          fetch("/accounts/read_notification", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ notification_id: notification_id }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              // WebSocket will send the authoritative count, so we don't need to do anything here
+              if (!data.success) {
+                console.error(
+                  "Failed to mark notification as read:",
+                  data.error,
+                );
+              }
+            })
+            .catch((error) =>
+              console.error("Error marking notification as read:", error),
+            );
+
+          // Scroll to message if on the same page
+          const href = clickedItem.getAttribute("href");
+          if (href && href.includes("#")) {
+            const hash = href.substring(href.indexOf("#"));
+            scrollToMessage(hash);
+          }
         });
 
-        const hashOnLoad = window.location.hash;
-        if (hashOnLoad) scrollToMessage(hashOnLoad);
+      const hashOnLoad = window.location.hash;
+      if (hashOnLoad) scrollToMessage(hashOnLoad);
     });
-    
-    const empty_message = document.getElementById('emptyMessage');
 
-    function updateEmptyMessage(){
-        const notiDrop = document.querySelectorAll('.notiDrop');
-        if (empty_message) {
-            empty_message.style.display = notiDrop.length > 0 ? 'none': 'block';
-        }
+    const empty_message = document.getElementById("emptyMessage");
+
+    function updateEmptyMessage() {
+      const notiDrop = document.querySelectorAll(".notiDrop");
+      if (empty_message) {
+        empty_message.style.display = notiDrop.length > 0 ? "none" : "block";
+      }
     }
 
-    document.querySelector('.noti-content').addEventListener('click', function(e){
-        const btn = e.target.closest('.delete-noti');
+    document
+      .querySelector(".noti-content")
+      .addEventListener("click", function (e) {
+        const btn = e.target.closest(".delete-noti");
         if (!btn) return;
 
         e.stopPropagation();
         const notification_id = btn.dataset.id;
         const noti_div = document.getElementById(`noti_div_${notification_id}`);
 
-        fetch('/accounts/delete_notification', {
-            method: 'POST',
-            headers: {
-                'X-CSRFTOKEN': csrftoken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({notification_id: notification_id})
+        fetch("/accounts/delete_notification", {
+          method: "POST",
+          headers: {
+            "X-CSRFTOKEN": csrftoken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ notification_id: notification_id }),
         })
-        .then(response => response.json())
-        .then(data => {
+          .then((response) => response.json())
+          .then((data) => {
             if (data.success) {
-                console.log(`Deleted notification ${notification_id} successfully`);
-                noti_div?.remove();
-                updateEmptyMessage();
+              console.log(
+                `Deleted notification ${notification_id} successfully`,
+              );
+              noti_div?.remove();
+              updateEmptyMessage();
             }
-        })
-        .catch(error => console.error("Notification error:", error));
-    });
-    
-</script>
-{% if request.user.is_authenticated %}
-<script>
+          })
+          .catch((error) => console.error("Notification error:", error));
+      });
+  </script>
+  {% if request.user.is_authenticated %}
+  <script>
     document.addEventListener("DOMContentLoaded", () => {
+      const noti_content = document.querySelector(".noti-content");
+      const message_link = document.getElementById("message-link");
+      const notifBadge = document.getElementById("notification-badge");
 
-        const noti_content = document.querySelector(".noti-content");
-        const message_link = document.getElementById("message-link");
-        const notifBadge = document.getElementById("notification-badge");
+      // Thread ID only exists on the thread page
+      const threadEl = document.querySelector(".current_thread");
+      const threadId = threadEl ? threadEl.dataset.currentThread : null;
 
-        // Thread ID only exists on the thread page
-        const threadEl = document.querySelector(".current_thread");
-        const threadId = threadEl ? threadEl.dataset.currentThread : null;
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      const socket = new WebSocket(
+        `${protocol}://127.0.0.1:8000/ws/notifications/`,
+      );
 
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-        const socket = new WebSocket(`${protocol}://127.0.0.1:8000/ws/notifications/`);
+      socket.onopen = () => {
+        console.log("Connected to notification WS");
 
-        socket.onopen = () => {
-            console.log("Connected to notification WS");
+        // Send current thread AFTER WS opens
+        if (threadId) {
+          socket.send(
+            JSON.stringify({
+              type: "set_current_thread",
+              thread_id: threadId,
+            }),
+          );
+        }
+      };
 
-            // Send current thread AFTER WS opens
-            if (threadId) {
-                socket.send(
-                    JSON.stringify({
-                        type: "set_current_thread",
-                        thread_id: threadId,
-                    })
-                );
-            }
-        };
+      socket.onerror = (err) => console.error("WebSocket error:", err);
+      socket.onclose = () => console.log("Notification socket closed");
 
-        socket.onerror = (err) => console.error("WebSocket error:", err);
-        socket.onclose = () => console.log("Notification socket closed");
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("WS message:", data);
 
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("WS message:", data);
+        if (
+          data.notification &&
+          data.notification.unread_count !== undefined &&
+          !data.notification.id
+        ) {
+          const unread_count = data.notification.unread_count;
+          const unread_messages = data.notification.unread_messages;
 
-            if (data.notification && data.notification.unread_count !== undefined && !data.notification.id) {
+          // Update NOTIFICATION badge
+          if (notifBadge) {
+            notifBadge.textContent = unread_count;
+            notifBadge.style.display =
+              unread_count > 0 ? "inline-block" : "none";
+          }
 
-                const unread_count = data.notification.unread_count;
-                const unread_messages = data.notification.unread_messages;
+          // Update MESSAGE badge
+          updateMessageBadge(unread_messages);
 
-                // Update NOTIFICATION badge
-                if (notifBadge) {
-                    notifBadge.textContent = unread_count;
-                    notifBadge.style.display = unread_count > 0 ? "inline-block" : "none";
-                }
-
-                // Update MESSAGE badge
-                updateMessageBadge(unread_messages);
-
-                return;
-            }
-
-            if (!data.notification) return;
-
-            const notification = data.notification;
-
-            if (notification.unread_count !== undefined) {
-                if (notifBadge) {
-                    notifBadge.textContent = notification.unread_count;
-                    notifBadge.style.display = notification.unread_count > 0 ? "inline-block": "none";
-                }
-            }
-
-            appendNotification(notification);
-            updateEmptyMessage();
-
-            // If this notification belongs to a thread AND user is viewing that thread, hide badge
-            if (threadId && notification.thread_id == threadId) {
-                updateMessageBadge(0);  // Hide message badge if viewing this thread
-            } else if (notification.unread_messages !== undefined) {
-                updateMessageBadge(notification.unread_messages);  // Normal update
-            }
-
-            // Dispatch custom event for other pages (like messages.html) to listen to
-            const notificationEvent = new CustomEvent('newNotification', {
-                detail: notification
-            });
-            document.dispatchEvent(notificationEvent);
-        };
-
-        // --------------------------
-        // 🔹 Helper #1: message badge updater
-        // --------------------------
-        function updateMessageBadge(count) {
-            let mbadge = document.getElementById("message-badge");
-
-            if (!message_link) return; // no message nav icon
-
-            if (!mbadge) {
-                mbadge = document.createElement("span");
-                mbadge.id = "message-badge";
-                mbadge.className = "badge bg-secondary";
-                message_link.appendChild(mbadge);
-            }
-
-            mbadge.textContent = count;
-            mbadge.style.display = count > 0 ? "inline-block" : "none";
+          return;
         }
 
-        // --------------------------
-        // 🔹 Helper #2: append notification HTML
-        // --------------------------
-        function appendNotification(notification) {
-            const wrapperDiv = document.createElement("div");
-            wrapperDiv.id = `noti_div_${notification.id}`;
-            wrapperDiv.classList.add("dropdown-item");
+        if (!data.notification) return;
 
-            const delete_button = document.createElement("button");
-            delete_button.classList.add("delete-noti");
-            delete_button.dataset.id = notification.id;
+        const notification = data.notification;
 
-            const delete_icon = document.createElement("i");
-            delete_icon.classList.add("bi", "bi-x");
-            delete_button.appendChild(delete_icon);
+        if (notification.unread_count !== undefined) {
+          if (notifBadge) {
+            notifBadge.textContent = notification.unread_count;
+            notifBadge.style.display =
+              notification.unread_count > 0 ? "inline-block" : "none";
+          }
+        }
 
-            wrapperDiv.appendChild(delete_button);
+        appendNotification(notification);
+        updateEmptyMessage();
 
-            const dropdownItem = document.createElement("a");
-            dropdownItem.classList.add("dropdown-item", "notiDrop");
-            dropdownItem.dataset.id = notification.id;
-            dropdownItem.dataset.read = notification.is_read;
+        // If this notification belongs to a thread AND user is viewing that thread, hide badge
+        if (threadId && notification.thread_id == threadId) {
+          updateMessageBadge(0); // Hide message badge if viewing this thread
+        } else if (notification.unread_messages !== undefined) {
+          updateMessageBadge(notification.unread_messages); // Normal update
+        }
 
-            // Reminder notification
-            if (notification.type === "reminder") {
-                const reminderUrl = "{% url 'reminders' %}";
-                dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
+        // Dispatch custom event for other pages (like messages.html) to listen to
+        const notificationEvent = new CustomEvent("newNotification", {
+          detail: notification,
+        });
+        document.dispatchEvent(notificationEvent);
+      };
 
-                dropdownItem.innerHTML = `
+      // --------------------------
+      // 🔹 Helper #1: message badge updater
+      // --------------------------
+      function updateMessageBadge(count) {
+        let mbadge = document.getElementById("message-badge");
+
+        if (!message_link) return; // no message nav icon
+
+        if (!mbadge) {
+          mbadge = document.createElement("span");
+          mbadge.id = "message-badge";
+          mbadge.className = "badge bg-secondary";
+          message_link.appendChild(mbadge);
+        }
+
+        mbadge.textContent = count;
+        mbadge.style.display = count > 0 ? "inline-block" : "none";
+      }
+
+      // --------------------------
+      // 🔹 Helper #2: append notification HTML
+      // --------------------------
+      function appendNotification(notification) {
+        const wrapperDiv = document.createElement("div");
+        wrapperDiv.id = `noti_div_${notification.id}`;
+        wrapperDiv.classList.add("dropdown-item");
+
+        const delete_button = document.createElement("button");
+        delete_button.classList.add("delete-noti");
+        delete_button.dataset.id = notification.id;
+
+        const delete_icon = document.createElement("i");
+        delete_icon.classList.add("bi", "bi-x");
+        delete_button.appendChild(delete_icon);
+
+        wrapperDiv.appendChild(delete_button);
+
+        const dropdownItem = document.createElement("a");
+        dropdownItem.classList.add("dropdown-item", "notiDrop");
+        dropdownItem.dataset.id = notification.id;
+        dropdownItem.dataset.read = notification.is_read;
+
+        // Reminder notification
+        if (notification.type === "reminder") {
+          const reminderUrl = "{% url 'reminders' %}";
+          dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
+
+          dropdownItem.innerHTML = `
                     <p class='reminder-message'>Time to take your ${notification.reminder}</p>
                     <p class='reminder-time'><small>${notification.created_time}</small></p>
                 `;
-            }
-            // System notification (prescription, refill, etc.) - has content field
-            else if (notification.type && notification.content) {
-                dropdownItem.href = notification.link || '#';
+        }
+        // System notification (prescription, refill, etc.) - has content field
+        else if (notification.type && notification.content) {
+          dropdownItem.href = notification.link || "#";
 
-                dropdownItem.innerHTML = `
+          dropdownItem.innerHTML = `
                     <p class='message-message'>${notification.content}</p>
                     <p class='message-time'><small>${notification.timestamp}</small></p>
                 `;
-            }
-            // Regular message notification
-            else {
-                const threadUrl = "{% url 'threads' thread_id=0 %}".replace(
-                    "0",
-                    notification.thread_id
-                );
+        }
+        // Regular message notification
+        else {
+          const threadUrl = "{% url 'threads' thread_id=0 %}".replace(
+            "0",
+            notification.thread_id,
+          );
 
-                dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
+          dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
 
-                dropdownItem.innerHTML = `
+          dropdownItem.innerHTML = `
                     <p class='message-message'>${notification.sender} has sent you a new message.</p>
                     <p class='message-time'><small>${notification.timestamp}</small></p>
                 `;
-            }
-
-            wrapperDiv.appendChild(dropdownItem);
-            noti_content.prepend(wrapperDiv);
         }
-});
-       
-</script>
-{% endif %}
-<body {% if user.is_authenticated %}data-user-id="{{ request.user.id }}"{% endif %}>
+
+        wrapperDiv.appendChild(dropdownItem);
+        noti_content.prepend(wrapperDiv);
+      }
+    });
+  </script>
+  {% endif %}
+  <body
+    {%
+    if
+    user.is_authenticated
+    %}data-user-id="{{ request.user.id }}"
+    {%
+    endif
+    %}
+  >
     <p>{{request.user.id}}</p>
-    {% block content %}
-
-    {% endblock %}
-
-</body>
+    {% block content %} {% endblock %}
+  </body>
 </html>
