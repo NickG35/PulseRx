@@ -6,4 +6,8 @@
 
 
 <p>This is the join code: {{pharmacy.join_code}}</p>
+<form method="post" action="{% url 'regenerate_code' %}">
+    {% csrf_token %}
+    <button type="submit">Regenerate Code</button>
+</form>
 {% endblock %}
