@@ -70,6 +70,18 @@ def register_role(request, role):
         profile_form = ProfileForm(request.POST) if ProfileForm else None
 
         if user_form.is_valid() and profile_form and profile_form.is_valid():
+            if role == 'pharmacist':
+                join_code = profile_form.cleaned_data.get('join_code')
+                try:
+                    pharmacy = PharmacyProfile.objects.get(join_code=join_code)
+                except PharmacyProfile.DoesNotExist:
+                    profile_form.add_error('join_code', 'Invalid join code. Please contact your pharmacy admin.')
+                    return render(request, 'register_role.html', {
+                        'user_form': user_form,
+                        'profile_form': profile_form,
+                        'role': role
+                    })
+                
             user = user_form.save(commit=False)
             user.role = role
             user.save()
@@ -78,17 +90,7 @@ def register_role(request, role):
             profile.user = user
 
             if role == 'pharmacist':
-                join_code = profile_form.cleaned_data.get('join_code')
-                try:
-                    pharmacy = PharmacyProfile.objects.get(join_code=join_code)
-                    profile.pharmacy = pharmacy
-                except PharmacyProfile.DoesNotExist:
-                    profile_form.add_error('join_code', 'Invalid join code. Please contact your pharmacy admin.')
-                    return render(request, 'register_role.html', {
-                        'user_form': user_form,
-                        'profile_form': profile_form,
-                        'role': role
-                    })
+                profile.pharmacy = pharmacy
             
             profile.save()
             login(request, user)
