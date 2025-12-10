@@ -2,180 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-.dashboard-nav {
-    justify-content: space-between;
-    display: flex;
-    border: 1px solid;
-    align-items: center;
-    padding: 0px;
-    margin: 0px;
-}
+/* ========================================
+   JavaScript-Dependent Classes
+   These classes are referenced in JS and must be preserved
+   ======================================== */
 
-.end-div {
-    padding: 0px 15px;
-}
-
+/* Autocomplete Search */
 .search-item {
-    border: 1px solid black;
-    background: beige;
-    cursor: pointer;
+    @apply p-2 cursor-pointer hover:bg-pulse-gray-100 transition-colors;
 }
 
-.search-item:hover{
-    background: gray;
+.no-results {
+    @apply p-2 text-pulse-gray-500 italic;
 }
 
-
-a {
-    text-decoration: none;
-    color: black;
-}
-
-.main-link {
-    padding: 0px 10px;
-}
-
-.image-holder {
-    display: flex;
-    border: 1px solid;
-    background: lightgray;
-    width: 250px;
-    height: 250px;
-    align-items: center;
-    justify-content: center;
-}
-
-#med-icon {
-    font-size: 100px;
-    color: gray;
-}
-
-.med-container {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-    gap: 25px;
-    padding: 16px;
-    justify-content: center;
-}
-
-.thread-box {
-    border: 1px solid;
-}
-
-.med-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.drug-name {
-    width: 250px;
-    font-size: 14px;
-    border: 1px solid;
-    justify-self: left;
-}
-
-.drug-title {
-    padding: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.reminder-layout {
-    transition: color 0.3s ease, opacity 0.3s ease;
-}
-
-.grayed {
-    color: gray;
-    opacity: 0.5;
-}
-
-.black {
-    color: black;
-    opacity: 1;
-}
-
-[class^="editable"] {
-    display: none;
-}
-
-.time-div {
-    display: flex;
-}
-
+/* Message/Notification Highlighting */
 .highlight {
     animation: flash 1.5s ease-out;
 }
 
-.message-convo {
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-bottom: 20px;
-}
-
-#new-message-bubble {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #0d6efd;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    display: none;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    z-index: 1000;
-}
-
 @keyframes flash {
     0% {
-        opacity: 0.6; 
+        opacity: 0.6;
         background-color: #d0ebff;
     }
-
     100% {
         opacity: 1;
         background-color: transparent;
     }
 }
 
-#hidden-dropdown, .delete-noti {
-    background: none;
-    border: none;
+.read {
+    @apply text-pulse-gray-400 opacity-70;
 }
 
-#hidden-dropdown .rounded-circle {
-    width: 10px;
-    height: 10px;
-    top: 1px;
-    right: 0px;
+/* Notification Dropdown Content */
+.noti-content {
+    @apply max-h-96 overflow-y-auto;
+}
+
+.delete-noti {
+    @apply absolute top-2 right-2 p-1 rounded-full hover:bg-pulse-gray-200 transition-colors;
+}
+
+/* New Message Bubble (fixed position notification) */
+#new-message-bubble {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    @apply bg-blue-600 text-white px-4 py-2 rounded-full cursor-pointer shadow-lg z-50;
     display: none;
 }
 
-#noti-bell {
-    color: black;
-    font-size: 24px;
+/* ========================================
+   Utility Classes for Specific Features
+   ======================================== */
+
+/* Reminder layouts */
+.reminder-layout {
+    @apply transition-all duration-300;
 }
 
-.dropdown-item {
-    padding: 0;
+.grayed {
+    @apply text-pulse-gray-400 opacity-50;
 }
 
-a.dropdown-item.read {
-    color: #adb5bd;
+/* Hide editable fields by default (used in forms) */
+[class^="editable"] {
+    display: none;
 }
 
-.dropdown-item:active,
-.dropdown-item:focus {
-    background-color: var(--bs-dropdown-link-hover-bg) !important;
-    color: inherit !important;
+/* Custom scrollbar styling for dashboard cards */
+.overflow-y-auto {
+    /* Override DaisyUI's global scrollbar-color and use our custom WebKit styles */
+    scrollbar-color: #d1d5db #f3f4f6;
+    scrollbar-width: thin;
+    overflow-y: auto !important; /* Show scrollbar only when needed */
 }
 
-.dropdown-item.read:active,
-.dropdown-item.read:focus {
-    background-color: inherit !important;
-    color: #adb5bd !important;
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px !important;
+    -webkit-appearance: none !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background-color: #f3f4f6 !important;
+    border-radius: 9999px !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: #d1d5db !important;
+    border-radius: 9999px !important;
+    -webkit-appearance: none !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af !important;
+}
+
+/* Force scrollbar to always be visible on WebKit browsers */
+.overflow-y-auto::-webkit-scrollbar-button {
+    display: none;
+}
+
+.overflow-y-auto::-webkit-scrollbar-corner {
+    background-color: transparent;
 }
