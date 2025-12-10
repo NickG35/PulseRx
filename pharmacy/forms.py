@@ -13,6 +13,14 @@ class PharmacistProfileForm(forms.ModelForm):
         model = PharmacistProfile
         exclude = ['user','pharmacy']
 
+    def clean_join_code(self):
+        join_code = self.cleaned_data.get('join_code')
+        try:
+            PharmacyProfile.objects.get(join_code=join_code)
+        except PharmacyProfile.DoesNotExist:
+            raise forms.ValidationError('Invalid join code. Please contact your pharmacy admin.')
+        return join_code
+
 class PrescriptionForm(forms.ModelForm):
         patient = forms.CharField(required=False, widget=forms.HiddenInput())
         medicine = forms.CharField(required=False, widget=forms.HiddenInput())
