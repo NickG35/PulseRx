@@ -1,8 +1,443 @@
-<h1>{{role}} register</h1>
+{% extends 'base.html' %}
 
-<form action="{% url 'register_role' role=role %}" method="post">
-    {% csrf_token %}
-    {{ user_form.as_p }}
-    {{ profile_form.as_p }}
-    <button type="submit">Submit</button>
-</form>
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-pulse-cream to-white flex flex-col items-center justify-center p-6">
+  <!-- Logo/Brand Header -->
+  <div class="mb-8 text-center">
+    <div class="flex items-center justify-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-pulse-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+      <h1 class="text-4xl font-bold text-pulse-gray-800 ml-3">PulseRx</h1>
+    </div>
+    <p class="text-pulse-gray-600">Complete your registration</p>
+  </div>
+
+  <!-- Register Role Card -->
+  <div class="w-full max-w-md">
+    <div class="card bg-white shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-2xl text-pulse-gray-800 mb-2">{{ role|title }} Registration</h2>
+        <p class="text-pulse-gray-600 mb-6">Fill in your details to create your account</p>
+
+        <form action="{% url 'register_role' role=role %}" method="post">
+          {% csrf_token %}
+
+          <!-- User Form Fields -->
+          {% for field in user_form %}
+            {% if field.name == 'role' %}
+              {{ field }}
+            {% else %}
+              <div class="form-control w-full mb-4">
+                <label class="label" for="{{ field.id_for_label }}">
+                  <span class="label-text text-pulse-gray-800 font-medium">{{ field.label }}</span>
+                </label>
+                {% if field.field.widget.input_type == 'password' %}
+                  <input
+                    type="password"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="input input-bordered w-full focus:border-pulse-red focus:outline-none"
+                    placeholder="{{ field.label }}"
+                    {% if field.field.required %}required{% endif %}
+                  />
+                {% elif field.field.widget.input_type == 'email' %}
+                  <input
+                    type="email"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="input input-bordered w-full focus:border-pulse-red focus:outline-none"
+                    placeholder="{{ field.label }}"
+                    value="{{ field.value|default:'' }}"
+                    {% if field.field.required %}required{% endif %}
+                  />
+                {% else %}
+                  <input
+                    type="text"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="input input-bordered w-full focus:border-pulse-red focus:outline-none"
+                    placeholder="{{ field.label }}"
+                    value="{{ field.value|default:'' }}"
+                    {% if field.field.required %}required{% endif %}
+                  />
+                {% endif %}
+                {% if field.help_text %}
+                  <label class="label">
+                    <span class="label-text-alt text-xs text-pulse-gray-500 break-words" id="help-{{ field.name }}">{{ field.help_text }}</span>
+                  </label>
+                {% endif %}
+                {% if field.errors %}
+                  <label class="label">
+                    <span class="label-text-alt text-xs text-red-600 django-error">{{ field.errors.0 }}</span>
+                  </label>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Profile Form Fields -->
+          {% if profile_form %}
+            {% for field in profile_form %}
+              <div class="form-control w-full mb-4">
+                <label class="label" for="{{ field.id_for_label }}">
+                  <span class="label-text text-pulse-gray-800 font-medium">{{ field.label }}</span>
+                </label>
+                {% if field.field.choices %}
+                  <select
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="select select-bordered w-full focus:border-pulse-red focus:outline-none"
+                    {% if field.field.required %}required{% endif %}
+                  >
+                    <option value="">Select {{ field.label }}</option>
+                    {% for value, label in field.field.choices %}
+                      <option value="{{ value }}" {% if field.value == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                {% elif field.field.widget.input_type == 'date' %}
+                  <input
+                    type="date"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="input input-bordered w-full focus:border-pulse-red focus:outline-none"
+                    value="{{ field.value|default:'' }}"
+                    max="9999-12-31"
+                    {% if field.field.required %}required{% endif %}
+                  />
+                {% else %}
+                  <input
+                    type="text"
+                    name="{{ field.name }}"
+                    id="{{ field.id_for_label }}"
+                    class="input input-bordered w-full focus:border-pulse-red focus:outline-none"
+                    placeholder="{{ field.label }}"
+                    value="{{ field.value|default:'' }}"
+                    {% if field.field.required %}required{% endif %}
+                  />
+                {% endif %}
+                {% if field.help_text %}
+                  <label class="label">
+                    <span class="label-text-alt text-xs text-pulse-gray-500 break-words" id="help-{{ field.name }}">{{ field.help_text }}</span>
+                  </label>
+                {% endif %}
+                {% if field.errors %}
+                  <label class="label">
+                    <span class="label-text-alt text-xs text-red-600 django-error">{{ field.errors.0 }}</span>
+                  </label>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full mt-2">
+            Create Account
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-center mt-6 text-pulse-gray-600">
+      Already have an account?
+      <a href="/accounts/login" class="text-pulse-red font-bold hover:text-pulse-red-dark transition-colors">
+        Login
+      </a>
+    </p>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const usernameInput = document.querySelector('input[name="username"]');
+  const emailInput = document.querySelector('input[name="email"]');
+  const password1Input = document.querySelector('input[name="password1"]');
+  const password2Input = document.querySelector('input[name="password2"]');
+
+  const usernameHelp = document.getElementById('help-username');
+  const emailHelp = document.getElementById('help-email');
+  const password1Help = document.getElementById('help-password1');
+  const password2Help = document.getElementById('help-password2');
+
+  // Password validation requirements
+  const passwordRequirements = [
+    { regex: /.{8,}/, message: 'At least 8 characters' },
+    { regex: /[A-Z]/, message: 'Contains uppercase letter' },
+    { regex: /[a-z]/, message: 'Contains lowercase letter' },
+    { regex: /[0-9]/, message: 'Contains number' }
+  ];
+
+  function createRequirementList() {
+    if (!password1Help) return;
+
+    const list = document.createElement('ul');
+    list.className = 'mt-2 space-y-1';
+
+    passwordRequirements.forEach((req, index) => {
+      const li = document.createElement('li');
+      li.className = 'text-xs flex items-center text-pulse-gray-500 transition-colors';
+      li.id = `req-${index}`;
+      li.innerHTML = `
+        <svg class="w-3 h-3 mr-2 hidden" id="check-${index}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span class="w-3 h-3 mr-2 border border-pulse-gray-400 rounded-full" id="circle-${index}"></span>
+        <span>${req.message}</span>
+      `;
+      list.appendChild(li);
+    });
+
+    // Replace help text with requirement list
+    password1Help.innerHTML = '';
+    password1Help.appendChild(list);
+  }
+
+  function validatePassword() {
+    if (!password1Input || !password1Help) return;
+
+    const password = password1Input.value;
+
+    // Hide Django error message when showing live validation
+    const password1Error = password1Input.closest('.form-control').querySelector('.django-error');
+    if (password1Error && password.length > 0) {
+      password1Error.style.display = 'none';
+    } else if (password1Error && password.length === 0) {
+      password1Error.style.display = '';
+    }
+
+    passwordRequirements.forEach((req, index) => {
+      const li = document.getElementById(`req-${index}`);
+      const check = document.getElementById(`check-${index}`);
+      const circle = document.getElementById(`circle-${index}`);
+
+      if (req.regex.test(password)) {
+        li.classList.remove('text-pulse-gray-500');
+        li.classList.add('text-green-600');
+        check.classList.remove('hidden');
+        circle.classList.add('hidden');
+      } else {
+        li.classList.remove('text-green-600');
+        li.classList.add('text-pulse-gray-500');
+        check.classList.add('hidden');
+        circle.classList.remove('hidden');
+      }
+    });
+  }
+
+  function validatePasswordMatch() {
+    if (!password2Input || !password2Help) return;
+
+    const password1 = password1Input?.value || '';
+    const password2 = password2Input.value;
+
+    // Get Django error element
+    const password2Error = password2Input.closest('.form-control').querySelector('.django-error');
+
+    if (password2.length === 0) {
+      password2Help.classList.remove('text-green-600', 'text-red-600');
+      password2Help.classList.add('text-pulse-gray-500');
+      password2Help.innerHTML = 'Enter the same password as before, for verification.';
+      if (password2Error) password2Error.style.display = '';
+      return;
+    }
+
+    // Hide Django error only after we know we'll show live validation
+    if (password2Error) {
+      password2Error.style.display = 'none';
+    }
+
+    if (password1 === password2) {
+      password2Help.classList.remove('text-pulse-gray-500', 'text-red-600');
+      password2Help.classList.add('text-green-600');
+      password2Help.innerHTML = `
+        <svg class="w-3 h-3 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Passwords match
+      `;
+    } else {
+      password2Help.classList.remove('text-pulse-gray-500', 'text-green-600');
+      password2Help.classList.add('text-red-600');
+      password2Help.innerHTML = 'Passwords do not match';
+    }
+  }
+
+  let usernameCheckTimeout;
+
+  function validateUsername() {
+    if (!usernameInput || !usernameHelp) return;
+
+    const username = usernameInput.value.trim();
+    const minLength = 3;
+    const maxLength = 150;
+
+    // Hide Django error message when showing live validation
+    const usernameError = usernameInput.closest('.form-control').querySelector('.django-error');
+    if (usernameError && username.length > 0) {
+      usernameError.style.display = 'none';
+    }
+
+    // Clear previous timeout
+    clearTimeout(usernameCheckTimeout);
+
+    if (username.length === 0) {
+      usernameHelp.classList.remove('text-green-600', 'text-red-600', 'text-yellow-600');
+      usernameHelp.classList.add('text-pulse-gray-500');
+      usernameHelp.textContent = `${maxLength} characters or fewer. Letters, digits and @/./+/-/_ only.`;
+      if (usernameError) usernameError.style.display = '';
+      return;
+    }
+
+    if (username.length < minLength) {
+      usernameHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-yellow-600');
+      usernameHelp.classList.add('text-red-600');
+      usernameHelp.textContent = `Too short (minimum ${minLength} characters)`;
+      return;
+    }
+
+    if (username.length > maxLength) {
+      usernameHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-yellow-600');
+      usernameHelp.classList.add('text-red-600');
+      usernameHelp.textContent = `Too long (${username.length}/${maxLength} characters)`;
+      return;
+    }
+
+    // Show checking message
+    usernameHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-red-600');
+    usernameHelp.classList.add('text-yellow-600');
+    usernameHelp.textContent = 'Checking availability...';
+
+    // Debounce the API call
+    usernameCheckTimeout = setTimeout(() => {
+      fetch(`/accounts/check_username?username=${encodeURIComponent(username)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.available === true) {
+            usernameHelp.classList.remove('text-pulse-gray-500', 'text-red-600', 'text-yellow-600');
+            usernameHelp.classList.add('text-green-600');
+            usernameHelp.innerHTML = `
+              <svg class="w-3 h-3 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              ${data.message}
+            `;
+          } else if (data.available === false) {
+            usernameHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-yellow-600');
+            usernameHelp.classList.add('text-red-600');
+            usernameHelp.innerHTML = `
+              <svg class="w-3 h-3 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              ${data.message}
+            `;
+          }
+        })
+        .catch(error => {
+          console.error('Error checking username:', error);
+          usernameHelp.classList.remove('text-green-600', 'text-yellow-600');
+          usernameHelp.classList.add('text-red-600');
+          usernameHelp.textContent = 'Error checking username';
+        });
+    }, 500); // Wait 500ms after user stops typing
+  }
+
+  let emailCheckTimeout;
+
+  function validateEmail() {
+    if (!emailInput || !emailHelp) return;
+
+    const email = emailInput.value.trim();
+
+    // Hide Django error message when showing live validation
+    const emailError = emailInput.closest('.form-control').querySelector('.django-error');
+    if (emailError && email.length > 0) {
+      emailError.style.display = 'none';
+    }
+
+    // Clear previous timeout
+    clearTimeout(emailCheckTimeout);
+
+    if (email.length === 0) {
+      emailHelp.classList.remove('text-green-600', 'text-red-600', 'text-yellow-600');
+      emailHelp.classList.add('text-pulse-gray-500');
+      emailHelp.textContent = 'Must be unique';
+      if (emailError) emailError.style.display = '';
+      return;
+    }
+
+    // Basic email format check (HTML5 does this too, but we show feedback)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      emailHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-yellow-600');
+      emailHelp.classList.add('text-red-600');
+      emailHelp.textContent = 'Please enter a valid email address';
+      return;
+    }
+
+    // Show checking message
+    emailHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-red-600');
+    emailHelp.classList.add('text-yellow-600');
+    emailHelp.textContent = 'Checking availability...';
+
+    // Debounce the API call
+    emailCheckTimeout = setTimeout(() => {
+      fetch(`/accounts/check_email?email=${encodeURIComponent(email)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.available === true) {
+            emailHelp.classList.remove('text-pulse-gray-500', 'text-red-600', 'text-yellow-600');
+            emailHelp.classList.add('text-green-600');
+            emailHelp.innerHTML = `
+              <svg class="w-3 h-3 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              ${data.message}
+            `;
+          } else if (data.available === false) {
+            emailHelp.classList.remove('text-pulse-gray-500', 'text-green-600', 'text-yellow-600');
+            emailHelp.classList.add('text-red-600');
+            emailHelp.innerHTML = `
+              <svg class="w-3 h-3 inline mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              ${data.message}
+            `;
+          }
+        })
+        .catch(error => {
+          console.error('Error checking email:', error);
+          emailHelp.classList.remove('text-green-600', 'text-yellow-600');
+          emailHelp.classList.add('text-red-600');
+          emailHelp.textContent = 'Error checking email';
+        });
+    }, 500); // Wait 500ms after user stops typing
+  }
+
+  // Initialize password requirements list
+  if (password1Help) {
+    createRequirementList();
+  }
+
+  // Add event listeners
+  if (usernameInput) {
+    usernameInput.addEventListener('input', validateUsername);
+  }
+
+  if (emailInput) {
+    emailInput.addEventListener('input', validateEmail);
+  }
+
+  if (password1Input) {
+    password1Input.addEventListener('input', () => {
+      validatePassword();
+      if (password2Input && password2Input.value.length > 0) {
+        validatePasswordMatch();
+      }
+    });
+  }
+
+  if (password2Input) {
+    password2Input.addEventListener('input', validatePasswordMatch);
+  }
+});
+</script>
+{% endblock %}
