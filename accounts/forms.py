@@ -9,10 +9,11 @@ class UserRegistrationForm(UserCreationForm):
     class Meta:
         model = CustomAccount
         fields = ['username', 'email', 'password1', 'password2', 'role']
-    
+
     def __init__(self, *args, **kwargs):
         super(UserCreationForm, self).__init__(*args, **kwargs)
         self.fields['role'].widget = forms.HiddenInput()
+        self.fields['email'].help_text = 'Must be unique'
 
 User = get_user_model()
 
