@@ -23,6 +23,55 @@ from django.views.decorators.cache import never_cache
 
 
 # Create your views here.
+
+def check_username(request):
+    """
+    AJAX endpoint to check if a username is available
+    """
+    if request.method == 'GET':
+        username = request.GET.get('username', '').strip()
+
+        if not username:
+            return JsonResponse({'available': None, 'message': ''})
+
+        if len(username) < 3:
+            return JsonResponse({'available': False, 'message': 'Username must be at least 3 characters'})
+
+        if len(username) > 150:
+            return JsonResponse({'available': False, 'message': 'Username too long'})
+
+        # Check if username exists
+        exists = CustomAccount.objects.filter(username=username).exists()
+
+        if exists:
+            return JsonResponse({'available': False, 'message': 'Username already taken'})
+        else:
+            return JsonResponse({'available': True, 'message': 'Username available'})
+
+    return JsonResponse({'available': None, 'message': 'Invalid request'})
+
+
+def check_email(request):
+    """
+    AJAX endpoint to check if an email is available
+    """
+    if request.method == 'GET':
+        email = request.GET.get('email', '').strip()
+
+        if not email:
+            return JsonResponse({'available': None, 'message': ''})
+
+        # Check if email exists
+        exists = CustomAccount.objects.filter(email=email).exists()
+
+        if exists:
+            return JsonResponse({'available': False, 'message': 'Email already registered'})
+        else:
+            return JsonResponse({'available': True, 'message': 'Email available'})
+
+    return JsonResponse({'available': None, 'message': 'Invalid request'})
+
+
 class CustomLoginView(LoginView):
     template_name = 'login.html'
     authentication_form = LoginForm
@@ -66,22 +115,30 @@ def register_role(request, role):
     ProfileForm = profile_form_classes.get(role)
 
     if request.method == "POST":
+        # Debug logging to file
+        import datetime
+        with open('/tmp/pulserx_debug.log', 'a') as f:
+            f.write(f"\n{'='*50}\n")
+            f.write(f"[{datetime.datetime.now()}] FORM SUBMISSION\n")
+            f.write(f"Role: {role}\n")
+            f.write(f"POST data:\n")
+            for key, value in request.POST.items():
+                f.write(f"  {key}: {value}\n")
+
         user_form = UserRegistrationForm(request.POST)
         profile_form = ProfileForm(request.POST) if ProfileForm else None
 
+        # Debug logging to file
+        with open('/tmp/pulserx_debug.log', 'a') as f:
+            f.write(f"user_form.is_valid(): {user_form.is_valid()}\n")
+            if not user_form.is_valid():
+                f.write(f"user_form.errors: {user_form.errors}\n")
+            if profile_form:
+                f.write(f"profile_form.is_valid(): {profile_form.is_valid()}\n")
+                if not profile_form.is_valid():
+                    f.write(f"profile_form.errors: {profile_form.errors}\n")
+
         if user_form.is_valid() and profile_form and profile_form.is_valid():
-            if role == 'pharmacist':
-                join_code = profile_form.cleaned_data.get('join_code')
-                try:
-                    pharmacy = PharmacyProfile.objects.get(join_code=join_code)
-                except PharmacyProfile.DoesNotExist:
-                    profile_form.add_error('join_code', 'Invalid join code. Please contact your pharmacy admin.')
-                    return render(request, 'register_role.html', {
-                        'user_form': user_form,
-                        'profile_form': profile_form,
-                        'role': role
-                    })
-                
             user = user_form.save(commit=False)
             user.role = role
             user.save()
@@ -90,8 +147,10 @@ def register_role(request, role):
             profile.user = user
 
             if role == 'pharmacist':
+                join_code = profile_form.cleaned_data.get('join_code')
+                pharmacy = PharmacyProfile.objects.get(join_code=join_code)
                 profile.pharmacy = pharmacy
-            
+
             profile.save()
             login(request, user)
 
