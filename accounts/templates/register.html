@@ -1,14 +1,57 @@
-<h1>Welcome to register page</h1>
+{% extends 'base.html' %}
 
-<form class="register-form" action="{% url 'register' %}" method="post">
-    {% csrf_token %}
-    
-    <select name="role">
-        <option value="" disabled selected>Select your role</option>
-        <option value="pharmacy admin">Pharmacy Admin</option>
-        <option value="pharmacist">Pharmacist</option>
-        <option value="patient">Patient</option>
-    </select>
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-pulse-cream to-white flex flex-col items-center justify-start pt-20 p-6">
+  <!-- Logo/Brand Header -->
+  <div class="mb-8 text-center">
+    <div class="flex items-center justify-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-pulse-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+      <h1 class="text-4xl font-bold text-pulse-gray-800 ml-3">PulseRx</h1>
+    </div>
+    <p class="text-pulse-gray-600">Create your account to get started</p>
+  </div>
 
-    <button type="submit">Register</button>
-</form>
+  <!-- Register Card -->
+  <div class="w-full max-w-md">
+    <div class="card bg-white shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title text-2xl text-pulse-gray-800 mb-2">Register</h2>
+        <p class="text-pulse-gray-600 mb-6">Select your role to continue</p>
+
+        <form action="{% url 'register' %}" method="post">
+          {% csrf_token %}
+
+          <div class="form-control w-full mb-6">
+            <label class="label">
+              <span class="label-text text-pulse-gray-800 font-medium">Role</span>
+            </label>
+            <select
+              name="role"
+              class="select select-bordered w-full focus:border-pulse-red focus:outline-none"
+              required
+            >
+              <option value="" disabled selected>Select your role</option>
+              <option value="pharmacy admin">Pharmacy Admin</option>
+              <option value="pharmacist">Pharmacist</option>
+              <option value="patient">Patient</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
+            Continue
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-center mt-6 text-pulse-gray-600">
+      Already have an account?
+      <a href="/accounts/login" class="text-pulse-red font-bold hover:text-pulse-red-dark transition-colors">
+        Login
+      </a>
+    </p>
+  </div>
+</div>
+{% endblock %}
