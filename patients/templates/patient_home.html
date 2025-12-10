@@ -1,89 +1,209 @@
-{% extends 'base.html' %} {% block content %}
+{% extends 'base.html' %}
+{% block content %}
 
-<h2>Welcome patient!</h2>
-
-<div class="row">
-  <div class="col-sm-6 mb-sm-0 mb-3">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Reminders</h5>
-        {% if active_reminders %}
-          {% for reminder in active_reminders %}
-            <div class="mb-2">
-                <strong>{{ reminder.prescription.medicine.name }}</strong>
-                {% if reminder.next_time %}
-                  <p class="text-muted small mb-0">
-                    Next: 
-                    {% if reminder.next_date == today %}
-                          Today at {{ reminder.next_time|time:"g:i A" }}
-                        {% elif reminder.next_date == tomorrow %}
-                          Tomorrow at {{ reminder.next_time|time:"g:i A" }}
-                        {% else %}
-                          {{ reminder.next_date|date:"M j" }} at {{ reminder.next_time|time:"g:i A" }}
-                        {% endif %}
-                      </p>
-                    {% endif %}
-                <small class="text-muted">{{ reminder.days_left }} days left</small>
-            </div>
-            {% if not forloop.last %} <hr> {% endif %}
-          {% endfor %}
-        {% else %}
-            <p class="card-text">No active reminders</p>
-        {% endif %}
-       
-        <a href="{% url 'reminders' %}" class="btn btn-primary">Manage</a>
-      </div>
-    </div>
+<div class="min-h-screen bg-gradient-to-br from-pulse-cream to-white p-6">
+  <!-- Welcome Header -->
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-pulse-gray-800">Welcome back, {{request.user.patientprofile.first_name}}!</h1>
+    <p class="text-pulse-gray-600 mt-2">Here's your health overview</p>
   </div>
-  <div class="col-sm-6">
-    <div class="card">
+
+  <!-- Dashboard Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Reminders Card -->
+    <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
       <div class="card-body">
-        <h5 class="card-title">Messages</h5>
-        {% if recent_messages %}
-          {% for message in recent_messages %}
-            <div class="mb-2">
-              <strong>
-                {{ message.sender.first_name }} {{ message.sender.last_name }}
-              </strong>
-              <p class="text-muted small mb-0">
-                {{ message.content|truncatechars:50 }}
-              </p>
-              <small class="text-muted"
-                >{{ message.friendly_time }}</small
-              >
+        <div class="flex justify-between items-center">
+          <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Reminders
+          </h2>
+          {% if active_reminder_count > 0 %}
+          <span class="badge badge-lg bg-pulse-red border-pulse-red text-white">{{ active_reminder_count }}</span>
+          {% endif %}
+        </div>
+
+        <div class="mt-4 space-y-3 max-h-64 overflow-y-auto mb-8">
+          {% if active_reminders %}
+            {% for reminder in active_reminders %}
+            <div class="p-3 rounded-lg">
+              <div class="font-semibold text-pulse-gray-800">{{ reminder.prescription.medicine.name }}</div>
+              {% if reminder.next_time %}
+              <div class="text-sm text-pulse-gray-600 mt-1">
+                <span class="font-medium">Next:</span>
+                {% if reminder.next_date == today %}
+                  Today at {{ reminder.next_time|time:"g:i A" }}
+                {% elif reminder.next_date == tomorrow %}
+                  Tomorrow at {{ reminder.next_time|time:"g:i A" }}
+                {% else %}
+                  {{ reminder.next_date|date:"M j" }} at {{ reminder.next_time|time:"g:i A" }}
+                {% endif %}
+              </div>
+              {% endif %}
+              <div class="text-xs text-pulse-gray-500 mt-1">{{ reminder.days_left }} days remaining</div>
             </div>
             {% if not forloop.last %}
-            <hr />
-            {% endif %} 
-          {% endfor %}
-          <a href="{% url 'threads' thread_id=recent_messages.0.thread.id %}" class="btn btn-primary">View Thread</a>
-        {% else %}
-            <p class="card-text">No messages.</p>
-        {% endif %}
+            <div class="divider my-0"></div>
+            {% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-8 text-pulse-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p>No active reminders</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'reminders' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+        </a>
       </div>
     </div>
-  </div>
-  <div class="col-sm-6 mb-sm-0 mb-3">
-    <div class="card">
+
+    <!-- Messages Card -->
+    <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
       <div class="card-body">
-        <h5 class="card-title">Prescriptions</h5>
-        <p class="card-text">
-          With supporting text below as a natural lead-in to additional content.
-        </p>
-        <a href="#" class="btn btn-primary">Go somewhere</a>
+        <div class="flex justify-between items-center">
+          <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Messages
+          </h2>
+          {% if unread_messages > 0 %}
+          <span class="badge badge-lg bg-pulse-red border-pulse-red text-white">{{ unread_messages }}</span>
+          {% endif %}
+        </div>
+
+        <div class="mt-4 space-y-3 max-h-64 overflow-y-auto mb-8">
+          {% if recent_messages %}
+            {% for message in recent_messages %}
+            <div class="p-3 rounded-lg">
+              <div class="font-semibold text-pulse-gray-800">
+                {{ message.sender.first_name }} {{ message.sender.last_name }}
+              </div>
+              <div class="text-sm text-pulse-gray-600 mt-1">
+                {{ message.content|truncatechars:60 }}
+              </div>
+              <div class="text-xs text-pulse-gray-500 mt-1">{{ message.friendly_time }}</div>
+            </div>
+            {% if not forloop.last %}
+            <div class="divider my-0"></div>
+            {% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-8 text-pulse-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p>No messages</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'messages' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+        </a>
       </div>
     </div>
-  </div>
-  <div class="col-sm-6">
-    <div class="card">
+
+    <!-- Prescriptions Card -->
+    <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
       <div class="card-body">
-        <h5 class="card-title">My Pharmacy</h5>
-        <p class="card-text">
-          With supporting text below as a natural lead-in to additional content.
-        </p>
-        <a href="#" class="btn btn-primary">Go somewhere</a>
+        <div class="flex justify-between items-center">
+          <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+            Prescriptions
+          </h2>
+          {% if prescription_count > 0 %}
+          <span class="badge badge-lg bg-pulse-red border-pulse-red text-white">{{ prescription_count }}</span>
+          {% endif %}
+        </div>
+
+        <div class="mt-4 space-y-3 max-h-64 overflow-y-auto mb-8">
+          {% if recent_prescriptions %}
+            {% for rx in recent_prescriptions %}
+            <div class="p-3 rounded-lg">
+              <div class="font-semibold text-pulse-gray-800">
+                {{ rx.medicine.name }}
+              </div>
+              <div class="text-sm text-pulse-gray-600 mt-1">{{ rx.medicine.brand }}</div>
+              <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-pulse-gray-500">Qty: {{ rx.quantity }}</span>
+                <span class="badge badge-sm badge-outline">{{ rx.refills_left }} refills left</span>
+              </div>
+              <div class="text-xs text-pulse-gray-500 mt-1">Expires: {{ rx.expiration_date|date:"M j, Y" }}</div>
+            </div>
+            {% if not forloop.last %}
+            <div class="divider my-0"></div>
+            {% endif %}
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-8 text-pulse-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p>No prescriptions yet</p>
+            </div>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'prescriptions' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+        </a>
       </div>
     </div>
+
+    <!-- My Pharmacy Card -->
+    <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+      <div class="card-body">
+        <h2 class="card-title text-2xl text-pulse-gray-800">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          My Pharmacy
+        </h2>
+
+        <div class="mt-4 mb-8">
+          {% if pharmacy %}
+          <div class="p-4 rounded-lg">
+            <div class="font-bold text-lg text-pulse-gray-800 mb-2">
+              {{ pharmacy.pharmacy_name }} Pharmacy
+            </div>
+            <div class="text-sm text-pulse-gray-600 space-y-1">
+              <div class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{{ pharmacy.street_address }}, {{ pharmacy.city }}, {{ pharmacy.state }} {{ pharmacy.zip_code }}</span>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center py-8 text-pulse-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+            </svg>
+            <p>No pharmacy selected</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <a href="{% url 'my_pharmacy' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+        </a>
+      </div>
+    </div>
+
   </div>
 </div>
+
 {% endblock %}
