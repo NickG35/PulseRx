@@ -6,11 +6,18 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 
 class PatientProfile(models.Model):
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+        ('N', 'Prefer not to say'),
+    ]
+
     first_name = models.CharField(max_length=100, null=False)
     last_name = models.CharField(max_length=100, null=False)
     user = models.OneToOneField(CustomAccount, on_delete=models.CASCADE)
     dob = models.DateField()
-    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female')])
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=20, null=False)
     pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.SET_NULL, null=True, related_name='patients')
 
