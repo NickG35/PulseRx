@@ -16,3 +16,4 @@ db.sqlite3
 *.code-workspace
 
 *.log
+node_modules
