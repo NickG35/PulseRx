@@ -21,10 +21,29 @@ def patient_home(request):
     #prescription preview
     recent_prescriptions = patient.prescription.with_latest_ordering()[:3]
 
-    #reminders
+    # Prescription count (unexpired only)
+    from django.db.models import Q
+    prescription_count = patient.prescription.filter(
+        Q(expiration_date__gte=date.today()) | Q(expiration_date__isnull=True)
+    ).count()
+
+    #reminders - get ALL active reminders first
     active_reminders = MedicationReminder.objects.filter(
         user=patient, is_archived=False, is_active=True
-    ).select_related('prescription__medicine').prefetch_related('times')[:3]
+    ).select_related('prescription__medicine').prefetch_related('times')
+
+    # Archive any expired reminders
+    for reminder in active_reminders:
+        if reminder.days_left() == 0:
+            reminder.archive()
+
+    # Re-query to exclude newly archived reminders
+    active_reminders = MedicationReminder.objects.filter(
+        user=patient, is_archived=False, is_active=True
+    ).select_related('prescription__medicine').prefetch_related('times')
+
+    # Reminder count
+    active_reminder_count = active_reminders.count()
 
     for reminder in active_reminders:
         now = timezone.localtime().time()
@@ -37,6 +56,12 @@ def patient_home(request):
                 reminder.next_date = date.today()
             else:
                 reminder.next_date = date.today() + timedelta(days=1)
+
+    # Sort by most imminent (soonest date/time first) and take top 3
+    active_reminders = sorted(
+        active_reminders,
+        key=lambda r: (r.next_date, r.next_time) if hasattr(r, 'next_date') and r.next_time else (date.max, datetime.max.time())
+    )[:3]
 
     #messages - 3 most recent unread
     user_threads = Thread.objects.filter(participant=request.user)
@@ -69,7 +94,9 @@ def patient_home(request):
 
     context = {
         'recent_prescriptions': recent_prescriptions,
+        'prescription_count': prescription_count,
         'active_reminders': active_reminders,
+        'active_reminder_count': active_reminder_count,
         'recent_messages': recent_messages,
         'pharmacy': pharmacy,
         'today': date.today(),
@@ -328,23 +355,29 @@ def edit_reminder(request):
                             "error": f"You already have a reminder set for {parsed_time.strftime('%I:%M %p')}"
                         }, status=400)
 
-                    time_entry.time = parsed_time
-
+                    # Revoke old task BEFORE updating time
                     if time_entry.task_id:
                         try:
-                            current_app.control.revoke(time_entry.task_id, terminate=True)
-                        except Exception:
-                            pass
+                            # Revoke using both methods for reliability
+                            current_app.control.revoke(time_entry.task_id, terminate=True, signal='SIGKILL')
+                            from celery.result import AsyncResult
+                            old_task = AsyncResult(time_entry.task_id, app=current_app)
+                            old_task.revoke(terminate=True, signal='SIGKILL')
+                            print(f"[REVOKE] Revoked old task {time_entry.task_id} for time {time_entry.time}")
+                        except Exception as e:
+                            print(f"[REVOKE ERROR] Failed to revoke {time_entry.task_id}: {e}")
+
+                    time_entry.time = parsed_time
 
                     now = timezone.localtime()
                     eta = timezone.make_aware(datetime.combine(date.today(), parsed_time))
                     if eta <= now:
                         eta += timedelta(days=1)
 
-
                     task = send_reminder.apply_async((time_entry.id,), eta=eta)
                     time_entry.task_id = task.id
                     time_entry.save()
+                    print(f"[RESCHEDULE] New task {task.id} scheduled for {eta} (time: {parsed_time})")
 
 
                 except ReminderTime.DoesNotExist:
