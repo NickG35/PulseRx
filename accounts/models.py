@@ -10,6 +10,9 @@ class CustomAccount(AbstractUser):
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
+    # Override email field to make it unique
+    email = models.EmailField(unique=True, blank=False)
+
 class Thread(models.Model):
     participant = models.ManyToManyField(CustomAccount)
     created_at = models.DateTimeField(auto_now_add=True)
