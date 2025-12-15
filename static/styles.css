@@ -9,50 +9,50 @@
 
 /* Autocomplete Search */
 .search-item {
-    @apply p-2 cursor-pointer hover:bg-pulse-gray-100 transition-colors;
+  @apply cursor-pointer p-2 transition-colors hover:bg-pulse-gray-100;
 }
 
 .no-results {
-    @apply p-2 text-pulse-gray-500 italic;
+  @apply p-2 italic text-pulse-gray-500;
 }
 
 /* Message/Notification Highlighting */
 .highlight {
-    animation: flash 1.5s ease-out;
+  animation: flash 1.5s ease-out;
 }
 
 @keyframes flash {
-    0% {
-        opacity: 0.6;
-        background-color: #d0ebff;
-    }
-    100% {
-        opacity: 1;
-        background-color: transparent;
-    }
+  0% {
+    opacity: 0.6;
+    background-color: #d0ebff;
+  }
+  100% {
+    opacity: 1;
+    background-color: transparent;
+  }
 }
 
 .read {
-    @apply text-pulse-gray-400 opacity-70;
+  @apply text-pulse-gray-400 opacity-70;
 }
 
 /* Notification Dropdown Content */
 .noti-content {
-    @apply max-h-96 overflow-y-auto;
+  @apply max-h-96 overflow-y-auto;
 }
 
 .delete-noti {
-    @apply absolute top-2 right-2 p-1 rounded-full hover:bg-pulse-gray-200 transition-colors;
+  @apply absolute right-2 top-2 rounded-full p-1 transition-colors hover:bg-pulse-gray-200;
 }
 
 /* New Message Bubble (fixed position notification) */
 #new-message-bubble {
-    position: fixed;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    @apply bg-blue-600 text-white px-4 py-2 rounded-full cursor-pointer shadow-lg z-50;
-    display: none;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  @apply z-50 cursor-pointer rounded-full bg-blue-600 px-4 py-2 text-white shadow-lg;
+  display: none;
 }
 
 /* ========================================
@@ -61,51 +61,91 @@
 
 /* Reminder layouts */
 .reminder-layout {
-    @apply transition-all duration-300;
+  @apply relative transition-all duration-300;
 }
 
 .grayed {
-    @apply text-pulse-gray-400 opacity-50;
+  @apply text-pulse-gray-400 opacity-50;
 }
 
-/* Hide editable fields by default (used in forms) */
-[class^="editable"] {
-    display: none;
+/* Hide editable fields and buttons by default (used in forms) */
+[class^="editable_"],
+[class*="editable_buttons_"] {
+  display: none;
+}
+
+/* Make editable fields very noticeable when shown */
+[class^="editable"] input,
+[class^="editable"] .edit-field {
+  @apply border-2 border-black bg-yellow-50 focus:border-pulse-red focus:bg-white focus:ring-2 focus:ring-pulse-red;
+}
+
+/* Fix time input appearance - remove conflicting styles */
+[class^="editable"] input[type="time"] {
+  @apply border-2 border-black bg-yellow-50 focus:border-pulse-red focus:bg-white focus:ring-2 focus:ring-pulse-red;
+  position: relative;
+}
+
+/* Ensure time input calendar picker doesn't overlap with the text */
+[class^="editable"] input[type="time"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+  z-index: 10;
 }
 
 /* Custom scrollbar styling for dashboard cards */
 .overflow-y-auto {
-    /* Override DaisyUI's global scrollbar-color and use our custom WebKit styles */
-    scrollbar-color: #d1d5db #f3f4f6;
-    scrollbar-width: thin;
-    overflow-y: auto !important; /* Show scrollbar only when needed */
+  /* Override DaisyUI's global scrollbar-color and use our custom WebKit styles */
+  scrollbar-color: #d1d5db #f3f4f6;
+  scrollbar-width: thin;
+  overflow-y: auto !important; /* Show scrollbar only when needed */
 }
 
 .overflow-y-auto::-webkit-scrollbar {
-    width: 8px !important;
-    -webkit-appearance: none !important;
+  width: 8px !important;
+  -webkit-appearance: none !important;
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-    background-color: #f3f4f6 !important;
-    border-radius: 9999px !important;
+  background-color: #f3f4f6 !important;
+  border-radius: 9999px !important;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-    background-color: #d1d5db !important;
-    border-radius: 9999px !important;
-    -webkit-appearance: none !important;
+  background-color: #d1d5db !important;
+  border-radius: 9999px !important;
+  -webkit-appearance: none !important;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background-color: #9ca3af !important;
+  background-color: #9ca3af !important;
 }
 
 /* Force scrollbar to always be visible on WebKit browsers */
 .overflow-y-auto::-webkit-scrollbar-button {
-    display: none;
+  display: none;
 }
 
 .overflow-y-auto::-webkit-scrollbar-corner {
-    background-color: transparent;
+  background-color: transparent;
+}
+
+/* Override DaisyUI error color with pulse-red */
+[data-theme="light"] {
+  --color-error: oklch(49% 0.19 27);
+}
+
+/* Override DaisyUI error color with pulse-red - Must come after @tailwind utilities */
+@layer utilities {
+  [data-theme="light"] {
+    --color-error: oklch(49% 0.19 27);
+  }
 }
