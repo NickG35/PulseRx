@@ -69,6 +69,24 @@ class ReminderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         patient = kwargs.pop('patient', None)
         super().__init__(*args, **kwargs)
-        self.fields['frequency'].widget.attrs.update({'id': 'frequency'})
+
+        # Style frequency dropdown
+        self.fields['frequency'].widget.attrs.update({
+            'id': 'frequency',
+            'class': 'select select-bordered w-full focus:border-pulse-gray focus:outline-none'
+        })
+        self.fields['frequency'].empty_label = "Select your frequency"
+
+        # Style prescription dropdown
+        self.fields['prescription'].widget.attrs.update({
+            'class': 'select select-bordered w-full focus:border-pulse-grat focus:outline-none'
+        })
+
+        # Style day_amount input
+        self.fields['day_amount'].widget.attrs.update({
+            'class': 'input input-bordered w-full focus:border-pulse-gray focus:outline-none',
+            'placeholder': 'Enter number of days'
+        })
+
         if patient:
             self.fields['prescription'].queryset = Prescription.objects.filter(patient=patient)
