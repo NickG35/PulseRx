@@ -1,33 +1,153 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>prescriptions</h1>
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-800 mb-2">My Prescriptions</h1>
+        <p class="text-pulse-gray-600">View and manage your active prescriptions and request refills</p>
+    </div>
+
+    <!-- Messages -->
     {% if messages %}
-        <ul class="messages">
+        <div class="px-6 mb-6">
             {% for message in messages %}
-            <li class="{{ message.tags }}">{{ message }}</li>
+                <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% else %}info{% endif %} mb-2">
+                    <i class="fa-solid fa-{% if message.tags == 'success' %}circle-check{% elif message.tags == 'error' %}circle-exclamation{% else %}info-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
             {% endfor %}
-        </ul>
+        </div>
     {% endif %}
 
-    {% for prescription in prescriptions %}
-        <p><a href="{% url 'drug_detail' drug_id=prescription.medicine.id%}">Drug: {{prescription.medicine.name}} ({{prescription.medicine.brand}})</a></p>
-        <p>QTY: {{prescription.quantity}}</p>
-        <p>Prescribed by: {{prescription.prescribed_by}}</p>
-        <p>Created on: {{prescription.prescribed_on}}</p>
-        {% if prescription.refilled_on %}
-            <p>Refilled on: {{prescription.refilled_on}}</p>
+    <!-- Main Content Container -->
+    <div class="max-w-7xl mx-auto px-6">
+        <!-- Empty State -->
+        {% if not prescriptions %}
+            <div class="card bg-white shadow-sm">
+                <div class="card-body text-center py-16">
+                    <i class="fa-solid fa-prescription-bottle text-6xl text-pulse-gray-300 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-pulse-gray-700 mb-2">No Prescriptions Yet</h3>
+                    <p class="text-pulse-gray-500">Your prescriptions will appear here once they're issued by your healthcare provider</p>
+                </div>
+            </div>
+        {% else %}
+            <!-- Prescriptions Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {% for prescription in prescriptions %}
+                    <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <div class="card-body p-6">
+                            <!-- Medicine Name and Brand -->
+                            <div class="mb-4">
+                                <a href="{% url 'drug_detail' drug_id=prescription.medicine.id %}" class="hover:text-pulse-red transition-colors">
+                                    <h3 class="text-2xl font-semibold text-pulse-gray-800">{{ prescription.medicine.name }}</h3>
+                                    <p class="text-sm text-pulse-gray-500">{{ prescription.medicine.brand }}</p>
+                                </a>
+                            </div>
+
+                            <!-- Quick Info Badges -->
+                            <div class="flex gap-2 mb-4 flex-wrap">
+                                <!-- Refills Badge -->
+                                <div class="badge {% if prescription.refills_left > 0 %}badge-success{% else %}badge-error{% endif %} gap-2">
+                                    <i class="fa-solid fa-rotate"></i>
+                                    {{ prescription.refills_left }} refill{% if prescription.refills_left != 1 %}s{% endif %} left
+                                </div>
+
+                                <!-- Expiration Badge -->
+                                <div class="badge badge-outline gap-2">
+                                    <i class="fa-solid fa-calendar-xmark"></i>
+                                    Expires {{ prescription.expiration_date|date:"M d, Y" }}
+                                </div>
+                            </div>
+
+                            <!-- Refill Pending Alert -->
+                            {% if prescription.refill_pending %}
+                                <div class="alert alert-info mb-4">
+                                    <i class="fa-solid fa-clock"></i>
+                                    <div class="text-sm">
+                                        <p class="font-semibold">Refill Pending</p>
+                                        <p class="text-xs">Your pharmacy team is reviewing your request</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Prescription Details Collapse -->
+                            <div class="collapse collapse-arrow bg-pulse-gray-50 rounded-lg mb-4">
+                                <input type="checkbox" />
+                                <div class="collapse-title text-sm font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-info-circle text-pulse-gray-400"></i>
+                                    View Prescription Details
+                                </div>
+                                <div class="collapse-content">
+                                    <div class="space-y-3 pt-2">
+                                        <!-- Dosage -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-capsules text-pulse-gray-400"></i>
+                                            <span class="font-medium">Dosage:</span>
+                                            <span>{{ prescription.medicine.dosage }} mg</span>
+                                        </div>
+
+                                        <!-- Issued Quantity -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-pills text-pulse-gray-400"></i>
+                                            <span class="font-medium">Issued Qty:</span>
+                                            <span>{{ prescription.quantity }}</span>
+                                        </div>
+
+                                        <!-- Prescribed Date and Doctor -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-calendar-days text-pulse-gray-400"></i>
+                                            <span class="font-medium">Prescribed:</span>
+                                            <span>{{ prescription.prescribed_on|date:"M d, Y" }} by {{ prescription.prescribed_by }}</span>
+                                        </div>
+
+                                        <!-- Refilled Date (if applicable) -->
+                                        {% if prescription.refilled_on %}
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-clock-rotate-left text-pulse-gray-400"></i>
+                                            <span class="font-medium">Last Refilled:</span>
+                                            <span>{{ prescription.refilled_on|date:"M d, Y" }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex gap-2">
+                                <!-- Refill Button -->
+                                {% if prescription.refills_left > 0 %}
+                                    <form action="{% url 'refill' prescription_id=prescription.id %}" method="post" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn w-full {% if prescription.refill_pending %}bg-orange-500 hover:bg-orange-600 text-white border-orange-500{% else %}bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red{% endif %}"
+                                                {% if prescription.refill_pending %}disabled{% endif %}>
+                                            <i class="fa-solid fa-{% if prescription.refill_pending %}clock{% else %}prescription-bottle-medical{% endif %}"></i>
+                                            {% if prescription.refill_pending %}
+                                                Refill Pending
+                                            {% else %}
+                                                Request Refill
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button class="btn bg-pulse-gray-300 text-pulse-gray-600 border-pulse-gray-300 w-full flex-1" disabled>
+                                        <i class="fa-solid fa-ban"></i>
+                                        No Refills Available
+                                    </button>
+                                {% endif %}
+
+                                <!-- View Details Link -->
+                                <a href="{% url 'drug_detail' drug_id=prescription.medicine.id %}"
+                                   class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400">
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
-        <p>Exp date: {{prescription.expiration_date}}</p>
-        <p>You have {{ prescription.refills_left }} refill(s) left</p>
-        {% if prescription.refills_left > 0 %}
-            <form action="{% url 'refill' prescription_id=prescription.id %}" method="post">
-                {% csrf_token %}
-                <button type="submit" {% if prescription.refill_pending %}disabled{% endif %}>Request Refill</button>
-                {% if prescription.refill_pending %}
-                    Your refill request is under review by your pharmacy team. You will be notified once it has been processed.
-                {% endif %}
-            </form>
-        {% endif %}
-    {% endfor %}
+    </div>
+</div>
 {% endblock %}
