@@ -12,6 +12,9 @@
   @apply cursor-pointer p-2 transition-colors hover:bg-pulse-gray-100;
 }
 
+.link-messages {
+  @apply w-full p-3 text-pulse-gray-700 transition-colors hover:bg-pulse-gray-200;
+}
 .no-results {
   @apply p-2 italic text-pulse-gray-500;
 }
