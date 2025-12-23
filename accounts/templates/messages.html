@@ -38,6 +38,7 @@
                                 linkMessage.href = `${threadUrl}#message_${item.id}`;
                                 linkMessage.style.display = 'block';
                                 linkMessage.textContent = item.content;
+                                linkMessage.classList.add('link-messages');
                                 div.appendChild(linkMessage);
 
                                 fragment.appendChild(div);
@@ -45,6 +46,7 @@
                         } else {
                             const div = document.createElement('div');
                             div.textContent = `No messages found.`
+                            div.classList.add('link-messages');
                             fragment.appendChild(div);
                         }
 
@@ -158,7 +160,7 @@
             threadLink.appendChild(threadDiv);
 
             // Insert at top of threads list
-            threadsBox.insertBefore(threadLink, threadsBox.firstChild);
+            threadsBox.insertBefore(threadLink, threadsBox.firstChild)
 
             // Hide "No messages yet" message
             if (noMessage) {
@@ -167,65 +169,96 @@
         }
     });
 </script>
-<p>These are my pharmacy messages</p>
+<div class="p-6">
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-pulse-gray-899 mb-2">Messages</h1>
+    <p class="text-pulse-gray-600">
+        {% if request.user.role == 'patient' %}
+            Here are your messages between you and your pharmacy
+        {% endif %}
+    </p>
 
+</div>
+<div class="container mx-auto px-4">
 
-    <input placeholder="search messages..." type="text" class="autocomplete-message">
-    <div id="autocompleteResults"></div>
-
-    {% if request.user.role == 'patient' %}
-        <form action="{% url 'patient_thread' %}" method="post" style="display:inline;">
-            {% csrf_token %}
-            <input type="hidden" name="patientID" value="{{ patient.id }}">
-            <button type="submit"><i class="fa-regular fa-pen-to-square"></i></button>
-        </form>
-    {% else %}
-        <button class="threadSearch" type="button"><i class="fa-regular fa-pen-to-square"></i></button>
-        <form action="{% url 'patient_thread' %}" method="post">
-            {% csrf_token %}
-            <input placeholder="search for patients..." type="text" id="autocomplete-people" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
-            <input name="patientID" type="hidden" class="hidden-patient">
-            <div class="autocompletePeople" id="autocompleteResults-patient"></div>
-            <button type="submit">Search</button>
-        </form>
-    {% endif %}
-
-<div id="threads-box">
-    {% for thread in threads %}
-    <a href="{% url 'threads' thread_id=thread.id %}">
-        <div class="thread-box" id="thread_{{ thread.id }}">
-            {% with latest=thread.latest_message %}
-                    <div class="message-box"  {% if latest %} id="message_{{ latest.id }}" {% endif %}>
-                        <p class="message-sender">
-                            <strong>
-                                {% for user in thread.other_participants %}
-                                    {% if user.role == "pharmacy admin" or user.role == "pharmacist" %}
-                                        {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
-                                    {% else %}
-                                        {{ user.first_name }} {{ user.last_name }}
-                                    {% endif %}
-                                {% endfor %}
-                            </strong>
-                        </p>
-                        
-                        {% if latest %}
-                            {% if latest.sender == request.user %}
-                                <span>Me:</span>
-                            {% else %}
-                                <span>{{ latest.sender.first_name }} {{ latest.sender.last_name }}:</span>
-                            {% endif %}
-
-                            <p class="message-content">{{ latest.content }}</p>
-                            <p class="message-timestamp"><small>{{ latest.timestamp }}</small></p>
-                        {% else %}
-                            <p class="message-content">No messages yet</p>
-                            <p class="message-timestamp"><small>{{ thread.created_at }}</small></p>
-                        {% endif %}
-                    </div>
-            {% endwith %}
+    <div class="flex flex-row items-center gap-4 max-w-2xl mb-4 mx-auto">
+        <div class="relative flex-1">
+            <label class="input input-lg w-full border-2 border-pulse-gray focus-within:outline-none shadow-md">
+                <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <g
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    stroke-width="2.5"
+                    fill="none"
+                    stroke="currentColor"
+                    >
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                    </g>
+                </svg>
+                <input placeholder="search messages..." type="search" class="autocomplete-message focus-within:outline-none w-full">
+            </label>
+            <div id="autocompleteResults" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
         </div>
-    </a>
-{% endfor %}
-    <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
+        <div class="flex-shrink-0">
+            {% if request.user.role == 'patient' %}
+                <form action="{% url 'patient_thread' %}" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="patientID" value="{{ patient.id }}">
+                    <button type="submit"><i class="fa-regular fa-pen-to-square fa-xl text-pulse-gray-500"></i></button>
+                </form>
+            {% else %}
+                <button class="threadSearch" type="button"><i class="fa-regular fa-pen-to-square fa-xl text-pulse-gray-500"></i></button>
+                <form action="{% url 'patient_thread' %}" method="post">
+                    {% csrf_token %}
+                    <input placeholder="search for patients..." type="text" id="autocomplete-people" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
+                    <input name="patientID" type="hidden" class="hidden-patient">
+                    <div class="autocompletePeople" id="autocompleteResults-patient"></div>
+                    <button type="submit">Search</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mx-auto max-w-2xl">
+        {% for thread in threads %}
+            <a href="{% url 'threads' thread_id=thread.id %}">
+                <div class="thread-box" id="thread_{{ thread.id }}">
+                    {% with latest=thread.latest_message %}
+                            <div class="message-box bg-white border-2 border-pulse-gray-300 rounded-lg p-4 mb-3 hover:bg-gray-50 transition-colors"  {% if latest %} id="message_{{ latest.id }}" {% endif %}>
+                                <div class="message-sender flex flex-row items-center justify-between mb-2">
+                                    <div>
+                                        <strong class="text-pulse-gray-900 text-lg">
+                                            {% for user in thread.other_participants %}
+                                                {% if user.role == "pharmacy admin" or user.role == "pharmacist" %}
+                                                    {{ user.pharmacyprofile.pharmacy_name }} Pharmacy
+                                                {% else %}
+                                                    {{ user.first_name }} {{ user.last_name }}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </strong>
+                                    </div>
+                                    <div>
+                                        {% if latest %}
+                                            <p class="message-timestamp text-gray-500"><small>{{ latest.timestamp }}</small></p>
+                                        {% else %}
+                                            <p class="message-timestamp text-gray-500"><small>{{ thread.created_at }}</small></p>    
+                                        {% endif %}  
+                                    </div>    
+                                </div>
+                                
+                                {% if latest %}
+                                    <p class="message-content text-gray-500 truncate">{{ latest.content }}</p>
+                                {% else %}
+                                    <p class="message-content text-center text-gray-400 py-8">No messages yet</p>
+                                {% endif %}
+                            </div>
+                    {% endwith %}
+                </div>
+            </a>
+        {% endfor %}
+        <p id="noMessage" {% if threads %} style="display: none;" {% endif %}>No messages yet.</p>
+    </div>
+</div>
 </div>
 {% endblock %}
