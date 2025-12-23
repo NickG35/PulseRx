@@ -92,78 +92,102 @@ class MessageConsumer(AsyncWebsocketConsumer):
         )
     
     async def receive(self, text_data):
-        data = json.loads(text_data)
+        try:
+            data = json.loads(text_data)
 
-        if data.get("type") == "set_current_thread":
-            self.current_thread = str(data["thread_id"])
-            return
-        
-        content = data['content']
-        user = self.scope["user"]
+            if data.get("type") == "set_current_thread":
+                self.current_thread = str(data["thread_id"])
+                return
 
-        thread = await self.get_thread(self.thread_id)
+            content = data.get('content')
+            if not content:
+                print("ERROR: No content in message")
+                return
 
-        message, notifications = await self.create_message(thread, user, content)
+            user = self.scope["user"]
 
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': content,
-                'sender': f"{user.first_name} {user.last_name}",
-                'timestamp': timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
-            }
-        )
+            thread = await self.get_thread(self.thread_id)
 
-        other_participants = await self.get_other_participants(thread, user)
-        channel_layer = get_channel_layer()
+            message, notifications = await self.create_message(thread, user, content)
 
-        for participant in other_participants:
-            notification_obj = next((n for n in notifications if n.user == participant), None)
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'id': message.id,
+                    'message': content,
+                    'sender': f"{user.first_name} {user.last_name}",
+                    'timestamp': timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
+                }
+            )
 
-            if notification_obj:
-                # Send notification with automatic unread counts using helper
-                await sync_to_async(send_notification_with_counts)(
-                    user=participant,
-                    notification_data={
-                        "id": notification_obj.id,
-                        "thread_id": thread.id,
-                        "message_id": message.id,
-                        "sender": f"{user.first_name} {user.last_name}",
-                        "content": message.content,
-                        "timestamp": timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
-                        "is_read": False,
+            other_participants = await self.get_other_participants(thread, user)
+            channel_layer = get_channel_layer()
+
+            # Process notifications for each participant
+            for participant in other_participants:
+                try:
+                    notification_obj = next((n for n in notifications if n.user == participant), None)
+
+                    # Get unread counts for this participant
+                    unread_count = await self.get_unread_count(participant)
+                    unread_messages = await self.get_unread_messages(participant)
+
+                    notification_data = {
+                        "id": notification_obj.id if notification_obj else 0,
+                        "unread_count": unread_count,
+                        "unread_messages": unread_messages,
                     }
-                )
-            else:
-                # No notification created (user is viewing thread), but still send count update
-                unread_count = await sync_to_async(
-                    lambda: Notifications.objects.filter(user=participant, is_read=False).count()
-                )()
-                unread_messages = await sync_to_async(
-                    lambda: ReadStatus.objects.filter(user=participant, read=False).count()
-                )()
 
-                await channel_layer.group_send(
-                    f"user_{participant.id}",
-                    {
-                        "type": "send_notification",
-                        "notification": {
-                            "unread_count": unread_count,
-                            "unread_messages": unread_messages,
+                    if notification_obj:
+                        notification_data.update({
+                            "thread_id": thread.id,
+                            "message_id": message.id,
+                            "sender": f"{user.first_name} {user.last_name}",
+                            "content": message.content,
+                            "timestamp": timezone.localtime(message.timestamp).strftime("%b %d, %I:%M %p"),
+                            "is_read": False,
+                        })
+
+                    await channel_layer.group_send(
+                        f"user_{participant.id}",
+                        {
+                            "type": "send_notification",
+                            "notification": notification_data
                         }
-                    }
-                )
+                    )
+
+                except Exception as participant_error:
+                    print(f"ERROR processing participant {participant.id}: {participant_error}")
+                    import traceback
+                    traceback.print_exc()
+        except Exception as e:
+            print(f"ERROR in MessageConsumer.receive: {e}")
+            import traceback
+            traceback.print_exc()
                 
     async def chat_message(self, event):
-        await self.send(text_data=json.dumps({
-            'sender': event['sender'],
-            'content': event['message'],
-            'timestamp': event['timestamp'],
-        }))
+        try:
+            await self.send(text_data=json.dumps({
+                'id': event['id'],
+                'sender': event['sender'],
+                'content': event['message'],
+                'timestamp': event['timestamp'],
+            }))
+        except Exception as e:
+            print(f"ERROR in MessageConsumer.chat_message: {e}")
+            import traceback
+            traceback.print_exc()
         
     async def get_thread(self, thread_id):
-        return await Thread.objects.aget(id=thread_id)
+        try:
+            return await Thread.objects.aget(id=thread_id)
+        except Thread.DoesNotExist:
+            print(f"ERROR: Thread {thread_id} does not exist")
+            raise
+        except Exception as e:
+            print(f"ERROR in get_thread: {e}")
+            raise
     
     @sync_to_async
     def get_other_participants(self, thread, user):
@@ -180,11 +204,11 @@ class MessageConsumer(AsyncWebsocketConsumer):
 
         notifications = []
         participants = thread.participant.exclude(id=sender.id)
-        
+
         for participant in participants:
             notif_ws = active_notification_users.get(participant.id)
             is_viewing_thread = notif_ws and getattr(notif_ws, "current_thread", None) == str(thread.id)
-            if is_viewing_thread: 
+            if is_viewing_thread:
                 ReadStatus.objects.create(message=message, user=participant, read=True)
             else:
                 ReadStatus.objects.create(message=message, user=participant, read=False)
@@ -192,5 +216,13 @@ class MessageConsumer(AsyncWebsocketConsumer):
                 notifications.append(noti)
 
         return message, notifications
+
+    @sync_to_async
+    def get_unread_count(self, user):
+        return Notifications.objects.filter(user=user, is_read=False).count()
+
+    @sync_to_async
+    def get_unread_messages(self, user):
+        return ReadStatus.objects.filter(user=user, read=False).count()
     
 
