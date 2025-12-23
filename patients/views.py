@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from pharmacy.models import Prescription
+from pharmacy.models import Prescription, PharmacistProfile
 from .models import PatientProfile, MedicationReminder, ReminderTime
 from accounts.models import CustomAccount, Notifications, Message, Thread
 from accounts.utils import send_notification_with_counts
@@ -115,6 +115,7 @@ def prescriptions(request):
 def my_pharmacy(request):
     patient = PatientProfile.objects.get(user=request.user)
     current_pharmacy = patient.pharmacy
+    pharmacists = PharmacistProfile.objects.filter(pharmacy=current_pharmacy).all()
 
     if request.method == 'POST':
         form = PharmacyForm(request.POST, instance=patient)
@@ -126,6 +127,7 @@ def my_pharmacy(request):
 
     return render(request, 'my_pharmacy.html', {
         'pharmacy': current_pharmacy,
+        'pharmacists': pharmacists,
         'form': form,
     })
 
