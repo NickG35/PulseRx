@@ -51,9 +51,19 @@ class PatientProfileForm(forms.ModelForm):
         return dob
 
 class PharmacyForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove the empty label (dash option)
+        self.fields['pharmacy'].empty_label = None
+
     class Meta:
         model = PatientProfile
         fields = ['pharmacy']
+        widgets = {
+            'pharmacy': forms.Select(attrs={
+                'class': 'select select-bordered w-full focus:border-pulse-red focus:outline-none'
+            })
+        }
 
 class ReminderForm(forms.ModelForm):
     class Meta:
@@ -79,7 +89,7 @@ class ReminderForm(forms.ModelForm):
 
         # Style prescription dropdown
         self.fields['prescription'].widget.attrs.update({
-            'class': 'select select-bordered w-full focus:border-pulse-grat focus:outline-none'
+            'class': 'select select-bordered w-full focus:border-pulse-gray focus:outline-none'
         })
 
         # Style day_amount input
