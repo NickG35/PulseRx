@@ -1,50 +1,122 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div class="p-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-800 mb-2">Account Settings</h1>
+        <p class="text-pulse-gray-600">Manage your account information and security preferences</p>
+    </div>
 
-<h3>Account Info</h3>
-<button onclick="editUser('.user-info', 'save-btn', 'cancel-btn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
-<form id="account-form" method="post">
-    {% csrf_token %}
-    <input type="hidden" name="form_type" value="account">
-    {% for field in account_form %}
-        <p>{{ field.label }}</p>
-        {{ field }}
-        {% for error in field.errors %}
-            <p class="error">{{ error }}</p>
-        {% endfor %}
-    {% endfor %}
-    <button onclick="disableInput('.user-info', 'save-btn', 'cancel-btn')" style="display: none" type="button" id="cancel-btn">Cancel</button>
-    <button style="display: none" type="submit" id="save-btn">Save</button>
-</form>
+    <!-- Main Content Container -->
+    <div class="max-w-2xl mx-auto space-y-6">
 
-{% if request.user.role == 'pharmacist' %}
-    <h3>Activity Overview</h3>
-    <p>Prescriptions Filled</p>
-    <p>Low Stock Medications</p>
-{% endif %}
+        <!-- Identification Card -->
+        <div class="bg-white border border-pulse-gray-300 rounded-lg shadow-sm">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-pulse-gray-800">Identification</h2>
+                        <p class="text-sm text-pulse-gray-600 mt-1">Update your username and email address</p>
+                    </div>
+                    <button onclick="editUser('.user-info', 'save-btn', 'cancel-btn')" class="btn btn-ghost btn-sm">
+                        <i class="fa-solid fa-pen-to-square text-pulse-gray-600"></i>
+                    </button>
+                </div>
 
-<h3>Security</h3>
-<button onclick="editUser('.password-info', 'savebtn', 'cancelbtn')"><i class="fa-solid fa-pen-to-square" style="color: #000000;"></i></button>
-<form id="password-form" method="post">
-    {% csrf_token %}
+                <form id="account-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="account">
 
-    {% for error in password_form.non_field_errors %}
-        <p class="error">{{ error }}</p>
-    {% endfor %}
-        
-    <input type="hidden" name="form_type" value="password">
-     {% for field in password_form %}
-        <p>{{ field.label }}</p>
-        {{ field }}
-        {% for error in field.errors %}
-            <p class="error">{{ error }}</p>
-        {% endfor %}
-        {{ field.password }}
-    {% endfor %}
-    <button onclick="disableInput('.password-info', 'savebtn', 'cancelbtn')" style="display: none" type="button" id="cancelbtn">Cancel</button>
-    <button style="display: none" type="submit" id="savebtn">Save</button>
-</form>
+                    {% for field in account_form %}
+                    <div class="form-control w-full mb-4">
+                        <label class="label">
+                            <span class="label-text text-pulse-gray-700 font-medium">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                                <label class="label">
+                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                </label>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="disableInput('.user-info', 'save-btn', 'cancel-btn')" style="display: none" type="button" class="btn bg-pulse-gray-200 hover:bg-pulse-gray-400 flex-1" id="cancel-btn">Cancel</button>
+                        <button style="display: none" type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red flex-1" id="save-btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Security Card -->
+        <div class="bg-white border border-pulse-gray-300 rounded-lg shadow-sm">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-pulse-gray-800">Security</h2>
+                        <p class="text-sm text-pulse-gray-600 mt-1">Change your password to keep your account secure</p>
+                    </div>
+                    <button onclick="editUser('.password-info', 'savebtn', 'cancelbtn')" class="btn btn-ghost btn-sm">
+                        <i class="fa-solid fa-pen-to-square text-pulse-gray-600"></i>
+                    </button>
+                </div>
+
+                <form id="password-form" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="password">
+
+                    {% for field in password_form %}
+                    <div class="form-control w-full mb-4">
+                        {% if field.label %}
+                        <label class="label">
+                            <span class="label-text text-pulse-gray-700 font-medium">{{ field.label }}</span>
+                        </label>
+                        {% endif %}
+                        {{ field }}
+                        {% if field.errors %}
+                            {% for error in field.errors %}
+                                <label class="label">
+                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                </label>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="disableInput('.password-info', 'savebtn', 'cancelbtn')" style="display: none" type="button" class="btn bg-pulse-gray-200 hover:bg-pulse-gray-400 flex-1" id="cancelbtn">Cancel</button>
+                        <button style="display: none" type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red flex-1" id="savebtn">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if request.user.role == 'pharmacist' %}
+        <!-- Activity Overview Card -->
+        <div class="bg-white border border-pulse-gray-300 rounded-lg shadow-sm">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-pulse-gray-800 mb-4">Activity Overview</h2>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-4 bg-pulse-cream rounded-lg">
+                        <span class="text-pulse-gray-700">Prescriptions Filled</span>
+                        <span class="font-semibold text-pulse-gray-800">-</span>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-pulse-cream rounded-lg">
+                        <span class="text-pulse-gray-700">Low Stock Medications</span>
+                        <span class="font-semibold text-pulse-gray-800">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
 
 <script>
     const confirmation = document.getElementById('confirmation');
