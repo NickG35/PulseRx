@@ -1,56 +1,112 @@
 {% extends 'base.html' %}
 {% block content %}
-    <p>create prescription</p>
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-899 mb-2">Create Prescription</h1>
+        <p class="text-pulse-gray-600">Assign a prescribed medication to a patient</p>
+    </div>
 
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-            <li class="{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-
-
-    <form method="post">
-        {% csrf_token %}
+    <div class="card bg-white p-6 max-w-2xl mx-auto border border-pulse-gray-200 rounded-sm shadow-sm">
         {% if not is_refill %}
-            {% if form.patient.errors %}
-                {% for error in form.patient.errors %}
-                    <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
-                {% endfor %}
-            {% endif %}
-            <input name="patient_name" placeholder="search for patients..."  type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
-            <div id="autocompleteResults-patient"></div>
-
-            {% if form.medicine.errors %}
-                {% for error in form.medicine.errors %}
-                    <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
-                {% endfor %}
-            {% endif %}
-            <input name="medicine_name" placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
-            <div id="autocompleteResults-medicine"></div>
-
-            <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
-            <input type="hidden" name="medicine" class="hidden-medicine" value="{{ previous_medicine|default:'' }}">
+            <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">New Prescription</h3>
         {% else %}
-            <input  name="patient_shown" class="hidden-patient" value="{{old_prescription.patient.user.first_name}} {{old_prescription.patient.user.last_name}} ID: {{old_prescription.patient.id}}" readonly>
-            <input  name="medicine_shown" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
-
-            <input  name="patient" class="hidden-patient" value="{{old_prescription.patient.id}}" hidden>
-            <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine.id}}" hidden>
+        <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">Refill Prescription</h3>
+        {% endif %}
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
         {% endif %}
 
-        {% for error in form.quantity.errors %}
-            <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
-        {% endfor %}
-        <label for="{{ form.quantity.id_for_label }}">Quantity:</label>
-        {{ form.quantity }}
+        
+        <form method="post">
+            {% csrf_token %}
+            {% if not is_refill %}
+                <!-- Quantity and Expiration Date Row -->
+                <div class="flex flex-row gap-6 mb-4">
+                    <div class="form-control w-full">
+                        <label class="label" for="{{ form.quantity.id_for_label }}">
+                            <span class="label-text text-pulse-gray-800 font-medium">Quantity</span>
+                        </label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.quantity.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
 
-        <label for="{{ form.expiration_date.id_for_label }}">Expiration Date:</label>
-        {{ form.expiration_date }}
-        {% for error in form.expiration_date.errors %}
-            <div class="error" style="color: red; margin-bottom: 4px;">{{ error }}</div>
-        {% endfor %}
-        <button type="submit">Submit</button>
-    </form>
+                    <div class="form-control w-full">
+                        <label class="label" for="{{ form.expiration_date.id_for_label }}">
+                            <span class="label-text text-pulse-gray-800 font-medium">Expiration Date</span>
+                        </label>
+                        {{ form.expiration_date }}
+                        {% if form.expiration_date.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.expiration_date.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Patient Search -->
+                <div class="form-control w-full mb-4">
+                    <label class="label">
+                        <span class="label-text text-pulse-gray-800 font-medium">Patient</span>
+                    </label>
+                    {% if form.patient.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.patient.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                    <label class="input input-bordered w-full focus:border-pulse-red focus:outline-none flex items-center gap-2">
+                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </g>
+                        </svg>
+                        <input name="patient_name" placeholder="search for patients..." type="text" class="grow autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
+                    </label>
+                    <div id="autocompleteResults-patient"></div>
+                </div>
+
+                <!-- Medicine Search -->
+                <div class="form-control w-full mb-4">
+                    <label class="label">
+                        <span class="label-text text-pulse-gray-800 font-medium">Medicine</span>
+                    </label>
+                    {% if form.medicine.errors %}
+                        <label class="label">
+                            <span class="label-text-alt text-error">{{ form.medicine.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                    <label class="input input-bordered w-full focus:border-pulse-red focus:outline-none flex items-center gap-2">
+                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.3-4.3"></path>
+                            </g>
+                        </svg>
+                        <input name="medicine_name" placeholder="search for medicine..." type="text" class="grow autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
+                    </label>
+                    <div id="autocompleteResults-medicine"></div>
+                </div>
+
+                <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
+                <input type="hidden" name="medicine" class="hidden-medicine" value="{{ previous_medicine|default:'' }}">
+            {% else %}
+                <input  name="patient_shown" class="hidden-patient" value="{{old_prescription.patient.user.first_name}} {{old_prescription.patient.user.last_name}} ID: {{old_prescription.patient.id}}" readonly>
+                <input  name="medicine_shown" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
+
+                <input  name="patient" class="hidden-patient" value="{{old_prescription.patient.id}}" hidden>
+                <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine.id}}" hidden>
+            {% endif %}
+
+            <button class="w-full p-2 border rounded-sm bg-pulse-red hover:bg-pulse-red-dark text-white" type="submit">Submit</button>
+        </form>
+    </div>
+</div>
 {% endblock %}
