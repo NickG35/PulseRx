@@ -27,11 +27,11 @@ class AccountUpdateForm(forms.ModelForm):
         fields = ['username', 'email']
         widgets = {
             'username': forms.TextInput(attrs={
-                'class': 'user-info',
+                'class': 'user-info border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
                 'disabled': 'disabled'
             }),
             'email': forms.EmailInput(attrs={
-                'class': 'user-info',
+                'class': 'user-info border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
                 'disabled': 'disabled'
             })
         }
@@ -58,18 +58,18 @@ class AccountUpdateForm(forms.ModelForm):
 class PasswordUpdateForm(forms.Form):
     current_password = forms.CharField(
         widget=forms.PasswordInput(attrs={
-            'class': 'password-info', 
+            'class': 'password-info border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
             'placeholder': 'Current password',
             'disabled': 'disabled'
         }),
     )
     password = forms.CharField(widget=forms.PasswordInput(attrs= {
-        'class': 'password-info',
+        'class': 'password-info border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
         'placeholder': 'New password',
         'disabled': 'disabled'
     }))
     confirmation = forms.CharField(label='', widget=forms.PasswordInput(attrs= {
-        'class': 'password-info',
+        'class': 'password-info border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
         'id': 'confirmation',
         'style': 'display:none;',
         'placeholder': 'Confirm password',
@@ -106,4 +106,14 @@ class MessageForm(forms.ModelForm):
     class Meta:
         model = Message
         exclude = ['timestamp','sender', 'recipient', 'thread', 'link', 'prescription', 'refill_fulfilled', 'drug', 'resupply_fulfilled']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'class': 'textarea w-full border-2 border-pulse-gray-300 rounded-lg p-3 focus:border-pulse-red focus:outline-none',
+                'placeholder': 'Type your message..',
+                'rows': 3,
+            }),
+        }
+        labels = {
+            'content': '',
+        }
         
