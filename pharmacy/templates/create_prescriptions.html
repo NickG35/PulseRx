@@ -52,7 +52,7 @@
                 </div>
 
                 <!-- Patient Search -->
-                <div class="form-control w-full mb-4">
+                <div class="relative flex-1 form-control w-full mb-4">
                     <label class="label">
                         <span class="label-text text-pulse-gray-800 font-medium">Patient</span>
                     </label>
@@ -70,11 +70,11 @@
                         </svg>
                         <input name="patient_name" placeholder="search for patients..." type="text" class="grow autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
                     </label>
-                    <div id="autocompleteResults-patient"></div>
+                    <div id="autocompleteResults-patient" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
                 </div>
 
                 <!-- Medicine Search -->
-                <div class="form-control w-full mb-4">
+                <div class="relative flex-1 form-control w-full mb-4">
                     <label class="label">
                         <span class="label-text text-pulse-gray-800 font-medium">Medicine</span>
                     </label>
@@ -92,7 +92,7 @@
                         </svg>
                         <input name="medicine_name" placeholder="search for medicine..." type="text" class="grow autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
                     </label>
-                    <div id="autocompleteResults-medicine"></div>
+                    <div id="autocompleteResults-medicine" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
                 </div>
 
                 <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
