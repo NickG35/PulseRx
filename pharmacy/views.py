@@ -162,9 +162,6 @@ def create_prescriptions(request):
             return redirect(
                 f"{reverse('patient_profile', args=[prescription.patient.id])}#prescription-{prescription.id}"
             )
-        else:
-            messages.error(request, "There was a problem with your submission. Please check the form.")
-            print(form.errors)
 
     return render(request, 'create_prescriptions.html', {
         'form': form, 
