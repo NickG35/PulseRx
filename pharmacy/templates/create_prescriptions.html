@@ -8,9 +8,9 @@
 
     <div class="card bg-white p-6 max-w-2xl mx-auto border border-pulse-gray-200 rounded-sm shadow-sm">
         {% if not is_refill %}
-            <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">New Prescription</h3>
+            <h3 class="text-2xl text-center font-semibold pulse-gray-600 mb-6">New Prescription</h3>
         {% else %}
-        <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">Refill Prescription</h3>
+        <h3 class="text-2xl text-center font-semibold pulse-gray-600 mb-6">Refill Prescription</h3>
         {% endif %}
         {% if messages %}
             <ul class="messages">
@@ -26,7 +26,7 @@
             {% if not is_refill %}
                 <!-- Quantity and Expiration Date Row -->
                 <div class="flex flex-row gap-6 mb-4">
-                    <div class="form-control w-full">
+                    <div class="form-control w-full flex flex-col">
                         <label class="label" for="{{ form.quantity.id_for_label }}">
                             <span class="label-text text-pulse-gray-800 font-medium">Quantity</span>
                         </label>
@@ -38,7 +38,7 @@
                         {% endif %}
                     </div>
 
-                    <div class="form-control w-full">
+                    <div class="form-control w-full flex flex-col">
                         <label class="label" for="{{ form.expiration_date.id_for_label }}">
                             <span class="label-text text-pulse-gray-800 font-medium">Expiration Date</span>
                         </label>
@@ -61,7 +61,7 @@
                             <span class="label-text-alt text-error">{{ form.patient.errors.0 }}</span>
                         </label>
                     {% endif %}
-                    <label class="input input-bordered w-full focus:border-pulse-red focus:outline-none flex items-center gap-2">
+                    <label class="input w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus:border-black focus:outline-none">
                         <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
                                 <circle cx="11" cy="11" r="8"></circle>
@@ -83,7 +83,7 @@
                             <span class="label-text-alt text-error">{{ form.medicine.errors.0 }}</span>
                         </label>
                     {% endif %}
-                    <label class="input input-bordered w-full focus:border-pulse-red focus:outline-none flex items-center gap-2">
+                    <label class="input w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus:border-black focus:outline-none">
                         <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
                                 <circle cx="11" cy="11" r="8"></circle>
