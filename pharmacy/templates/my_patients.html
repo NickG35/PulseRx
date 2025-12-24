@@ -1,18 +1,52 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
-<p>These are my patients</p>
-{% if patients %}
-    <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="yes">
-    <input type="hidden" class="hidden-patient">
-    <div id="autocompleteResults-patient"></div>
-    <ul>
-        {% for patient in patients %}
-            <a href="{% url 'patient_profile' patient_id=patient.id %}">{{ patient.first_name }} {{ patient.last_name }}</a>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>No patients assigned to your pharmacy yet.</p>
-{% endif %}
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-800 mb-2">My Patients</h1>
+        <p class="text-pulse-gray-600">
+            Browse patients from your pharmacy
+        </p>
+    </div>
+    {% if patients %}
+        <div class="flex flex-row items-center gap-4 max-w-2xl mb-4 mx-auto">
+            <div class="relative flex-1">
+                <label class="input input-lg w-full border-2 border-pulse-gray focus-within:outline-none shadow-md">
+                    <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <g
+                        stroke-linejoin="round"
+                        stroke-linecap="round"
+                        stroke-width="2.5"
+                        fill="none"
+                        stroke="currentColor"
+                        >
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.3-4.3"></path>
+                        </g>
+                    </svg>
+                    <input placeholder="search for patients..." type="text" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="yes">
+                </label>
+                <div id="autocompleteResults-patient" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-8">
+                {% for patient in patients %}
+                    <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <figure class="pt-6">
+                            <i class="fa-solid fa-user-circle text-6xl text-pulse-gray-200"></i>
+                        </figure>
+                        <div class="card-body text-center">
+                            <h2 class="card-title justify-center text-pulse-gray-800">{{ patient.first_name }} {{ patient.last_name }}</h2>
+                            <div class="card-actions justify-center mt-2">
+                                <a href="{% url 'patient_profile' patient_id=patient.id %}" class="btn btn-sm bg-pulse-red hover:bg-pulse-red-dark text-white">View Profile</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>  
+    {% else %}
+        <p>No patients assigned to your pharmacy yet.</p>
+    {% endif %}
+</div>
 {% endblock %}
