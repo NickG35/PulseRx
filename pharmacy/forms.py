@@ -68,8 +68,15 @@ class PrescriptionForm(forms.ModelForm):
         expiration_date = forms.DateField(
             input_formats=['%m-%d-%Y'],
             widget=forms.DateInput(attrs={
-                 'class': 'datepicker',
+                 'class': 'datepicker border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
                  'placeholder': 'MM-DD-YYYY'
+            })
+        )
+
+        quantity = forms.IntegerField(
+            widget=forms.NumberInput(attrs={
+                'class': 'border-2 border-pulse-gray-100 rounded w-full p-2 focus:border-black focus:outline-none',
+                'placeholder': 'Enter quantity'
             })
         )
 
