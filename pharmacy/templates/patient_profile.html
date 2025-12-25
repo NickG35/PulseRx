@@ -1,26 +1,171 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Patient Info</h2>
-    <p>{{patient.first_name}} {{patient.last_name}}</p>
-    <strong>DOB:</strong> {{ patient.dob }}<br>
-    <strong>Gender:</strong> {{ patient.gender }}<br>
-    <strong>Email:</strong> {{ patient.user.email }}<br>
-    <strong>Phone:</strong> {{ patient.phone_number }}<br>
+    <div class="p-6 max-w-7xl mx-auto">
+        <div class="flex flex-col text-center mx-auto mb-8">
+            <h1 class="text-4xl font-bold text-pulse-gray-800 mb-4">{{patient.first_name}} {{patient.last_name}}</h1>
+            <i class="fa-solid fa-circle-user text-pulse-gray-200" style="font-size: 200px;"></i>
+        </div>
 
-<h2>Prescription History</h2>
-{% for prescription in patient.prescription.with_latest_ordering %}
-    <div id="prescription-{{prescription.id}}" class="prescription-item">
-        <p>Name: {{prescription.medicine.name}}({{prescription.medicine.brand}})</p>
-        <p>QTY: {{prescription.quantity}}</p>
-        <p>Prescribed by: Dr. {{prescription.prescribed_by}}</p>
-        <p>Prescribed on {{prescription.prescribed_on}}</p>
-        {% if prescription.refilled_on %}
-                <p>Refilled on: {{prescription.refilled_on}}</p>
+        <div class="card max-w-md mx-auto bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
+            <div class="card-body p-0">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                <!-- DOB -->
+                <div class="flex flex-col items-center text-center gap-2">
+                  <i class="fa-solid fa-calendar-days text-2xl text-pulse-red mb-1"></i>
+                  <p class="text-sm font-medium text-pulse-gray-500">Date of Birth</p>
+                  <p class="text-lg text-pulse-gray-800">{{ patient.dob }}</p>
+                </div>
+
+                <!-- Gender -->
+                <div class="flex flex-col items-center text-center gap-2">
+                  <i class="fa-solid fa-person text-2xl text-pulse-red mb-1"></i>
+                  <p class="text-sm font-medium text-pulse-gray-500">Gender</p>
+                  <p class="text-lg text-pulse-gray-800">{{ patient.gender }}</p>
+                </div>
+
+                <!-- Email -->
+                <div class="flex flex-col items-center text-center gap-2">
+                  <i class="fa-solid fa-envelope text-2xl text-pulse-red mb-1"></i>
+                  <p class="text-sm font-medium text-pulse-gray-500">Email</p>
+                  <p class="text-lg text-pulse-gray-800 break-all">{{ patient.user.email }}</p>
+                </div>
+
+                <!-- Phone -->
+                <div class="flex flex-col items-center text-center gap-2">
+                  <i class="fa-solid fa-phone text-2xl text-pulse-red mb-1"></i>
+                  <p class="text-sm font-medium text-pulse-gray-500">Phone</p>
+                  <p class="text-lg text-pulse-gray-800">{{ patient.phone_number }}</p>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-pulse-gray-800 mb-4">Prescriptions</h2>
+
+        {% if not prescriptions %}
+            <div class="card bg-white shadow-sm">
+                <div class="card-body text-center py-16">
+                    <i class="fa-solid fa-prescription-bottle text-6xl text-pulse-gray-300 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-pulse-gray-700 mb-2">No Prescriptions Yet</h3>
+                    <p class="text-pulse-gray-500">Your prescriptions will appear here once they're issued by your healthcare provider</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {% for prescription in patient.prescription.with_latest_ordering %}
+                    <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <div class="card-body p-6">
+                            <!-- Medicine Name and Brand -->
+                            <div class="mb-4">
+                                <a href="{% url 'drug_detail' drug_id=prescription.medicine.id %}" class="hover:text-pulse-red transition-colors">
+                                    <h3 class="text-2xl font-semibold text-pulse-gray-800">{{ prescription.medicine.name }}</h3>
+                                    <p class="text-sm text-pulse-gray-500">{{ prescription.medicine.brand }}</p>
+                                </a>
+                            </div>
+
+                            <!-- Quick Info Badges -->
+                            <div class="flex gap-2 mb-4 flex-wrap">
+                                <!-- Refills Badge -->
+                                <div class="badge {% if prescription.refills_left > 0 %}badge-success{% else %}badge-error{% endif %} gap-2">
+                                    <i class="fa-solid fa-rotate"></i>
+                                    {{ prescription.refills_left }} refill{% if prescription.refills_left != 1 %}s{% endif %} left
+                                </div>
+
+                                <!-- Expiration Badge -->
+                                <div class="badge badge-outline gap-2">
+                                    <i class="fa-solid fa-calendar-xmark"></i>
+                                    Expires {{ prescription.expiration_date|date:"M d, Y" }}
+                                </div>
+                            </div>
+
+                            <!-- Refill Pending Alert -->
+                            {% if prescription.refill_pending %}
+                                <div class="alert alert-info mb-4">
+                                    <i class="fa-solid fa-clock"></i>
+                                    <div class="text-sm">
+                                        <p class="font-semibold">Refill Pending</p>
+                                        <p class="text-xs">Your pharmacy team is reviewing your request</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Prescription Details Collapse -->
+                            <div class="collapse collapse-arrow bg-pulse-gray-50 rounded-lg mb-4">
+                                <input type="checkbox" />
+                                <div class="collapse-title text-sm font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-info-circle text-pulse-gray-400"></i>
+                                    View Prescription Details
+                                </div>
+                                <div class="collapse-content">
+                                    <div class="space-y-3 pt-2">
+                                        <!-- Dosage -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-capsules text-pulse-gray-400"></i>
+                                            <span class="font-medium">Dosage:</span>
+                                            <span>{{ prescription.medicine.dosage }} mg</span>
+                                        </div>
+
+                                        <!-- Issued Quantity -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-pills text-pulse-gray-400"></i>
+                                            <span class="font-medium">Issued Qty:</span>
+                                            <span>{{ prescription.quantity }}</span>
+                                        </div>
+
+                                        <!-- Prescribed Date and Doctor -->
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-calendar-days text-pulse-gray-400"></i>
+                                            <span class="font-medium">Prescribed:</span>
+                                            <span>{{ prescription.prescribed_on|date:"M d, Y" }} by {{ prescription.prescribed_by }}</span>
+                                        </div>
+
+                                        <!-- Refilled Date (if applicable) -->
+                                        {% if prescription.refilled_on %}
+                                        <div class="flex items-start gap-2 text-pulse-gray-700">
+                                            <i class="fa-solid fa-clock-rotate-left text-pulse-gray-400"></i>
+                                            <span class="font-medium">Last Refilled:</span>
+                                            <span>{{ prescription.refilled_on|date:"M d, Y" }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex gap-2">
+                                <!-- Refill Button -->
+                                {% if prescription.refills_left > 0 %}
+                                    <form action="{% url 'refill' prescription_id=prescription.id %}" method="post" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn w-full {% if prescription.refill_pending %}bg-orange-500 hover:bg-orange-600 text-white border-orange-500{% else %}bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red{% endif %}"
+                                                {% if prescription.refill_pending %}disabled{% endif %}>
+                                            <i class="fa-solid fa-{% if prescription.refill_pending %}clock{% else %}prescription-bottle-medical{% endif %}"></i>
+                                            {% if prescription.refill_pending %}
+                                                Refill Pending
+                                            {% else %}
+                                                Request Refill
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <button class="btn bg-pulse-gray-300 text-pulse-gray-600 border-pulse-gray-300 w-full flex-1" disabled>
+                                        <i class="fa-solid fa-ban"></i>
+                                        No Refills Available
+                                    </button>
+                                {% endif %}
+
+                                <!-- View Details Link -->
+                                <a href="{% url 'drug_detail' drug_id=prescription.medicine.id %}"
+                                class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400">
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
-        <p>Expires: {{prescription.expiration_date}}</p>
     </div>
-{% empty %}
-    <p>No prescriptions yet</p>
-{% endfor %}
 {% endblock %}
