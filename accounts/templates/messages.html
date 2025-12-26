@@ -175,6 +175,8 @@
     <p class="text-pulse-gray-600">
         {% if request.user.role == 'patient' %}
             Here are your messages between you and your pharmacy
+        {% else %}
+            Here are your messages between you and your patients
         {% endif %}
     </p>
 
@@ -210,16 +212,32 @@
             {% else %}
                 <button class="threadSearch" type="button" onclick="my_modal_3.showModal()"><i class="fa-regular fa-pen-to-square fa-xl text-pulse-gray-500"></i></button>
                 <dialog id="my_modal_3" class="modal">
-                    <div class="modal-box">
+                    <div class="modal-box max-w-2xl h-[70vh] max-h-[70vh] p-8">
                         <form method="dialog">
                             <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
                         </form>
-                        <h3 class="text-lg font-bold text-pulse-gray-800">Patient Search</h3>
+                        <h3 class="text-lg font-bold text-pulse-gray-800 mb-6">Patient Search</h3>
                         <form action="{% url 'patient_thread' %}" method="post">
                             {% csrf_token %}
-                            <input placeholder="search for patients..." type="text" id="autocomplete-people" class="autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}">
-                            <input name="patientID" type="hidden" class="hidden-patient">
-                            <div class="autocompletePeople" id="autocompleteResults-patient"></div>
+                            <div class="relative flex-1 mb-6">
+                                <label class="input input-lg w-full border-2 border-pulse-gray focus-within:outline-none shadow-md">
+                                    <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <g
+                                        stroke-linejoin="round"
+                                        stroke-linecap="round"
+                                        stroke-width="2.5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        >
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.3-4.3"></path>
+                                        </g>
+                                    </svg>
+                                    <input placeholder="search for patients..." type="search" class="autocomplete-input focus-within:outline-none w-full" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no">
+                                </label>
+                                <input name="patientID" type="hidden" class="hidden-patient">
+                                <div class="autocompletePeople absolute top-full left-0 right-0 bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-50 max-h-80 overflow-y-auto" id="autocompleteResults-patient"></div>
+                            </div>
                             <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
                                 Search
                             </button>
