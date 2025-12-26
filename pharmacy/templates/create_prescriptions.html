@@ -7,11 +7,13 @@
     </div>
 
     <div class="card bg-white p-6 max-w-2xl mx-auto border border-pulse-gray-200 rounded-sm shadow-sm">
-        {% if not is_refill %}
-            <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">New Prescription</h3>
-        {% else %}
-        <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">Refill Prescription</h3>
-        {% endif %}
+        <div class="mb-2">
+            {% if not is_refill %}
+                <h3 class="text-2xl text-center font-semibold pulse-gray-600 mb-6">New Prescription</h3>
+            {% else %}
+                <h3 class="text-2xl font-semibold pulse-gray-600 mb-6">Refill Prescription</h3>
+            {% endif %}
+        </div>
         {% if messages %}
             <ul class="messages">
                 {% for message in messages %}
@@ -61,16 +63,16 @@
                             <span class="label-text-alt text-error">{{ form.patient.errors.0 }}</span>
                         </label>
                     {% endif %}
-                    <label class="input w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus:border-black focus:outline-none">
-                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <div class="w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus-within:outline-none">
+                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.3-4.3"></path>
                             </g>
                         </svg>
-                        <input name="patient_name" placeholder="search for patients..." type="text" class="grow autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
-                    </label>
-                    <div id="autocompleteResults-patient" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
+                        <input name="patient_name" placeholder="search for patients..." type="text" class="grow outline-none focus:outline-none autocomplete-input" data-type="patient" data-url="{% url 'patient_search' %}" data-email="no" data-link="no" value="{{ previous_patient_name|default:'' }}">
+                    </div>
+                    <div id="autocompleteResults-patient" class="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-pulse-gray-100 rounded-lg z-10 max-h-60 overflow-y-auto hidden"></div>
                 </div>
 
                 <!-- Medicine Search -->
@@ -83,16 +85,16 @@
                             <span class="label-text-alt text-error">{{ form.medicine.errors.0 }}</span>
                         </label>
                     {% endif %}
-                    <label class="input w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus:border-black focus:outline-none">
-                        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <div class="w-full flex items-center gap-2 border-2 border-pulse-gray-100 rounded p-2 focus-within:outline-none">
+                        <svg class="h-4 w-4 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <g stroke-linejoin="round" stroke-linecap="round" stroke-width="2.5" fill="none" stroke="currentColor">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <path d="m21 21-4.3-4.3"></path>
                             </g>
                         </svg>
-                        <input name="medicine_name" placeholder="search for medicine..." type="text" class="grow autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
-                    </label>
-                    <div id="autocompleteResults-medicine" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
+                        <input name="medicine_name" placeholder="search for medicine..." type="text" class="grow outline-none focus:outline-none autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="no" value="{{ previous_medicine_name|default:'' }}">
+                    </div>
+                    <div id="autocompleteResults-medicine" class="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-pulse-gray-100 rounded-lg z-10 max-h-60 overflow-y-auto hidden"></div>
                 </div>
 
                 <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
