@@ -245,8 +245,17 @@
 
           if (query.length === 0) {
             resultsContainer.innerHTML = "";
+            resultsContainer.classList.add("hidden");
             return;
           }
+
+          // Hide all other autocomplete dropdowns
+          document.querySelectorAll('[id^="autocompleteResults-"]').forEach(dropdown => {
+            if (dropdown !== resultsContainer) {
+              dropdown.innerHTML = "";
+              dropdown.classList.add("hidden");
+            }
+          });
 
           timeoutId = setTimeout(() => {
             fetch(
@@ -283,6 +292,7 @@
                           input.value = `${item.first_name} ${item.last_name} ${item.email}`;
                         }
                         resultsContainer.innerHTML = "";
+                        resultsContainer.classList.add("hidden");
                         hiddenInput.value = item.id;
                         console.log(hiddenInput);
                         console.log(hiddenInput.value);
@@ -299,6 +309,7 @@
 
                 resultsContainer.innerHTML = "";
                 resultsContainer.appendChild(fragment);
+                resultsContainer.classList.remove("hidden");
               })
               .catch((error) => {
                 console.error(`Error fetching ${type} data:`, error);
