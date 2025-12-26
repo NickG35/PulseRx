@@ -1,85 +1,141 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Inventory</h2>
-{% if messages %}
-<ul class="messages">
-    {% for message in messages %}
-    <li class="{{ message.tags }}">{{ message }}</li>
-    {% endfor %}
-</ul>
-{% endif %}
+<div class="p-6">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-pulse-gray-800 mb-2">Inventory</h1>
+    <p class="text-pulse-gray-600">Track and Manage Medications</p>
+  </div>
+  {% if messages %}
+  <ul class="messages">
+      {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+  </ul>
+  {% endif %}
 
-<input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="yes">
-<input type="hidden" class="hidden-medicine">
-<div id="autocompleteResults-medicine"></div>
+  <div class="relative flex-1 max-w-2xl mx-auto">
+    <label class="input input-lg w-full border-2 border-pulse-gray focus-within:outline-none shadow-md">
+        <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <g
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            stroke-width="2.5"
+            fill="none"
+            stroke="currentColor"
+            >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+            </g>
+        </svg>
+        <input placeholder="search for medicine..." type="text" class="autocomplete-input" data-type="medicine" data-url="{% url 'medicine_search' %}" data-email="no" data-link="yes">
+    </label>
+    <input type="hidden" class="hidden-medicine">
+    <div id="autocompleteResults-medicine" class="absolute top-full left-0 right-0  bg-white border-2 border-t-0 border-pulse-gray rounded-lg z-10 max-h-60 overflow-y-auto"></div>
+  </div>
 
-<div class="med-container">
-  {% for drug in page_obj %}
-    <div class="med-item">
-        <a href="{% url 'drug_detail' drug_id=drug.id %}">
-          <div class="image-holder {% if drug.stock < 1 %} grayed {% endif %}">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-8">
+    {% for drug in page_obj %}
+      <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border border-pulse-gray-200 rounded-sm">
+        <div class="card-body p-6">
+          <!-- Icon -->
+          <div class="flex justify-center mb-4">
             {% if drug.route == "ORAL" %}
-            <i id="med-icon" class="fa-solid fa-capsules"></i>
+              <i class="fa-solid fa-capsules text-6xl text-pulse-red"></i>
             {% elif drug.route == "RESPIRATORY (INHALATION)" %}
-            <i id="med-icon" class="fa-solid fa-lungs"></i>
+              <i class="fa-solid fa-lungs text-6xl text-pulse-red"></i>
             {% elif drug.route == "INTRATHECAL" %}
-            <i id="med-icon" class="fa-solid fa-syringe"></i>
+              <i class="fa-solid fa-syringe text-6xl text-pulse-red"></i>
             {% elif drug.route == "OPHTHALMIC" %}
-            <i id="med-icon" class="fa-solid fa-eye"></i>
+              <i class="fa-solid fa-eye text-6xl text-pulse-red"></i>
             {% elif drug.route == "TOPICAL" %}
-            <i id="med-icon" class="fa-solid fa-pump-soap"></i>
+              <i class="fa-solid fa-pump-soap text-6xl text-pulse-red"></i>
             {% elif drug.route == "SUBCUTANEOUS" %}
-            <i id="med-icon" class="fa-solid fa-syringe"></i>
+              <i class="fa-solid fa-syringe text-6xl text-pulse-red"></i>
             {% elif drug.route == "INTRAMUSCULAR" %}
-            <i id="med-icon" class="fa-solid fa-syringe"></i>
+              <i class="fa-solid fa-syringe text-6xl text-pulse-red"></i>
             {% elif drug.route == "INTRAVENOUS" %}
-            <i id="med-icon" class="fa-solid fa-droplet"></i>
+              <i class="fa-solid fa-droplet text-6xl text-pulse-red"></i>
             {% elif drug.route == "SUBLINGUAL" %}
-            <i id="med-icon" class="fa-solid fa-mouth"></i>
+              <i class="fa-solid fa-mouth text-6xl text-pulse-red"></i>
             {% elif drug.route == "NASAL" %}
-            <i id="med-icon" class="fa-solid fa-head-side-cough"></i>
+              <i class="fa-solid fa-head-side-cough text-6xl text-pulse-red"></i>
             {% endif %}
           </div>
-        </a>
-        <a href="{% url 'drug_detail' drug_id=drug.id %}">
-          <div class="drug-name {% if drug.stock < 1 %} grayed {% endif %}">
-            <p class="drug-title">{{ drug.name }} ({{ drug.brand }})</p>
+
+          <!-- Medicine Name and Brand -->
+          <div class="mb-4 text-center">
+            <a href="{% url 'drug_detail' drug_id=drug.id %}" class="hover:text-pulse-red transition-colors">
+              <h3 class="text-2xl font-semibold text-pulse-gray-800">{{ drug.name }}</h3>
+              <p class="text-sm text-pulse-gray-500">{{ drug.brand }}</p>
+            </a>
           </div>
-        </a>
-      {% if drug.stock <= 30 %}
-        {% if drug.stock|add:0 <= 30 and drug.stock|add:0 >= 1 %}
-          <p>Low Stock</p>
-        {% elif drug.stock|add:0 < 1 %}
-            <p>No Stock</p>
-        {% endif %}
 
-          {% if request.user.role == 'pharmacy admin' %}
-            <form action="{% url 'resupply' drug_id=drug.id %}" method="post" >
-              {% csrf_token %}
-              <button type="submit">Resupply</button>
-            </form>
-          {% else %}       
-              {% if drug.resupply_pending %}
-                <p>Your resupply request is under review by your pharmacy admin. You will be notified once it has been processed.</p>
-              {% else %}
-                <p>View to contact admin.</p>
-              {% endif %}
+          <!-- Stock Status Badges -->
+          <div class="flex justify-center gap-2 mb-4">
+            {% if drug.stock < 1 %}
+              <div class="badge badge-error gap-2">
+                <i class="fa-solid fa-circle-xmark"></i>
+                Out of Stock
+              </div>
+            {% elif drug.stock <= 30 %}
+              <div class="badge badge-warning gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Low Stock ({{ drug.stock }})
+              </div>
+            {% else %}
+              <div class="badge badge-success gap-2">
+                <i class="fa-solid fa-circle-check"></i>
+                In Stock ({{ drug.stock }})
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Resupply Alert -->
+          {% if drug.stock <= 30 %}
+            {% if drug.resupply_pending %}
+              <div class="alert alert-info mb-4">
+                <i class="fa-solid fa-clock"></i>
+                <div class="text-sm">
+                  <p class="font-semibold">Resupply Pending</p>
+                  <p class="text-xs">Request under review by pharmacy admin</p>
+                </div>
+              </div>
+            {% endif %}
           {% endif %}
+
+          <!-- Action Buttons -->
+          <div class="flex gap-2 mt-4">
+            {% if drug.stock <= 30 and request.user.role == 'pharmacy admin' and not drug.resupply_pending %}
+              <form action="{% url 'resupply' drug_id=drug.id %}" method="post" class="flex-1">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
+                  <i class="fa-solid fa-box"></i>
+                  Resupply
+                </button>
+              </form>
+            {% endif %}
+
+            <a href="{% url 'drug_detail' drug_id=drug.id %}" class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400 {% if drug.stock <= 30 and request.user.role == 'pharmacy admin' and not drug.resupply_pending %}{% else %}w-full{% endif %}">
+              <i class="fa-solid fa-arrow-right"></i>
+              View Details
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="pagination">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
     {% endif %}
-    </div>
-  {% endfor %}
-</div>
 
-<div class="pagination">
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-  {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
-  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-  {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}">Next</a>
-  {% endif %}
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
