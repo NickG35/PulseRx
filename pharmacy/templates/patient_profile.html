@@ -2,57 +2,71 @@
 
 {% block content %}
     <div class="p-6 max-w-7xl mx-auto">
-        <div class="flex flex-col text-center mx-auto mb-8">
-            <h1 class="text-4xl font-bold text-pulse-gray-800 mb-4">{{patient.first_name}} {{patient.last_name}}</h1>
-            <i class="fa-solid fa-circle-user text-pulse-gray-200" style="font-size: 200px;"></i>
-        </div>
-
-        <div class="card max-w-md mx-auto bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
-            <div class="card-body p-0">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                <!-- DOB -->
-                <div class="flex flex-col items-center text-center gap-2">
-                  <i class="fa-solid fa-calendar-days text-2xl text-pulse-red mb-1"></i>
-                  <p class="text-sm font-medium text-pulse-gray-500">Date of Birth</p>
-                  <p class="text-lg text-pulse-gray-800">{{ patient.dob }}</p>
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-pulse-gray-800 mb-4">Patient Information</h2>
+            <div class="card  bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
+                <div class="card-body p-0">
+                <!-- Profile Header -->
+                <div class="flex flex-col items-center text-center px-6 border-b border-pulse-gray-200">
+                    <i class="fa-solid fa-circle-user text-pulse-gray-200 mb-4" style="font-size: 120px;"></i>
+                    <h1 class="text-3xl font-bold text-pulse-gray-800">{{patient.first_name}} {{patient.last_name}}</h1>
                 </div>
 
-                <!-- Gender -->
-                <div class="flex flex-col items-center text-center gap-2">
-                  <i class="fa-solid fa-person text-2xl text-pulse-red mb-1"></i>
-                  <p class="text-sm font-medium text-pulse-gray-500">Gender</p>
-                  <p class="text-lg text-pulse-gray-800">{{ patient.gender }}</p>
-                </div>
+                <!-- Patient Info Grid -->
+                <div class="grid grid-cols-1 gap-6 p-6">
+                    <!-- DOB -->
+                    <div class="flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-xl text-pulse-red"></i>
+                        <p class="text-sm font-medium text-pulse-gray-500">Date of Birth</p>
+                    </div>
+                    <p class="text-lg text-pulse-gray-800 self-start ml-7">{{ patient.dob }}</p>
+                    </div>
 
-                <!-- Email -->
-                <div class="flex flex-col items-center text-center gap-2">
-                  <i class="fa-solid fa-envelope text-2xl text-pulse-red mb-1"></i>
-                  <p class="text-sm font-medium text-pulse-gray-500">Email</p>
-                  <p class="text-lg text-pulse-gray-800 break-all">{{ patient.user.email }}</p>
-                </div>
+                    <!-- Gender -->
+                    <div class="flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-person text-xl text-pulse-red"></i>
+                        <p class="text-sm font-medium text-pulse-gray-500">Gender</p>
+                    </div>
+                    <p class="text-lg text-pulse-gray-800 self-start ml-7">{{ patient.gender }}</p>
+                    </div>
 
-                <!-- Phone -->
-                <div class="flex flex-col items-center text-center gap-2">
-                  <i class="fa-solid fa-phone text-2xl text-pulse-red mb-1"></i>
-                  <p class="text-sm font-medium text-pulse-gray-500">Phone</p>
-                  <p class="text-lg text-pulse-gray-800">{{ patient.phone_number }}</p>
+                    <!-- Email -->
+                    <div class="flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-envelope text-xl text-pulse-red"></i>
+                        <p class="text-sm font-medium text-pulse-gray-500">Email</p>
+                    </div>
+                    <p class="text-lg text-pulse-gray-800 break-all self-start ml-7">{{ patient.user.email }}</p>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="flex flex-col items-center gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-phone text-xl text-pulse-red"></i>
+                        <p class="text-sm font-medium text-pulse-gray-500">Phone</p>
+                    </div>
+                    <p class="text-lg text-pulse-gray-800 self-start ml-7">{{ patient.phone_number }}</p>
+                    </div>
                 </div>
-              </div>
+                </div>
             </div>
         </div>
 
-        <h2 class="text-2xl font-semibold text-pulse-gray-800 mb-4">Prescriptions</h2>
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-pulse-gray-800 mb-4">Prescriptions</h2>
 
-        {% if not prescriptions %}
-            <div class="card bg-white shadow-sm">
+            {% if not prescriptions %}
+            <div class="card bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
                 <div class="card-body text-center py-16">
                     <i class="fa-solid fa-prescription-bottle text-6xl text-pulse-gray-300 mb-4"></i>
                     <h3 class="text-xl font-semibold text-pulse-gray-700 mb-2">No Prescriptions Yet</h3>
                     <p class="text-pulse-gray-500">Your prescriptions will appear here once they're issued by your healthcare provider</p>
                 </div>
             </div>
-        {% else %}
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {% else %}
+            <div class="grid grid-cols-1 gap-6">
                 {% for prescription in patient.prescription.with_latest_ordering %}
                     <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
                         <div class="card-body p-6">
@@ -166,6 +180,7 @@
                     </div>
                 {% endfor %}
             </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 {% endblock %}
