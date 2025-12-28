@@ -28,16 +28,33 @@ class PharmacistProfile(models.Model):
         return f"{self.first_name} {self.last_name} ({self.pharmacy.pharmacy_name})"
 
 class Drug(models.Model):
+    STOCK_STATUS_CHOICES = [
+        ('in_stock', 'In Stock'),
+        ('low_stock', 'Low Stock'),
+        ('out_of_stock', 'Out of Stock'),
+    ]
+
+    pharmacy = models.ForeignKey(PharmacyProfile, on_delete=models.CASCADE, related_name='drugs', null=True)
     name = models.CharField(max_length=255)
     brand = models.CharField(max_length=255, blank=True)
     description = models.TextField()
     dosage = models.CharField(max_length=100)
     route = models.CharField(max_length=100, blank=True)
     stock = models.IntegerField(default=100)
+    status = models.CharField(max_length=20, choices=STOCK_STATUS_CHOICES, default='in_stock')
     resupply_pending = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.brand}"
+
+    def update_status(self):
+        """Automatically update status based on stock level"""
+        if self.stock == 0:
+            self.status = 'out_of_stock'
+        elif self.stock <= 30:
+            self.status = 'low_stock'
+        else:
+            self.status = 'in_stock'
 
 class PrescriptionQuerySet(models.QuerySet):
     def with_latest_ordering(self):
