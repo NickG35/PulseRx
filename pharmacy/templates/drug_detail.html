@@ -2,47 +2,134 @@
 
 {% block content %}
 {% load med_icons %}
-{% if messages %}
-<ul class="messages">
+
+<div class="p-6 max-w-7xl mx-auto">
+  {% if messages %}
+  <div class="mb-4">
     {% for message in messages %}
-    <li class="{{ message.tags }}">{{ message }}</li>
+      <div class="alert alert-{{ message.tags }} mb-2">
+        <span>{{ message }}</span>
+      </div>
     {% endfor %}
-</ul>
-{% endif %}
-{% for drug in drug_info %}
-    <div class="image-holder">
-        <i id="med-icon" class="fa-solid {{drug.route|med_icon}}"></i>
-    </div>
-    <p>{{drug.name}}({{drug.brand}})</p>
-    <p>{{drug.description}}</p>
-    <p>{{drug.dosage}}</p>
-    <p>{{drug.route}}</p>
-    <p>{{drug.stock}}</p>
+  </div>
+  {% endif %}
 
-    {% if drug.stock <= 30 %}
-        {% if drug.stock|add:0 <= 30 and drug.stock|add:0 >= 1 %}
-          <p>Low Stock</p>
-        {% elif drug.stock|add:0 < 1 %}
-            <p>No Stock</p>
-          {% endif %}
+  {% for drug in drug_info %}
+  <div class="max-w-3xl mx-auto">
+    <!-- Main Drug Information Card -->
+    <div class="card bg-white shadow-lg mb-6 border border-pulse-gray-200 rounded-sm">
+      <div class="card-body p-0">
 
-          {% if request.user.role == 'pharmacy admin' %}
-            <form action="{% url 'resupply' drug_id=drug.id %}" method="post" >
-              {% csrf_token %}
-              <button type="submit">Resupply</button>
-            </form>
+        <!-- Header: Icon, Name, Brand -->
+        <div class="flex flex-col items-center text-center py-8 px-6 border-b border-pulse-gray-200">
+          <i class="fa-solid {{drug.route|med_icon}} text-pulse-red mb-4" style="font-size: 120px;"></i>
+          <h1 class="text-3xl font-bold text-pulse-gray-800 mb-2">{{drug.name}}</h1>
+          <p class="text-lg text-pulse-gray-500">{{drug.brand}}</p>
+        </div>
+
+        <!-- Stock Status Badge -->
+        <div class="flex justify-center gap-2 py-4 border-b border-pulse-gray-200">
+          {% if drug.stock < 1 %}
+            <div class="badge badge-error gap-2 badge-lg">
+              <i class="fa-solid fa-circle-xmark"></i>
+              Out of Stock
+            </div>
+          {% elif drug.stock <= 30 %}
+            <div class="badge badge-warning gap-2 badge-lg">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              Low Stock ({{ drug.stock }} units)
+            </div>
           {% else %}
-            <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" >
-              {% csrf_token %}
-              <button type="submit" {% if drug.resupply_pending %}disabled{% endif %}>
-                Contact Admin
-              </button>
-              
-              {% if drug.resupply_pending %}
-                <p>Your resupply request is under review by your pharmacy admin. You will be notified once it has been processed.</p>
-              {% endif %}
-            </form>
+            <div class="badge badge-success gap-2 badge-lg">
+              <i class="fa-solid fa-circle-check"></i>
+              In Stock ({{ drug.stock }} units)
+            </div>
           {% endif %}
-    {% endif %}
-{% endfor %}
+        </div>
+
+        <!-- Route -->
+        <div class="flex flex-col items-center gap-2 py-4 border-b border-pulse-gray-200">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-syringe text-xl text-pulse-red"></i>
+            <p class="text-sm font-medium text-pulse-gray-500">Route</p>
+          </div>
+          <p class="text-lg text-pulse-gray-800">{{ drug.route }}</p>
+        </div>
+
+        <!-- Detailed Information Sections -->
+        <div class="p-6 space-y-4">
+          <!-- Description Section -->
+          <div class="collapse collapse-arrow bg-pulse-gray-50 rounded-lg">
+            <input type="checkbox" checked />
+            <div class="collapse-title text-lg font-semibold flex items-center gap-2 text-pulse-gray-800">
+              <i class="fa-solid fa-info-circle text-pulse-red"></i>
+              What is this medication?
+            </div>
+            <div class="collapse-content">
+              <p class="text-pulse-gray-700 leading-relaxed">{%if drug.description%} {{ drug.description }} {% else %} No information to display {% endif%}</p>
+            </div>
+          </div>
+
+          <!-- Dosage Instructions Section -->
+          <div class="collapse collapse-arrow bg-pulse-gray-50 rounded-lg">
+            <input type="checkbox" />
+            <div class="collapse-title text-lg font-semibold flex items-center gap-2 text-pulse-gray-800">
+              <i class="fa-solid fa-capsules text-pulse-red"></i>
+              Dosage Information
+            </div>
+            <div class="collapse-content">
+              <p class="text-pulse-gray-700 leading-relaxed">{{ drug.dosage }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resupply Alert -->
+        {% if drug.stock <= 30 and drug.resupply_pending %}
+          <div class="px-6 pb-4">
+            <div class="alert alert-info">
+              <i class="fa-solid fa-clock"></i>
+              <div class="text-sm">
+                <p class="font-semibold">Resupply Pending</p>
+                <p class="text-xs">Your resupply request is under review by your pharmacy admin. You will be notified once it has been processed.</p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="p-6 pt-0">
+          <div class="flex gap-2">
+            {% if drug.stock <= 30 %}
+              {% if request.user.role == 'pharmacy admin' and not drug.resupply_pending %}
+                <form action="{% url 'resupply' drug_id=drug.id %}" method="post" class="flex-1">
+                  {% csrf_token %}
+                  <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
+                    <i class="fa-solid fa-box"></i>
+                    Resupply Stock
+                  </button>
+                </form>
+              {% elif request.user.role != 'pharmacy admin' and not drug.resupply_pending %}
+                <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" class="flex-1">
+                  {% csrf_token %}
+                  <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
+                    <i class="fa-solid fa-envelope"></i>
+                    Request Resupply from Admin
+                  </button>
+                </form>
+              {% endif %}
+            {% endif %}
+
+            <a href="{% url 'inventory' %}" class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400 {% if drug.stock > 30 or drug.resupply_pending %}w-full{% endif %}">
+              <i class="fa-solid fa-arrow-left"></i>
+              Back to Inventory
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
 {% endblock %}
