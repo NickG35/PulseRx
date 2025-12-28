@@ -1,7 +1,84 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>Welcome {{user.first_name}}!</p>
-<p>Your pharmacy: {{pharmacist.pharmacy}}</p>
+<div class="p-6">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-899 mb-2">Welcome {{user.first_name}}!</h1>
+        <p class="text-pulse-gray-600">
+            {{pharmacist.pharmacy}} pharmacy
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Quick Stats Card with Carousel -->
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Quick Stats
+                </h2>
+
+                <div class="mt-4 mb-8">
+                    <div class="carousel w-full">
+                        <div id="slide1" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Total Patients</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-person"></i>
+                                    <span class="font-bold">{{total_patients}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide4" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide2" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="slide2" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Low Stock Medications</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-capsules"></i>
+                                    <span class="font-bold">{{low_stock}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide1" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide3" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="slide3" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Pending Refills</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-prescription-bottle"></i>
+                                    <span class="font-bold">{{pending_refills}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide2" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide4" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="slide4" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Unread Messages</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-comments"></i>
+                                    <span class="font-bold">{{unread_messages}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide3" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide1" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
