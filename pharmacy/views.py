@@ -19,8 +19,10 @@ from django.utils import timezone
 # Create your views here.
 def pharmacy_home(request):
     pharmacy = PharmacyProfile.objects.get(user=request.user)
+    total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
     return render(request, 'pharmacy_home.html', {
         'pharmacy': pharmacy,
+        'total_patients': total_patients
     })
 
 @login_required
@@ -43,8 +45,15 @@ def regenerate_code(request):
 
 def pharmacist_home(request):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
+    pharmacy = pharmacist.pharmacy
+    total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
+    low_stock_drugs = Drug.objects.filter(status='low_stock').count()
+    pending_refills = Prescription.objects.filter(refill_pending=True).count()
     return render(request, 'pharmacist_home.html', {
         'pharmacist': pharmacist,
+        'total_patients': total_patients,
+        'low_stock': low_stock_drugs,
+        'pending_refills': pending_refills
     })
 
 def create_prescriptions(request):
@@ -71,6 +80,7 @@ def create_prescriptions(request):
             new_stock = medicine.stock - prescription.quantity
 
             medicine.stock -= prescription.quantity
+            medicine.update_status()
             medicine.save()
             prescription.save()
 
@@ -202,7 +212,17 @@ def patient_search(request):
     return JsonResponse(results, safe=False)
 
 def medicine_search(request):
-    drugs = Drug.objects.all()
+    # Get the pharmacy based on user role
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    else:
+        return JsonResponse([], safe=False)
+
+    # Filter drugs by pharmacy
+    drugs = Drug.objects.filter(pharmacy=pharmacy)
 
     query = request.GET.get('q', '').strip()
     if query:
@@ -216,7 +236,7 @@ def medicine_search(request):
         results= [{'name': item.name, 'brand': item.brand, 'id': item.id} for item in items]
     else:
         results = []
-        
+
     return JsonResponse(results, safe=False)
 
 
@@ -238,7 +258,21 @@ def patient_profile(request, patient_id):
 
 @never_cache
 def inventory(request):
-    drugs = Drug.objects.all()
+    # Get the pharmacy based on user role
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    else:
+        pharmacy = None
+
+    # Filter drugs by pharmacy
+    if pharmacy:
+        drugs = Drug.objects.filter(pharmacy=pharmacy)
+    else:
+        drugs = Drug.objects.none()
+
     paginator = Paginator(drugs, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -248,7 +282,21 @@ def inventory(request):
 
 @never_cache
 def drug_detail(request, drug_id):
-    drug_info = Drug.objects.filter(id=drug_id).all()
+    # Get the pharmacy based on user role
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    else:
+        return HttpResponseForbidden("You don't have permission to view this drug.")
+
+    # Verify the drug belongs to this pharmacy
+    drug_info = Drug.objects.filter(id=drug_id, pharmacy=pharmacy).all()
+
+    if not drug_info:
+        return HttpResponseForbidden("This drug does not belong to your pharmacy.")
+
     return render(request, 'drug_detail.html', {
         'drug_info': drug_info
     })
@@ -263,6 +311,7 @@ def resupply(request, drug_id):
         if medicine.stock <= 30:
             medicine.resupply_pending = False
             medicine.stock = 100
+            medicine.update_status()
             medicine.save()
 
             content = f"{medicine.name} ({medicine.brand}) has been resupplied."
@@ -358,6 +407,7 @@ def refill_form(request, prescription_id):
 
             # Reduce stock and save
             medicine.stock -= prescription.quantity
+            medicine.update_status()
             medicine.save()
             prescription.save()
 
