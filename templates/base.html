@@ -97,85 +97,76 @@
             </div>
           </summary>
 
-          <div class="dropdown-content z-[1] menu p-4 shadow-2xl bg-base-100 rounded-box w-96 mt-3 border border-pulse-gray-200">
-            <h5>Notifications</h5>
-            <div class="noti-content">
+          <div class="dropdown-content z-[1] shadow-2xl mt-3">
+            <ul class="menu bg-base-200 rounded-box w-96 p-2">
+              <li class="menu-title">
+                <span class="text-lg font-semibold text-pulse-gray-800">Notifications</span>
+              </li>
               {% for noti in notifications %}
-              <div id="noti_div_{{noti.id}}" class="dropdown-item">
-                <button class="delete-noti" type="button" data-id="{{noti.id}}">
-                  <i class="bi bi-x"></i>
+              <li id="noti_div_{{noti.id}}" class="relative">
+                <button class="delete-noti absolute top-2 right-2 btn btn-ghost btn-xs btn-circle" type="button" data-id="{{noti.id}}">
+                  <i class="bi bi-x text-lg"></i>
                 </button>
                 {% if noti.reminder %}
                 <a
                   id="noti-dropdown"
-                  class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
+                  class="{% if noti.is_read %} opacity-60 {% endif %} notiDrop"
                   href="{% url 'reminders' %}#reminder_{{noti.reminder.id}}"
                   data-read="{{noti.is_read}}"
                   data-id="{{noti.id}}"
                 >
-                  <p class="reminder-message">
-                    Time to take your {{noti.reminder.medicine_name}}
-                  </p>
-                  <p class="reminder-time"><small>{{noti.time}}</small></p>
+                  <div class="flex flex-col gap-1">
+                    <p class="reminder-message text-sm font-medium">
+                      Time to take your {{noti.reminder.medicine_name}}
+                    </p>
+                    <p class="reminder-time text-xs text-pulse-gray-500">{{noti.time}}</p>
+                  </div>
                 </a>
                 {% elif noti.content %}
                 <a
                   id="noti-dropdown"
-                  class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
+                  class="{% if noti.is_read %} opacity-60 {% endif %} notiDrop"
                   href="{{noti.link}}"
                   data-read="{{noti.is_read}}"
                   data-id="{{noti.id}}"
                 >
-                  <p class="reminder-message">{{noti.content}}</p>
-                  <p class="reminder-time"><small>{{noti.time}}</small></p>
+                  <div class="flex flex-col gap-1">
+                    <p class="reminder-message text-sm font-medium">{{noti.content}}</p>
+                    <p class="reminder-time text-xs text-pulse-gray-500">{{noti.time}}</p>
+                  </div>
                 </a>
                 {% else %}
                 <a
                   id="noti-dropdown"
-                  class="dropdown-item {% if noti.is_read %} read {% endif %} notiDrop"
-                  {%
-                  if
-                  noti.message.sender.role
-                  !="system"
-                  %}
+                  class="{% if noti.is_read %} opacity-60 {% endif %} notiDrop"
+                  {% if noti.message.sender.role != "system" %}
                   href="{% url 'threads' thread_id=noti.message.thread.id %}#message_{{noti.message.id}}"
-                  {%
-                  else
-                  %}
+                  {% else %}
                   href="{{noti.message.link}}"
-                  {%
-                  endif
-                  %}
+                  {% endif %}
                   data-read="{{noti.is_read}}"
                   data-id="{{noti.id}}"
                 >
-                  {% if noti.message.sender.role != "system" %}
-                  <p class="reminder-message">
-                    {{noti.message.sender.first_name}}
-                    {{noti.message.sender.last_name}} has sent you a new message.
-                  </p>
-                  {% else %}
-                  <p class="reminder-message">{{noti.message.content}}</p>
-                  {% endif %}
-                  <p class="reminder-time"><small>{{noti.time}}</small></p>
+                  <div class="flex flex-col gap-1">
+                    {% if noti.message.sender.role != "system" %}
+                    <p class="reminder-message text-sm font-medium">
+                      {{noti.message.sender.first_name}} {{noti.message.sender.last_name}} has sent you a new message.
+                    </p>
+                    {% else %}
+                    <p class="reminder-message text-sm font-medium">{{noti.message.content}}</p>
+                    {% endif %}
+                    <p class="reminder-time text-xs text-pulse-gray-500">{{noti.time}}</p>
+                  </div>
                 </a>
                 {% endif %}
-              </div>
-              {% endfor %} {% if not noti %}
-              <span
-                id="emptyMessage"
-                {%
-                if
-                notifications
-                %}
-                style="display: none"
-                {%
-                endif
-                %}
-                >No notifications to display</span
-              >
+              </li>
+              {% endfor %}
+              {% if not notifications %}
+              <li id="emptyMessage">
+                <span class="text-pulse-gray-500 text-sm text-center py-4">No notifications to display</span>
+              </li>
               {% endif %}
-            </div>
+            </ul>
           </div>
         </details>
 
