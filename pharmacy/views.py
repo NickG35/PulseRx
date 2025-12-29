@@ -49,11 +49,15 @@ def pharmacist_home(request):
     total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
     low_stock_drugs = Drug.objects.filter(status='low_stock').count()
     pending_refills = Prescription.objects.filter(refill_pending=True).count()
+    no_stock_drugs = Drug.objects.filter(status='out_of_stock').all()
+    low_stock = Drug.objects.filter(status='low_stock').all()
     return render(request, 'pharmacist_home.html', {
         'pharmacist': pharmacist,
         'total_patients': total_patients,
         'low_stock': low_stock_drugs,
-        'pending_refills': pending_refills
+        'pending_refills': pending_refills,
+        'no_stock': no_stock_drugs,
+        'low_stock_drugs': low_stock
     })
 
 def create_prescriptions(request):
