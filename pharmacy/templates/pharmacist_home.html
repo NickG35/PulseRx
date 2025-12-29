@@ -78,6 +78,65 @@
                 </div>
             </div>
         </div>
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <i class="fa-solid fa-triangle-exclamation text-pulse-red"></i>
+                    Critical Alerts
+                </h2>
+
+                <div class="mt-4 mb-8">
+                    <div class="carousel w-full">
+                        <div id="alert-slide1" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Out of Stock</h3>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for no in no_stock %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'drug_detail' drug_id=no.id %}" class="flex justify-between items-center">
+                                            <div>
+                                                <span class="font-bold text-pulse-red">{{no.name}}</span>
+                                                <span class="font-semibold text-pulse-gray-600">({{no.brand}})</span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute right-5 top-1/2 flex -translate-y-1/2 transform">
+                                <a href="#alert-slide2" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="alert-slide2" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Low Stock</h3>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for low in low_stock_drugs %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'drug_detail' drug_id=low.id %}" class="flex justify-between items-center">
+                                            <div>
+                                                <span class="font-bold text-pulse-red">{{low.name}}</span>
+                                                <span class="font-semibold text-pulse-gray-600">({{low.brand}})</span>
+                                            </div>
+                                            {% if low.resupply_pending %}
+                                            <span class="badge badge-info badge-sm gap-1 flex-shrink-0">
+                                                <i class="fa-solid fa-clock text-xs"></i>
+                                                Pending
+                                            </span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute left-5 top-1/2 flex -translate-y-1/2 transform">
+                                <a href="#alert-slide1" class="btn btn-circle btn-sm">❮</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
