@@ -50,33 +50,6 @@
         {% endif %}
       </div>
 
-      <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1 gap-2">
-          {% if request.user.role == 'pharmacist' %}
-          <li><a href="{% url 'create_prescriptions' %}" class="btn btn-ghost">Create Prescriptions</a></li>
-          <li><a href="{% url 'my_patients' %}" class="btn btn-ghost">My Patients</a></li>
-          <li><a href="{% url 'inventory' %}" class="btn btn-ghost">Inventory</a></li>
-          <li>
-            <a href="{% url 'messages' %}" id="message-link" class="btn btn-ghost">
-              Messages
-              {% if unread_messages > 0 %}
-              <span id="message-badge" class="badge bg-pulse-red border-pulse-red text-white ml-1">{{unread_messages}}</span>
-              {% endif %}
-            </a>
-          </li>
-          {% elif request.user.role == 'pharmacy admin' %}
-          <li><a href="{% url 'inventory' %}" class="btn btn-ghost">Inventory</a></li>
-          <li>
-            <a href="{% url 'messages' %}" id="message-link" class="btn btn-ghost">
-              Messages
-              {% if unread_messages > 0 %}
-              <span id="message-badge" class="badge bg-pulse-red border-pulse-red text-white ml-1">{{unread_messages}}</span>
-              {% endif %}
-            </a>
-          </li>
-          {% endif %}
-        </ul>
-      </div>
 
       <div class="navbar-end gap-2">
         <!-- Notifications Dropdown -->
