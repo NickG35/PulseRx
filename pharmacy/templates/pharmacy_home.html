@@ -1,13 +1,317 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div class="container mx-auto p-6">
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-pulse-gray-899 mb-2">Welcome {{user.first_name}}!</h1>
+        <p class="text-pulse-gray-600">
+            {{pharmacy.pharmacy_name}} pharmacy
+        </p>
+    </div>
 
-<h2>Welcome pharmacy!</h2>
+    <!-- Join Code Card - Pharmacy Admin Only -->
+    <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow mb-6">
+        <div class="card-body">
+            <h2 class="card-title text-2xl text-pulse-gray-800 items-center mb-4">
+                <i class="fa-solid fa-key text-pulse-red"></i>
+                Pharmacy Join Code
+            </h2>
+            <div class="flex items-center justify-between bg-pulse-gray-50 p-4 rounded-lg">
+                <div class="flex flex-col">
+                    <span class="text-sm text-pulse-gray-500 mb-1">Share this code with pharmacists to join your pharmacy:</span>
+                    <span class="text-3xl font-bold text-pulse-red tracking-widest">{{pharmacy.join_code}}</span>
+                </div>
+                <form method="post" action="{% url 'regenerate_code' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red">
+                        <i class="fa-solid fa-rotate"></i>
+                        Regenerate Code
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Critical Alerts Card - Most Urgent -->
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <i class="fa-solid fa-triangle-exclamation text-pulse-red"></i>
+                    Critical Alerts
+                </h2>
 
-<p>This is the join code: {{pharmacy.join_code}}</p>
-<form method="post" action="{% url 'regenerate_code' %}">
-    {% csrf_token %}
-    <button type="submit">Regenerate Code</button>
-</form>
+                <div class="mt-4 mb-8">
+                    <div class="carousel w-full" style="scroll-behavior: auto;">
+                        <div id="alert-slide1" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Out of Stock</h3>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for no in no_stock %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'drug_detail' drug_id=no.id %}" class="flex justify-between items-center">
+                                            <span class="font-bold text-pulse-red">{{no.name}}</span>
+                                            <span class="font-semibold text-pulse-gray-600">({{no.brand}})</span>
+                                            {% if no.resupply_pending %}
+                                            <span class="badge badge-info badge-sm gap-1 flex-shrink-0">
+                                                <i class="fa-solid fa-clock text-xs"></i>
+                                                Pending
+                                            </span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-center py-4 text-pulse-gray-400">No out of stock medications</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute right-5 top-1/2 flex -translate-y-1/2 transform">
+                                <a href="#alert-slide2" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="alert-slide2" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Low Stock</h3>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for low in low_stock_drugs %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'drug_detail' drug_id=low.id %}" class="flex justify-between items-center">
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-bold text-pulse-red">{{low.name}}</span>
+                                                <span class="font-semibold text-pulse-gray-600">({{low.brand}})</span>
+                                            </div>
+                                            {% if low.resupply_pending %}
+                                            <span class="badge badge-info badge-sm gap-1 flex-shrink-0">
+                                                <i class="fa-solid fa-clock text-xs"></i>
+                                                Pending
+                                            </span>
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-center py-4 text-pulse-gray-400">No low stock medications</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute left-5 top-1/2 flex -translate-y-1/2 transform">
+                                <a href="#alert-slide1" class="btn btn-circle btn-sm">❮</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Recent Activity Card - Action Items -->
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <i class="fa-solid fa-clock text-pulse-red"></i>
+                    Recent Activity
+                </h2>
+
+                <div class="mt-4 mb-8">
+                    <div class="carousel w-full" style="scroll-behavior: auto;">
+                        <div id="activity-slide1" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <div class="flex justify-between items-center w-full mb-4">
+                                    <h3 class="text-lg font-semibold text-pulse-gray-600">Prescriptions</h3>
+                                    <a href="{% url 'all_prescriptions' %}" class="text-xs text-pulse-red hover:underline">View All</a>
+                                </div>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for rx in recent_prescriptions %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'patient_profile' patient_id=rx.patient.id %}#prescription-{{rx.id}}" class="flex justify-between items-center">
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-pulse-red">{{rx.medicine.name}}</span>
+                                                <span class="text-sm text-pulse-gray-600">{{rx.patient.first_name}} {{rx.patient.last_name}}</span>
+                                            </div>
+                                            <span class="text-xs text-pulse-gray-500">{{rx.prescribed_on|date:"M j"}}</span>
+                                        </a>
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-center py-4 text-pulse-gray-400">No recent prescriptions</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#activity-slide3" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#activity-slide2" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="activity-slide2" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <div class="flex justify-between items-center w-full mb-4">
+                                    <h3 class="text-lg font-semibold text-pulse-gray-600">Recent Messages</h3>
+                                </div>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for thread in recent_threads %}
+                                    <li class="border-b border-base-400">
+                                        <a href="{% url 'threads' thread_id=thread.id %}" class="flex justify-between items-center">
+                                            <div class="flex flex-col">
+                                                {% for participant in thread.other_participants %}
+                                                <span class="font-bold text-pulse-red">{{participant.first_name}} {{participant.last_name}}</span>
+                                                {% endfor %}
+                                            </div>
+                                            <span class="text-xs text-pulse-gray-500">{{thread.last_updated|date:"M j"}}</span>
+                                        </a>
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-center py-4 text-pulse-gray-400">No recent messages</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#activity-slide1" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#activity-slide3" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="activity-slide3" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                                <div class="flex justify-between items-center w-full mb-4">
+                                    <h3 class="text-lg font-semibold text-pulse-gray-600">Refill Requests</h3>
+                                    <a href="{% url 'all_refill_requests' %}" class="text-xs text-pulse-red hover:underline">View All</a>
+                                </div>
+                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                    {% for request in recent_requests %}
+                                    <li class="border-b border-base-400">
+                                        <div class="flex justify-between items-center px-4 py-3">
+                                            <div class="flex flex-col">
+                                                <span class="font-bold text-pulse-red">{{request.medicine.name}}</span>
+                                                <span class="text-sm text-pulse-gray-600">{{request.patient.first_name}} {{request.patient.last_name}}</span>
+                                            </div>
+                                            <span class="text-xs text-pulse-gray-500">{{request.prescribed_on|date:"M j"}}</span>
+                                        </div>
+                                    </li>
+                                    {% empty %}
+                                    <li class="text-center py-4 text-pulse-gray-400">No pending refill requests</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="absolute left-5 top-1/2 flex -translate-y-1/2 transform">
+                                <a href="#activity-slide2" class="btn btn-circle btn-sm">❮</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Quick Stats Card - Overview Metrics -->
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-pulse-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Stats
+                </h2>
+
+                <div class="mt-4 mb-8">
+                    <div class="carousel w-full" style="scroll-behavior: auto;">
+                        <div id="slide1" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Total Patients</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-person"></i>
+                                    <span class="font-bold">{{total_patients}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide3" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide2" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="slide2" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Low Stock Medications</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-capsules"></i>
+                                    <span class="font-bold">{{low_stock}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide1" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide3" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                        <div id="slide3" class="carousel-item relative w-full">
+                            <div class="w-full flex flex-col items-center justify-center py-6">
+                                <h3 class="text-lg font-semibold text-pulse-gray-600 mb-4">Pending Refills</h3>
+                                <div class="flex flex-row text-5xl text-pulse-red gap-4 items-center">
+                                    <i class="fa-solid fa-prescription-bottle"></i>
+                                    <span class="font-bold">{{pending_refills}}</span>
+                                </div>
+                            </div>
+                            <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
+                                <a href="#slide2" class="btn btn-circle btn-sm">❮</a>
+                                <a href="#slide1" class="btn btn-circle btn-sm">❯</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Quick Links Card - Navigation Shortcuts -->
+        <div class="card bg-white shadow-xl hover:shadow-2xl transition-shadow relative group">
+            <div class="card-body">
+                <h2 class="card-title text-2xl text-pulse-gray-800 items-center">
+                    <i class="fa-solid fa-magnifying-glass text-pulse-red"></i>
+                    Quick Links
+                </h2>
+                <div class="w-full flex flex-col py-6 items-center px-12 max-h-64 overflow-y-auto">
+                    <ul class="menu w-full border border-base-400 rounded-lg space-y-1">
+                        <li class="border-b border-base-400">
+                            <a href="{% url 'my_patients' %}" class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-pulse-red">My Patients</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="border-b border-base-400">
+                            <a href="{% url 'inventory' %}" class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-pulse-red">Inventory</span>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="border-b border-base-400">
+                            <a href="{% url 'messages' %}" class="flex justify-between items-center">
+                                <div>
+                                    <span class="font-bold text-pulse-red">Message Center</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all carousel navigation links
+    const carouselLinks = document.querySelectorAll('.carousel a[href^="#"]');
+
+    carouselLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                // Get the carousel container
+                const carousel = targetElement.closest('.carousel');
+                const currentScrollPos = window.scrollY;
+
+                // Scroll to the target slide within the carousel
+                targetElement.scrollIntoView({ behavior: 'smooth', inline: 'start' });
+
+                // Restore the page scroll position
+                window.scrollTo({ top: currentScrollPos, behavior: 'instant' });
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}
