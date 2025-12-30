@@ -22,6 +22,10 @@ class Thread(models.Model):
     def latest_message(self):
          return self.messages.order_by('-timestamp').first()
 
+    def get_other_participants(self, current_user):
+        """Get all participants in the thread except the current user"""
+        return self.participant.exclude(id=current_user.id)
+
 class Message(models.Model):
 
      
