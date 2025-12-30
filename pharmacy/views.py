@@ -20,9 +20,47 @@ from django.utils import timezone
 def pharmacy_home(request):
     pharmacy = PharmacyProfile.objects.get(user=request.user)
     total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
+    pending_refills = Prescription.objects.filter(refill_pending=True, prescribed_by__pharmacy=pharmacy).count()
+
+    # Optimize drug queries - use single queryset for low stock
+    no_stock_drugs = Drug.objects.filter(status='out_of_stock', pharmacy=pharmacy)
+    low_stock_drugs = Drug.objects.filter(status='low_stock', pharmacy=pharmacy)
+
+    # Use select_related to reduce database queries
+    # Exclude expired prescriptions
+    today = timezone.now().date()
+    recent_prescriptions = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')[:5]
+
+    recent_requests = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        refill_pending=True,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')[:5]
+
+    # Use prefetch_related for ManyToMany relationships
+    recent_threads = Thread.objects.filter(
+        participant=request.user
+    ).exclude(participant__role='system').prefetch_related('participant').order_by('-id')[:5]
+
+    # Add other_participants to each thread
+    for thread in recent_threads:
+        other_participants = thread.get_other_participants(request.user)
+        # Filter to only get patient participants
+        thread.other_participants = [p for p in other_participants if p.role == 'patient']
+
     return render(request, 'pharmacy_home.html', {
         'pharmacy': pharmacy,
-        'total_patients': total_patients
+        'total_patients': total_patients,
+        'low_stock': low_stock_drugs.count(),
+        'pending_refills': pending_refills,
+        'no_stock': no_stock_drugs,
+        'low_stock_drugs': low_stock_drugs,
+        'recent_prescriptions': recent_prescriptions,
+        'recent_threads': recent_threads,
+        'recent_requests': recent_requests
     })
 
 @login_required
@@ -47,17 +85,47 @@ def pharmacist_home(request):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = pharmacist.pharmacy
     total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
-    low_stock_drugs = Drug.objects.filter(status='low_stock').count()
-    pending_refills = Prescription.objects.filter(refill_pending=True).count()
-    no_stock_drugs = Drug.objects.filter(status='out_of_stock').all()
-    low_stock = Drug.objects.filter(status='low_stock').all()
+    pending_refills = Prescription.objects.filter(refill_pending=True, prescribed_by__pharmacy=pharmacy).count()
+
+    # Optimize drug queries - use single queryset for low stock
+    no_stock_drugs = Drug.objects.filter(status='out_of_stock', pharmacy=pharmacy)
+    low_stock_drugs = Drug.objects.filter(status='low_stock', pharmacy=pharmacy)
+
+    # Use select_related to reduce database queries
+    # Exclude expired prescriptions
+    today = timezone.now().date()
+    recent_prescriptions = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')[:5]
+
+    recent_requests = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        refill_pending=True,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')[:5]
+
+    # Use prefetch_related for ManyToMany relationships
+    recent_threads = Thread.objects.filter(
+        participant=request.user
+    ).exclude(participant__role='system').prefetch_related('participant').order_by('-id')[:5]
+
+    # Add other_participants to each thread
+    for thread in recent_threads:
+        other_participants = thread.get_other_participants(request.user)
+        # Filter to only get patient participants
+        thread.other_participants = [p for p in other_participants if p.role == 'patient']
+
     return render(request, 'pharmacist_home.html', {
         'pharmacist': pharmacist,
         'total_patients': total_patients,
-        'low_stock': low_stock_drugs,
+        'low_stock': low_stock_drugs.count(),
         'pending_refills': pending_refills,
         'no_stock': no_stock_drugs,
-        'low_stock_drugs': low_stock
+        'low_stock_drugs': low_stock_drugs,
+        'recent_prescriptions': recent_prescriptions,
+        'recent_threads': recent_threads,
+        'recent_requests': recent_requests
     })
 
 def create_prescriptions(request):
@@ -246,8 +314,14 @@ def medicine_search(request):
 
 
 def my_patients(request):
-    pharmacist =  PharmacistProfile.objects.get(user=request.user)
-    pharmacy_profile = pharmacist.pharmacy
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy_profile = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy_profile = PharmacyProfile.objects.get(user=request.user)
+    else:
+        return HttpResponseForbidden("You don't have permission to view patients.")
+
     patients = PatientProfile.objects.filter(pharmacy=pharmacy_profile).all()
 
     return render(request, 'my_patients.html', {
@@ -256,8 +330,12 @@ def my_patients(request):
 
 def patient_profile(request, patient_id):
     patient = PatientProfile.objects.get(id=patient_id)
+    # Exclude expired prescriptions
+    today = timezone.now().date()
+    prescriptions = patient.prescription.all().filter(expiration_date__gt=today).with_latest_ordering()
     return render(request, 'patient_profile.html', {
-        'patient': patient
+        'patient': patient,
+        'prescriptions': prescriptions
     })
 
 @never_cache
@@ -514,7 +592,56 @@ def refill_form(request, prescription_id):
         'is_refill': True,
         'old_prescription': old_prescription
     })
-            
 
+@never_cache
+def all_prescriptions(request):
+    # Get the pharmacy based on user role
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    else:
+        return HttpResponseForbidden("You don't have permission to view prescriptions.")
 
+    # Get all prescriptions for this pharmacy (exclude expired)
+    today = timezone.now().date()
+    prescriptions = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')
 
+    paginator = Paginator(prescriptions, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'all_prescriptions.html', {
+        'page_obj': page_obj
+    })
+
+@never_cache
+def all_refill_requests(request):
+    # Get the pharmacy based on user role
+    if request.user.role == 'pharmacist':
+        pharmacist = PharmacistProfile.objects.get(user=request.user)
+        pharmacy = pharmacist.pharmacy
+    elif request.user.role == 'pharmacy admin':
+        pharmacy = PharmacyProfile.objects.get(user=request.user)
+    else:
+        return HttpResponseForbidden("You don't have permission to view refill requests.")
+
+    # Get all pending refill requests for this pharmacy (exclude expired)
+    today = timezone.now().date()
+    refill_requests = Prescription.objects.filter(
+        prescribed_by__pharmacy=pharmacy,
+        refill_pending=True,
+        expiration_date__gt=today
+    ).select_related('medicine', 'patient', 'prescribed_by').order_by('-prescribed_on')
+
+    paginator = Paginator(refill_requests, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'all_refill_requests.html', {
+        'page_obj': page_obj
+    })
