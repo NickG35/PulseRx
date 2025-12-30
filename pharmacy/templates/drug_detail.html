@@ -83,8 +83,8 @@
           </div>
         </div>
 
-        <!-- Resupply Alert -->
-        {% if drug.stock <= 30 and drug.resupply_pending %}
+        <!-- Resupply Alert - Only show for pharmacists, not admins -->
+        {% if drug.stock <= 30 and drug.resupply_pending and request.user.role == 'pharmacist' %}
           <div class="px-6 pb-4">
             <div class="alert alert-info">
               <i class="fa-solid fa-clock"></i>
@@ -100,7 +100,7 @@
         <div class="p-6 pt-0">
           <div class="flex gap-2">
             {% if drug.stock <= 30 %}
-              {% if request.user.role == 'pharmacy admin' and not drug.resupply_pending %}
+              {% if request.user.role == 'pharmacy admin' %}
                 <form action="{% url 'resupply' drug_id=drug.id %}" method="post" class="flex-1">
                   {% csrf_token %}
                   <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
@@ -108,7 +108,7 @@
                     Resupply Stock
                   </button>
                 </form>
-              {% elif request.user.role != 'pharmacy admin' and not drug.resupply_pending %}
+              {% elif not drug.resupply_pending %}
                 <form action="{% url 'contact_admin' drug_id=drug.id %}" method="post" class="flex-1">
                   {% csrf_token %}
                   <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full">
@@ -119,7 +119,7 @@
               {% endif %}
             {% endif %}
 
-            <a href="{% url 'inventory' %}" class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400 {% if drug.stock > 30 or drug.resupply_pending %}w-full{% endif %}">
+            <a href="{% url 'inventory' %}" class="btn btn-outline hover:bg-pulse-gray-100 hover:border-pulse-gray-400 {% if drug.stock > 30 %}w-full{% elif drug.resupply_pending and request.user.role != 'pharmacy admin' %}w-full{% endif %}">
               <i class="fa-solid fa-arrow-left"></i>
               Back to Inventory
             </a>
