@@ -15,4 +15,6 @@ urlpatterns = [
     path('resupply/<int:drug_id>', views.resupply, name='resupply'),
     path('contact_admin/<int:drug_id>', views.contact_admin, name='contact_admin'),
     path('drug_detail/<int:drug_id>', views.drug_detail, name='drug_detail'),
+    path('all_prescriptions', views.all_prescriptions, name='all_prescriptions'),
+    path('all_refill_requests', views.all_refill_requests, name='all_refill_requests'),
 ]
