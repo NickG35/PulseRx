@@ -1,4 +1,6 @@
 from django import forms
+from django.core.exceptions import ValidationError
+import re
 from .models import PatientProfile, MedicationReminder
 from pharmacy.models import PharmacyProfile
 from pharmacy.models import Prescription
@@ -31,6 +33,52 @@ class PatientProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Make pharmacy optional
         self.fields['pharmacy'].required = False
+
+    def clean_first_name(self):
+        first_name = self.cleaned_data.get('first_name')
+        if not first_name:
+            raise ValidationError('First name is required.')
+
+        # Must be at least 2 characters
+        if len(first_name.strip()) < 2:
+            raise ValidationError('First name must be at least 2 characters long.')
+
+        # Should only contain letters, spaces, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-Z\s\-\']+$', first_name):
+            raise ValidationError('First name can only contain letters, spaces, hyphens, and apostrophes.')
+
+        return first_name.strip()
+
+    def clean_last_name(self):
+        last_name = self.cleaned_data.get('last_name')
+        if not last_name:
+            raise ValidationError('Last name is required.')
+
+        # Must be at least 2 characters
+        if len(last_name.strip()) < 2:
+            raise ValidationError('Last name must be at least 2 characters long.')
+
+        # Should only contain letters, spaces, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-Z\s\-\']+$', last_name):
+            raise ValidationError('Last name can only contain letters, spaces, hyphens, and apostrophes.')
+
+        return last_name.strip()
+
+    def clean_phone_number(self):
+        phone_number = self.cleaned_data.get('phone_number')
+        if not phone_number:
+            raise ValidationError('Phone number is required.')
+
+        # Remove all non-digit characters for validation
+        digits_only = re.sub(r'\D', '', phone_number)
+
+        # Must be exactly 10 digits for US phone numbers
+        if len(digits_only) != 10:
+            raise ValidationError('Phone number must be 10 digits.')
+
+        # Format as (XXX) XXX-XXXX
+        formatted = f'({digits_only[:3]}) {digits_only[3:6]}-{digits_only[6:]}'
+        return formatted
 
     def clean_dob(self):
         dob = self.cleaned_data.get('dob')

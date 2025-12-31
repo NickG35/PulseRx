@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from .models import CustomAccount, Message
+import re
 
 class UserRegistrationForm(UserCreationForm):
     class Meta:
@@ -14,6 +15,52 @@ class UserRegistrationForm(UserCreationForm):
         super(UserCreationForm, self).__init__(*args, **kwargs)
         self.fields['role'].widget = forms.HiddenInput()
         self.fields['email'].help_text = 'Must be unique'
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if not username:
+            raise ValidationError('Username is required.')
+
+        # Must be at least 3 characters
+        if len(username.strip()) < 3:
+            raise ValidationError('Username must be at least 3 characters long.')
+
+        # Must be at most 150 characters (Django default)
+        if len(username.strip()) > 150:
+            raise ValidationError('Username must be at most 150 characters long.')
+
+        # Can only contain letters, numbers, underscores, hyphens, periods
+        if not re.match(r'^[a-zA-Z0-9_\-\.]+$', username):
+            raise ValidationError('Username can only contain letters, numbers, underscores, hyphens, and periods.')
+
+        # Must start with a letter or number
+        if not re.match(r'^[a-zA-Z0-9]', username):
+            raise ValidationError('Username must start with a letter or number.')
+
+        # Check if username already exists
+        if CustomAccount.objects.filter(username=username).exists():
+            raise ValidationError('This username is already taken.')
+
+        return username.strip()
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if not email:
+            raise ValidationError('Email is required.')
+
+        # Basic email format validation (Django's EmailField already does some validation)
+        # But we'll add additional checks
+        email = email.strip().lower()
+
+        # Must contain @ symbol
+        if '@' not in email:
+            raise ValidationError('Please enter a valid email address.')
+
+        # Check if email already exists
+        if CustomAccount.objects.filter(email=email).exists():
+            raise ValidationError('This email is already registered.')
+
+        return email
 
 User = get_user_model()
 
