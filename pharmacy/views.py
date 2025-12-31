@@ -20,15 +20,22 @@ from django.utils import timezone
 def pharmacy_home(request):
     pharmacy = PharmacyProfile.objects.get(user=request.user)
     total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
-    pending_refills = Prescription.objects.filter(refill_pending=True, prescribed_by__pharmacy=pharmacy).count()
+
+    # Exclude expired prescriptions from pending refills count
+    today = timezone.now().date()
+    pending_refills = Prescription.objects.filter(
+        refill_pending=True,
+        prescribed_by__pharmacy=pharmacy,
+        expiration_date__gt=today
+    ).count()
 
     # Optimize drug queries - use single queryset for low stock
     no_stock_drugs = Drug.objects.filter(status='out_of_stock', pharmacy=pharmacy)
     low_stock_drugs = Drug.objects.filter(status='low_stock', pharmacy=pharmacy)
+    low_stock_count = low_stock_drugs.count()
 
     # Use select_related to reduce database queries
     # Exclude expired prescriptions
-    today = timezone.now().date()
     recent_prescriptions = Prescription.objects.filter(
         prescribed_by__pharmacy=pharmacy,
         expiration_date__gt=today
@@ -54,7 +61,7 @@ def pharmacy_home(request):
     return render(request, 'pharmacy_home.html', {
         'pharmacy': pharmacy,
         'total_patients': total_patients,
-        'low_stock': low_stock_drugs.count(),
+        'low_stock': low_stock_count,
         'pending_refills': pending_refills,
         'no_stock': no_stock_drugs,
         'low_stock_drugs': low_stock_drugs,
@@ -85,15 +92,22 @@ def pharmacist_home(request):
     pharmacist = PharmacistProfile.objects.get(user=request.user)
     pharmacy = pharmacist.pharmacy
     total_patients = PatientProfile.objects.filter(pharmacy=pharmacy).count()
-    pending_refills = Prescription.objects.filter(refill_pending=True, prescribed_by__pharmacy=pharmacy).count()
+
+    # Exclude expired prescriptions from pending refills count
+    today = timezone.now().date()
+    pending_refills = Prescription.objects.filter(
+        refill_pending=True,
+        prescribed_by__pharmacy=pharmacy,
+        expiration_date__gt=today
+    ).count()
 
     # Optimize drug queries - use single queryset for low stock
     no_stock_drugs = Drug.objects.filter(status='out_of_stock', pharmacy=pharmacy)
     low_stock_drugs = Drug.objects.filter(status='low_stock', pharmacy=pharmacy)
+    low_stock_count = low_stock_drugs.count()
 
     # Use select_related to reduce database queries
     # Exclude expired prescriptions
-    today = timezone.now().date()
     recent_prescriptions = Prescription.objects.filter(
         prescribed_by__pharmacy=pharmacy,
         expiration_date__gt=today
@@ -119,7 +133,7 @@ def pharmacist_home(request):
     return render(request, 'pharmacist_home.html', {
         'pharmacist': pharmacist,
         'total_patients': total_patients,
-        'low_stock': low_stock_drugs.count(),
+        'low_stock': low_stock_count,
         'pending_refills': pending_refills,
         'no_stock': no_stock_drugs,
         'low_stock_drugs': low_stock_drugs,
