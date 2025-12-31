@@ -120,7 +120,7 @@
                                 <ul class="menu w-full border border-base-400 rounded-lg">
                                     {% for thread in recent_threads %}
                                     <li class="border-b border-base-400">
-                                        <a href="{% url 'messages' thread_id=thread.id %}" class="flex justify-between items-center">
+                                        <a href="{% url 'threads' thread_id=thread.id %}" class="flex justify-between items-center">
                                             <div class="flex flex-col">
                                                 {% for participant in thread.other_participants %}
                                                 <span class="font-bold text-pulse-red">{{participant.first_name}} {{participant.last_name}}</span>
