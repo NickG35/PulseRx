@@ -63,30 +63,24 @@
               {{ form.pharmacy }}
             </div>
 
-            <button type="button" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full" data-bs-toggle="modal" data-bs-target="#exampleModal">
+            <button type="button" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red w-full" onclick="confirm_pharmacy_modal.showModal()">
               Change Pharmacy
             </button>
 
-            <!-- Confirmation Modal -->
-            <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Confirm Pharmacy Change</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                    </button>
-                  </div>
-                  <div class="modal-body">
-                    Are you sure you want to switch pharmacies? Your current pharmacy will no longer have access to your prescription information.
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Confirm Change</button>
-                  </div>
+            <!-- Confirmation Modal - DaisyUI -->
+            <dialog id="confirm_pharmacy_modal" class="modal">
+              <div class="modal-box">
+                <h3 class="font-bold text-lg mb-4">Confirm Pharmacy Change</h3>
+                <p class="py-4">Are you sure you want to switch pharmacies? Your current pharmacy will no longer have access to your prescription information.</p>
+                <div class="modal-action">
+                  <button type="button" class="btn btn-ghost" onclick="confirm_pharmacy_modal.close()">Cancel</button>
+                  <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red">Confirm Change</button>
                 </div>
               </div>
-            </div>
+              <form method="dialog" class="modal-backdrop">
+                <button>close</button>
+              </form>
+            </dialog>
           </form>
         </div>
       </div>
