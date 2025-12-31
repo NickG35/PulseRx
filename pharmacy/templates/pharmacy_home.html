@@ -23,9 +23,9 @@
                 </div>
                 <form method="post" action="{% url 'regenerate_code' %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red">
+                    <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red p-4">
                         <i class="fa-solid fa-rotate"></i>
-                        Regenerate Code
+                        Regenerate
                     </button>
                 </form>
             </div>
@@ -171,16 +171,14 @@
                                     <h3 class="text-lg font-semibold text-pulse-gray-600">Refill Requests</h3>
                                     <a href="{% url 'all_refill_requests' %}" class="text-xs text-pulse-red hover:underline">View All</a>
                                 </div>
-                                <ul class="menu w-full border border-base-400 rounded-lg">
+                                <ul class="w-full border border-base-400 rounded-lg">
                                     {% for request in recent_requests %}
-                                    <li class="border-b border-base-400">
-                                        <div class="flex justify-between items-center px-4 py-3">
-                                            <div class="flex flex-col">
-                                                <span class="font-bold text-pulse-red">{{request.medicine.name}}</span>
-                                                <span class="text-sm text-pulse-gray-600">{{request.patient.first_name}} {{request.patient.last_name}}</span>
-                                            </div>
-                                            <span class="text-xs text-pulse-gray-500">{{request.prescribed_on|date:"M j"}}</span>
+                                    <li class="border-b border-base-400 flex justify-between items-center px-4 py-3">
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-pulse-red">{{request.medicine.name}}</span>
+                                            <span class="text-sm text-pulse-gray-600">{{request.patient.first_name}} {{request.patient.last_name}}</span>
                                         </div>
+                                        <span class="text-xs text-pulse-gray-500">{{request.prescribed_on|date:"M j"}}</span>
                                     </li>
                                     {% empty %}
                                     <li class="text-center py-4 text-pulse-gray-400">No pending refill requests</li>
