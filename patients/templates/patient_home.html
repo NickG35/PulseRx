@@ -83,7 +83,7 @@
         <div class="mt-4 space-y-3 max-h-64 overflow-y-auto mb-8">
           {% if recent_messages %}
             {% for message in recent_messages %}
-            <div class="p-3 rounded-lg">
+            <a href="{% url 'threads' thread_id=message.thread.id %}" class="block p-3 rounded-lg hover:bg-pulse-gray-50 transition-colors">
               <div class="font-semibold text-pulse-gray-800">
                 {{ message.sender.first_name }} {{ message.sender.last_name }}
               </div>
@@ -91,7 +91,7 @@
                 {{ message.content|truncatechars:60 }}
               </div>
               <div class="text-xs text-pulse-gray-500 mt-1">{{ message.friendly_time }}</div>
-            </div>
+            </a>
             {% if not forloop.last %}
             <div class="divider my-0"></div>
             {% endif %}
@@ -106,9 +106,15 @@
           {% endif %}
         </div>
 
+        {% if recent_messages %}
+        <a href="{% url 'threads' thread_id=recent_messages.0.thread.id %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+          <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+        </a>
+        {% else %}
         <a href="{% url 'messages' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
           <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
         </a>
+        {% endif %}
       </div>
     </div>
 
