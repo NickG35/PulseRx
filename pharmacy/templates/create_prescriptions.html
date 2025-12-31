@@ -100,11 +100,53 @@
                 <input type="hidden" name="patient" class="hidden-patient" value="{{ previous_patient|default:'' }}">
                 <input type="hidden" name="medicine" class="hidden-medicine" value="{{ previous_medicine|default:'' }}">
             {% else %}
-                <input  name="patient_shown" class="hidden-patient" value="{{old_prescription.patient.user.first_name}} {{old_prescription.patient.user.last_name}} ID: {{old_prescription.patient.id}}" readonly>
-                <input  name="medicine_shown" class="hidden-medicine" value="{{old_prescription.medicine}}" readonly>
+                <!-- Quantity and Expiration Date Row for Refill -->
+                <div class="flex flex-row gap-6 mb-4">
+                    <div class="form-control w-full flex flex-col">
+                        <label class="label" for="{{ form.quantity.id_for_label }}">
+                            <span class="label-text text-pulse-gray-800 font-medium">Quantity</span>
+                        </label>
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.quantity.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
 
-                <input  name="patient" class="hidden-patient" value="{{old_prescription.patient.id}}" hidden>
-                <input  name="medicine" class="hidden-medicine" value="{{old_prescription.medicine.id}}" hidden>
+                    <div class="form-control w-full flex flex-col">
+                        <label class="label" for="{{ form.expiration_date.id_for_label }}">
+                            <span class="label-text text-pulse-gray-800 font-medium">Expiration Date</span>
+                        </label>
+                        {{ form.expiration_date }}
+                        {% if form.expiration_date.errors %}
+                            <label class="label">
+                                <span class="label-text-alt text-error">{{ form.expiration_date.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-row gap-6 mb-4">
+                    <!-- Patient (Disabled) -->
+                    <div class="form-control w-full flex flex-col mb-4">
+                        <label class="label">
+                            <span class="label-text text-pulse-gray-800 font-medium">Patient</span>
+                        </label>
+                        <input type="text" class="input input-bordered bg-gray-100 focus:outline-none" value="{{old_prescription.patient.user.first_name}} {{old_prescription.patient.user.last_name}} (ID: {{old_prescription.patient.id}})" readonly>
+                    </div>
+
+                    <!-- Medicine (Disabled) -->
+                    <div class="form-control w-full flex flex-col mb-4">
+                        <label class="label">
+                            <span class="label-text text-pulse-gray-800 font-medium">Medicine</span>
+                        </label>
+                        <input type="text" class="input input-bordered bg-gray-100 focus:outline-none" value="{{old_prescription.medicine}}" readonly>
+                    </div>
+
+                    <input type="hidden" name="patient" value="{{old_prescription.patient.id}}">
+                    <input type="hidden" name="medicine" value="{{old_prescription.medicine.id}}">
+                </div>
             {% endif %}
 
             <button class="w-full p-2 border rounded-sm bg-pulse-red hover:bg-pulse-red-dark text-white" type="submit">Submit</button>
