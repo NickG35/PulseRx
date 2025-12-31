@@ -2,6 +2,15 @@
 
 {% block content %}
     <div class="p-6 max-w-7xl mx-auto">
+    <style>
+        [id^="prescription-"]:target {
+            animation: highlight 2.5s ease-in-out;
+        }
+        @keyframes highlight {
+            0%, 100% { background-color: transparent; }
+            20%, 80% { background-color: rgba(239, 68, 68, 0.15); }
+        }
+    </style>
         <div class="max-w-2xl mx-auto">
             <h2 class="text-2xl font-semibold text-pulse-gray-800 mb-4">Patient Information</h2>
             <div class="card  bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
@@ -68,7 +77,7 @@
             {% else %}
             <div class="grid grid-cols-1 gap-6">
                 {% for prescription in patient.prescription.with_latest_ordering %}
-                    <div class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <div id="prescription-{{prescription.id}}" class="card bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 scroll-mt-6">
                         <div class="card-body p-6">
                             <!-- Medicine Name and Brand -->
                             <div class="mb-4">
