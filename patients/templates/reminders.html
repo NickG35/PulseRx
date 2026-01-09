@@ -31,7 +31,7 @@
                     <form method="dialog">
                         <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
                     </form>
-                    <h3 class="text-lg font-bold text-pulse-gray-800">Create a Reminder</h3>
+                    <h3 class="text-lg font-bold text-pulse-gray-800 mb-4">Create a Reminder</h3>
                     <form method="post">
                         {% csrf_token %}
 
@@ -57,9 +57,6 @@
                             {{ form.frequency }}
                         </div>
 
-                        <!-- Dosage Suggestion -->
-                        <div class="dosage-suggestion text-sm text-pulse-gray-600 mb-4"></div>
-
                         <!-- Time Inputs (dynamically generated) -->
                         <div id="timeInputsContainer" class="form-control w-full mb-4" style="display: none;">
                             <label class="label">
@@ -83,7 +80,27 @@
                                     <span class="label-text-alt text-error">{{ form.day_amount.errors }}</span>
                                 </label>
                             {% endif %}
-                            <div class="day-suggestion text-sm text-pulse-gray-600 mt-2"></div>
+                        </div>
+
+                        <!-- Suggestions Button and Content -->
+                        <div id="suggestions-container" class="mb-4" style="display: none;">
+                            <button type="button" id="suggestions-toggle" class="w-full btn btn-sm btn-outline justify-between text-pulse-gray-700">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-lightbulb text-pulse-gray-400"></i>
+                                    <span>View Suggestions</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down transition-transform" id="suggestions-icon"></i>
+                            </button>
+                            <div id="suggestions-content" class="bg-pulse-gray-50 rounded-b-lg px-4 py-3 space-y-3" style="display: none;">
+                                <div id="dosage-section" style="display: none;">
+                                    <h4 class="text-xs font-semibold text-pulse-gray-600 mb-1">Dosage Information</h4>
+                                    <div class="dosage-suggestion text-sm text-pulse-gray-600"></div>
+                                </div>
+                                <div id="day-section" style="display: none;">
+                                    <h4 class="text-xs font-semibold text-pulse-gray-600 mb-1">Day Recommendation</h4>
+                                    <div class="day-suggestion text-sm text-pulse-gray-600"></div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Submit Button -->
@@ -386,85 +403,160 @@
 </div>
 
 <script>
-            const suggestionDay = document.querySelector('.day-suggestion');
-            const suggestionDosage = document.querySelector('.dosage-suggestion');
+(function() {
+    // Get CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-            function createSuggestion(){
-                const prescription_id = prescriptionSelect.value;
-                const frequency = parseInt(frequencySelect.value);
+    // Get form elements
+    const prescriptionSelect = document.getElementById('id_prescription');
+    const frequencySelect = document.getElementById('frequency');
+    const timeInputsDiv = document.getElementById('timeInputs');
+    const timeInputsContainer = document.getElementById('timeInputsContainer');
+    const suggestionDay = document.querySelector('.day-suggestion');
+    const suggestionDosage = document.querySelector('.dosage-suggestion');
+    const suggestionsContainer = document.getElementById('suggestions-container');
+    const dosageSection = document.getElementById('dosage-section');
+    const daySection = document.getElementById('day-section');
 
-                suggestionDay.innerHTML = "";
-                suggestionDosage.innerHTML = "";
+    // Function to create day and dosage suggestions
+    function createSuggestion() {
+        if (!prescriptionSelect || !frequencySelect || !suggestionDay || !suggestionDosage) return;
 
+        const prescription_id = prescriptionSelect.value;
+        const frequency = parseInt(frequencySelect.value);
 
-                if (prescription_id){
-                    fetch("/patient/reminder_suggestions", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrfToken,
-                    },
-                        body: JSON.stringify({prescription_id: prescription_id})
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        data.results.forEach(item => {
-                            const dosageInfo = document.createElement('p');
-                            dosageInfo.classList.add('dosage-info');
-                            dosageInfo.textContent = `Dosage information: ${item.dosage}`;
-                            suggestionDosage.appendChild(dosageInfo);
+        suggestionDay.innerHTML = "";
+        suggestionDosage.innerHTML = "";
 
-                            if (frequency){
-                                const quantity = item.quantity;
-                                const days = Math.floor(quantity / frequency);
+        if (prescription_id) {
+            fetch("/patient/reminder_suggestions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: JSON.stringify({prescription_id: prescription_id})
+            })
+            .then(response => response.json())
+            .then(data => {
+                let hasSuggestions = false;
 
-                                const suggestion = document.createElement('p');
-                                suggestion.classList.add('daySuggestion');
-                                suggestion.textContent = `Based on prescription information it is recommended that you repeat this reminder for ${days} day(s)`;
-                                suggestionDay.appendChild(suggestion);
-                            }   
-                        });
-                    })
-                    .catch(error => {
-                        console.error("Error", error)
-                    });
-                } 
-            }
+                data.results.forEach(item => {
+                    // Show dosage information
+                    const dosageInfo = document.createElement('p');
+                    dosageInfo.classList.add('dosage-info');
+                    dosageInfo.textContent = `${item.dosage}`;
+                    suggestionDosage.appendChild(dosageInfo);
 
-            const selectedPrescriptionId = "{{ selected_prescription_id|default:'' }}";
-            if (selectedPrescriptionId && prescriptionSelect) {
-                prescriptionSelect.value = selectedPrescriptionId;
-            }
-
-            createSuggestion();
-
-            prescriptionSelect.addEventListener('change', createSuggestion);
-            frequencySelect.addEventListener('change', createSuggestion);
-
-            const timeInputsDiv = document.getElementById('timeInputs');
-            const timeInputsContainer = document.getElementById('timeInputsContainer');
-            const frequencyDropdown = document.getElementById('frequency');
-
-            frequencyDropdown.addEventListener('change', function(){
-                const frequency = parseInt(this.value);
-
-                if (frequency > 0) {
-                    timeInputsContainer.style.display = 'block';
-                    timeInputsDiv.innerHTML = '';
-
-                    for (let i = 0; i < frequency; i++) {
-                        const input = document.createElement('input');
-                        input.type = 'time';
-                        input.name = `time_${i}`;
-                        input.className = 'input input-bordered w-full focus:border-pulse-red focus:outline-none timeInput';
-                        input.placeholder = `Time ${i+1}`;
-                        timeInputsDiv.appendChild(input);
+                    // Show dosage section
+                    if (dosageSection) {
+                        dosageSection.style.display = 'block';
+                        hasSuggestions = true;
                     }
-                } else {
-                    timeInputsContainer.style.display = 'none';
-                    timeInputsDiv.innerHTML = '';
+
+                    // Show day suggestion if frequency is selected
+                    if (frequency) {
+                        const quantity = item.quantity;
+                        const days = Math.floor(quantity / frequency);
+
+                        const suggestion = document.createElement('p');
+                        suggestion.classList.add('daySuggestion');
+                        suggestion.textContent = `Based on prescription information, we recommend setting this reminder for ${days} day(s)`;
+                        suggestionDay.appendChild(suggestion);
+
+                        // Show day section
+                        if (daySection) {
+                            daySection.style.display = 'block';
+                            hasSuggestions = true;
+                        }
+                    } else {
+                        // Hide day section if no frequency selected
+                        if (daySection) {
+                            daySection.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Show/hide the main suggestions container
+                if (suggestionsContainer) {
+                    suggestionsContainer.style.display = hasSuggestions ? 'block' : 'none';
                 }
+            })
+            .catch(error => {
+                console.error("Error fetching suggestions:", error);
             });
+        } else {
+            // Hide all sections if no prescription selected
+            if (dosageSection) dosageSection.style.display = 'none';
+            if (daySection) daySection.style.display = 'none';
+            if (suggestionsContainer) suggestionsContainer.style.display = 'none';
+        }
+    }
+
+    // Handle frequency change to show/hide time inputs
+    if (frequencySelect && timeInputsDiv && timeInputsContainer) {
+        frequencySelect.addEventListener('change', function() {
+            const frequency = parseInt(this.value);
+
+            if (frequency > 0) {
+                // Show the container
+                timeInputsContainer.style.display = 'block';
+
+                // Clear existing inputs
+                timeInputsDiv.innerHTML = '';
+
+                // Create new time inputs
+                for (let i = 0; i < frequency; i++) {
+                    const input = document.createElement('input');
+                    input.type = 'time';
+                    input.name = `time_${i}`;
+                    input.className = 'input input-bordered w-full focus:border-pulse-red focus:outline-none timeInput';
+                    input.required = true;
+                    timeInputsDiv.appendChild(input);
+                }
+            } else {
+                // Hide the container
+                timeInputsContainer.style.display = 'none';
+                timeInputsDiv.innerHTML = '';
+            }
+
+            // Also update suggestions when frequency changes
+            createSuggestion();
+        });
+    }
+
+    // Set selected prescription if provided
+    const selectedPrescriptionId = "{{ selected_prescription_id|default:'' }}";
+    if (selectedPrescriptionId && prescriptionSelect) {
+        prescriptionSelect.value = selectedPrescriptionId;
+    }
+
+    // Add event listeners for suggestions
+    if (prescriptionSelect) {
+        prescriptionSelect.addEventListener('change', createSuggestion);
+    }
+
+    // Initial suggestion check
+    createSuggestion();
+
+    // Handle suggestions toggle button
+    const suggestionsToggle = document.getElementById('suggestions-toggle');
+    const suggestionsContent = document.getElementById('suggestions-content');
+    const suggestionsIcon = document.getElementById('suggestions-icon');
+
+    if (suggestionsToggle && suggestionsContent && suggestionsIcon) {
+        suggestionsToggle.addEventListener('click', function() {
+            const isHidden = suggestionsContent.style.display === 'none';
+            suggestionsContent.style.display = isHidden ? 'block' : 'none';
+
+            // Rotate the chevron icon
+            if (isHidden) {
+                suggestionsIcon.classList.add('rotate-180');
+            } else {
+                suggestionsIcon.classList.remove('rotate-180');
+            }
+        });
+    }
 
             const toggleSwitch = document.querySelectorAll('.form-check-input');
             toggleSwitch.forEach(item => {
@@ -788,6 +880,6 @@
                     });
                 })
             })
-        });
-    </script>
+})();
+</script>
 {% endblock %}
