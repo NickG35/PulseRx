@@ -159,6 +159,10 @@ def reminders(request):
         if any(val == "" for val in time_values):
             form.add_error(None, "All time fields must be filled.")
 
+        # Check for duplicate times
+        if len(time_values) != len(set(time_values)):
+            form.add_error(None, "Duplicate reminder times are not allowed.")
+
         if form.is_valid():
             reminder = form.save(commit=False)
             day_amount = int(request.POST.get('day_amount'))
@@ -320,6 +324,15 @@ def delete_reminder(request):
         data = json.loads(request.body)
         reminder_id = data.get('reminder_id')
         reminder = MedicationReminder.objects.get(id=reminder_id)
+
+        # Cancel all pending Celery tasks for this reminder
+        for reminder_time in reminder.times.all():
+            if reminder_time.task_id:
+                try:
+                    current_app.control.revoke(reminder_time.task_id, terminate=True)
+                except Exception as e:
+                    print(f"Failed to revoke task {reminder_time.task_id}: {e}")
+
         reminder.delete()
         return JsonResponse({"success": True})
     except json.JSONDecodeError:
@@ -402,6 +415,11 @@ def edit_reminder(request):
 def refill(request, prescription_id):
     if request.method == 'POST':
         prescription = Prescription.objects.get(id=prescription_id)
+
+        # Validate refills remaining
+        if prescription.refills_left <= 0:
+            messages.error(request, "No refills remaining for this prescription.")
+            return redirect('patient_profile')
 
         prescription.refills_left -= 1
         prescription.refill_pending = True
