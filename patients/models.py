@@ -4,6 +4,9 @@ from pharmacy.models import PharmacyProfile, Prescription
 from datetime import date, timedelta
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from celery import current_app
 
 class PatientProfile(models.Model):
     GENDER_CHOICES = [
@@ -61,4 +64,17 @@ class ReminderTime(models.Model):
     time = models.TimeField()
     is_active = models.BooleanField(default=True)
     task_id = models.CharField(max_length=255, blank=True, null=True)
+
+
+# Signal to cancel Celery tasks when reminder is deleted
+@receiver(pre_delete, sender=MedicationReminder)
+def cancel_reminder_tasks(sender, instance, **kwargs):
+    """Cancel all Celery tasks associated with a reminder before deletion"""
+    for reminder_time in instance.times.all():
+        if reminder_time.task_id:
+            try:
+                current_app.control.revoke(reminder_time.task_id, terminate=True)
+                print(f"Revoked task {reminder_time.task_id} for deleted reminder {instance.id}")
+            except Exception as e:
+                print(f"Failed to revoke task {reminder_time.task_id}: {e}")
    
