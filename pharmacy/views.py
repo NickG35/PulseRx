@@ -425,19 +425,19 @@ def resupply(request, drug_id):
                     content=content,
                     link=link,
                     drug=medicine
-            )
+                )
 
-            # Send notification with automatic unread counts
-            send_notification_with_counts(
-                user=user,
-                notification_data={
-                    "id": notification_obj.id,
-                    "type": "resupply",
-                    "content": content,
-                    "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
-                    "link": link
-                }
-            )
+                # Send notification with automatic unread counts
+                send_notification_with_counts(
+                    user=user,
+                    notification_data={
+                        "id": notification_obj.id,
+                        "type": "resupply",
+                        "content": content,
+                        "timestamp": timezone.localtime(notification_obj.time).strftime("%b %d, %I:%M %p"),
+                        "link": link
+                    }
+                )
             messages.success(request, "Medication inventory successfully resupplied.")
         else:
             messages.info(request, "Stock is already sufficient.")
