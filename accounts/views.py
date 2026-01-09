@@ -321,6 +321,7 @@ def thread_view(request, thread_id):
         message.user_read = read_map.get(message.id, False)
 
     system_user = thread.participant.all().filter(role='system').first()
+    can_message = True  # Default to allowing messaging
 
     if system_user:
         thread.other_participants = [system_user]
@@ -333,17 +334,32 @@ def thread_view(request, thread_id):
         # Show the pharmacy admin
         other_user = thread.participant.filter(role='pharmacy admin').first()
         thread.other_participants = [other_user] if other_user else []
+
+        # Check if patient's current pharmacy matches the pharmacy in this thread
+        if other_user:
+            from patients.models import PatientProfile
+            from pharmacy.models import PharmacyProfile
+
+            try:
+                patient_profile = PatientProfile.objects.get(user=request.user)
+                thread_pharmacy = PharmacyProfile.objects.get(user=other_user)
+
+                # Patient can only message if their current pharmacy matches the thread pharmacy
+                can_message = patient_profile.pharmacy == thread_pharmacy
+            except (PatientProfile.DoesNotExist, PharmacyProfile.DoesNotExist):
+                can_message = False
     else:
         thread.other_participants = thread.participant.exclude(id=request.user.id)
         other_user = thread.other_participants.first()
-        
+
     form = MessageForm()
 
     return render(request, 'threads.html', {
         'thread': thread,
         'messages': messages,
         'form': form,
-        'other_user': other_user
+        'other_user': other_user,
+        'can_message': can_message
     })
 
         
