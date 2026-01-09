@@ -37,7 +37,7 @@
                         {% if field.errors %}
                             {% for error in field.errors %}
                                 <label class="label">
-                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                    <span class="label-text-alt text-pulse-red">{{ error }}</span>
                                 </label>
                             {% endfor %}
                         {% endif %}
@@ -80,7 +80,7 @@
                         {% if field.errors %}
                             {% for error in field.errors %}
                                 <label class="label">
-                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                    <span class="label-text-alt text-pulse-red">{{ error }}</span>
                                 </label>
                             {% endfor %}
                         {% endif %}
@@ -154,7 +154,7 @@
                         const input = formName.querySelector(`[name="${field}"]`);
                         if (input) {
                             const errorEl = document.createElement('p');
-                            errorEl.classList.add('error');
+                            errorEl.classList.add('error', 'text-pulse-red', 'text-sm', 'mt-1');
                             errorEl.textContent = messages.join(' ');
                             input.insertAdjacentElement('afterend', errorEl);
                         }
