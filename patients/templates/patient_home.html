@@ -107,7 +107,7 @@
         </div>
 
         {% if recent_messages %}
-        <a href="{% url 'threads' thread_id=recent_messages.0.thread.id %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
+        <a href="{% url 'messages' %}" class="absolute bottom-4 right-4 text-pulse-red hover:text-pulse-red-dark transition-colors">
           <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
         </a>
         {% else %}
