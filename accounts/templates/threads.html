@@ -244,7 +244,17 @@
         </div>
 
         <!-- Message Input Form -->
-        {% if other_user.role != 'system' %}
+        {% if other_user.role == 'system' %}
+            <div class="text-center p-4 bg-pulse-gray-100 rounded-lg">
+                <i class="fa-solid fa-lock text-pulse-gray-400 mr-2"></i>
+                <span class="text-pulse-gray-600">You cannot reply to system notifications</span>
+            </div>
+        {% elif not can_message %}
+            <div class="text-center p-4 bg-pulse-gray-100 rounded-lg border-2 border-pulse-gray-300">
+                <i class="fa-solid fa-ban text-pulse-gray-400 mr-2"></i>
+                <span class="text-pulse-gray-600">You can no longer message this pharmacy. You have switched to a different pharmacy.</span>
+            </div>
+        {% else %}
             <form class="flex gap-3 items-end" id="message-form">
                 {% csrf_token %}
                 {{ form.content }}
@@ -253,11 +263,6 @@
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
-        {% else %}
-            <div class="text-center p-4 bg-pulse-gray-100 rounded-lg">
-                <i class="fa-solid fa-lock text-pulse-gray-400 mr-2"></i>
-                <span class="text-pulse-gray-600">You cannot reply to system notifications</span>
-            </div>
         {% endif %}
     </div>
 </div>
