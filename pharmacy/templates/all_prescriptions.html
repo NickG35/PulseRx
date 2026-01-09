@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold text-pulse-gray-800 mb-6">All Prescriptions</h1>
+
+    {% if page_obj %}
+    <div class="card bg-white shadow-sm border border-pulse-gray-200 rounded-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead>
+                    <tr class="bg-pulse-gray-100 border-b border-pulse-gray-200">
+                        <th class="text-left">Medication</th>
+                        <th class="text-left">Patient</th>
+                        <th class="text-left">Dosage</th>
+                        <th class="text-left">Quantity</th>
+                        <th class="text-center">Refills Left</th>
+                        <th class="text-left">Prescribed</th>
+                        <th class="text-left">Expires</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in page_obj %}
+                    <tr class="border-b border-pulse-gray-200 hover:bg-pulse-gray-50">
+                        <td>
+                            <div class="flex flex-col">
+                                <a href="{% url 'drug_detail' drug_id=prescription.medicine.id %}" class="font-semibold text-pulse-gray-800 hover:text-pulse-red">
+                                    {{ prescription.medicine.name }}
+                                </a>
+                                <span class="text-xs text-pulse-gray-500">{{ prescription.medicine.brand }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'patient_profile' patient_id=prescription.patient.id %}" class="text-pulse-gray-700 hover:text-pulse-red">
+                                {{ prescription.patient.first_name }} {{ prescription.patient.last_name }}
+                            </a>
+                        </td>
+                        <td class="text-pulse-gray-700">{{ prescription.medicine.dosage }} mg</td>
+                        <td class="text-pulse-gray-700">{{ prescription.quantity }}</td>
+                        <td class="text-center">
+                            <span class="badge {% if prescription.refills_left > 0 %}badge-success{% else %}badge-error{% endif %} badge-sm">
+                                {{ prescription.refills_left }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex flex-col">
+                                <span class="text-sm text-pulse-gray-700">{{ prescription.prescribed_on|date:"M d, Y" }}</span>
+                                <span class="text-xs text-pulse-gray-500">by {{ prescription.prescribed_by }}</span>
+                            </div>
+                        </td>
+                        <td class="text-sm text-pulse-gray-700">{{ prescription.expiration_date|date:"M d, Y" }}</td>
+                        <td class="text-center">
+                            {% if prescription.refill_pending %}
+                            <div class="flex flex-col gap-2 items-center">
+                                <span class="badge badge-warning badge-sm gap-1">
+                                    <i class="fa-solid fa-clock text-xs"></i>
+                                    Pending
+                                </span>
+                                {% if user.role != 'pharmacy admin' %}
+                                <a href="{% url 'refill_form' prescription_id=prescription.id %}" class="btn btn-sm bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red">
+                                    <i class="fa-solid fa-prescription-bottle-medical"></i>
+                                    Refill
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="badge badge-ghost badge-sm">Active</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex justify-center mt-6">
+        <div class="join">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="join-item btn btn-sm">«</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="join-item btn btn-sm">‹</a>
+            {% endif %}
+
+            <button class="join-item btn btn-sm btn-active">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</button>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="join-item btn btn-sm">›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="join-item btn btn-sm">»</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="card bg-white shadow-sm mb-6 border border-pulse-gray-200 rounded-sm">
+        <div class="card-body text-center py-16">
+            <i class="fa-solid fa-prescription-bottle text-6xl text-pulse-gray-300 mb-4"></i>
+            <h3 class="text-xl font-semibold text-pulse-gray-700 mb-2">No Prescriptions Yet</h3>
+            <p class="text-pulse-gray-500">Prescriptions will appear here once they're created</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
