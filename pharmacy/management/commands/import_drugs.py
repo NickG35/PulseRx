@@ -24,7 +24,25 @@ POPULAR_DRUGS = [
 class Command(BaseCommand):
     help = 'Import drugs from OpenFDA API'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--pharmacy',
+            type=int,
+            help='Pharmacy ID to assign drugs to (required)',
+            required=True
+        )
+
     def handle(self, *args, **kwargs):
+        from pharmacy.models import PharmacyProfile
+
+        pharmacy_id = kwargs['pharmacy']
+
+        try:
+            pharmacy = PharmacyProfile.objects.get(id=pharmacy_id)
+            self.stdout.write(f"Importing drugs for pharmacy: {pharmacy.pharmacy_name}")
+        except PharmacyProfile.DoesNotExist:
+            self.stderr.write(f"Pharmacy with ID {pharmacy_id} does not exist")
+            return
         for drug_name in POPULAR_DRUGS:
             self.stdout.write(f"Processing: {drug_name}")
             try:
@@ -53,11 +71,14 @@ class Command(BaseCommand):
                 summary_dosage = summarize_text(dosage, sentences_count=3)
 
                 Drug.objects.create(
+                    pharmacy=pharmacy,
                     name=name,
                     brand=brand,
                     route=route,
-                    description=summary_description, 
-                    dosage=summary_dosage
+                    description=summary_description,
+                    dosage=summary_dosage,
+                    stock=100,
+                    status='in_stock'
                 )
                 self.stdout.write(self.style.SUCCESS(f"Added drug: {name}"))
             except requests.RequestException as e:
