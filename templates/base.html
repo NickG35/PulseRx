@@ -71,7 +71,7 @@
           </summary>
 
           <div class="dropdown-content z-[1] shadow-2xl mt-3">
-            <ul class="menu bg-base-200 rounded-box w-96 p-2">
+            <ul class="menu bg-base-200 rounded-box w-96 p-2 noti-content">
               <li class="menu-title">
                 <span class="text-lg font-semibold text-pulse-gray-800">Notifications</span>
               </li>
@@ -542,43 +542,52 @@
       // 🔹 Helper #2: append notification HTML
       // --------------------------
       function appendNotification(notification) {
-        const wrapperDiv = document.createElement("div");
-        wrapperDiv.id = `noti_div_${notification.id}`;
-        wrapperDiv.classList.add("dropdown-item");
+        const li = document.createElement("li");
+        li.id = `noti_div_${notification.id}`;
+        li.classList.add("relative");
 
         const delete_button = document.createElement("button");
-        delete_button.classList.add("delete-noti");
+        delete_button.classList.add("delete-noti", "absolute", "top-2", "right-2", "btn", "btn-ghost", "btn-xs", "btn-circle");
+        delete_button.type = "button";
         delete_button.dataset.id = notification.id;
 
         const delete_icon = document.createElement("i");
-        delete_icon.classList.add("bi", "bi-x");
+        delete_icon.classList.add("bi", "bi-x", "text-lg");
         delete_button.appendChild(delete_icon);
 
-        wrapperDiv.appendChild(delete_button);
+        li.appendChild(delete_button);
 
-        const dropdownItem = document.createElement("a");
-        dropdownItem.classList.add("dropdown-item", "notiDrop");
-        dropdownItem.dataset.id = notification.id;
-        dropdownItem.dataset.read = notification.is_read;
+        const link = document.createElement("a");
+        link.id = "noti-dropdown";
+        link.classList.add("notiDrop");
+        if (notification.is_read) {
+          link.classList.add("opacity-60");
+        }
+        link.dataset.id = notification.id;
+        link.dataset.read = notification.is_read;
 
         // Reminder notification
         if (notification.type === "reminder") {
           const reminderUrl = "{% url 'reminders' %}";
-          dropdownItem.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
+          link.href = `${reminderUrl}#reminder_${notification.reminder_id}`;
 
-          dropdownItem.innerHTML = `
-                    <p class='reminder-message'>Time to take your ${notification.reminder}</p>
-                    <p class='reminder-time'><small>${notification.created_time}</small></p>
-                `;
+          link.innerHTML = `
+            <div class="flex flex-col gap-1">
+              <p class="reminder-message text-sm font-medium text-wrap break-words pr-8">Time to take your ${notification.reminder}</p>
+              <p class="reminder-time text-xs text-pulse-gray-500">${notification.created_time}</p>
+            </div>
+          `;
         }
         // System notification (prescription, refill, etc.) - has content field
         else if (notification.type && notification.content) {
-          dropdownItem.href = notification.link || "#";
+          link.href = notification.link || "#";
 
-          dropdownItem.innerHTML = `
-                    <p class='message-message'>${notification.content}</p>
-                    <p class='message-time'><small>${notification.timestamp}</small></p>
-                `;
+          link.innerHTML = `
+            <div class="flex flex-col gap-1">
+              <p class="reminder-message text-sm font-medium text-wrap break-words pr-8">${notification.content}</p>
+              <p class="reminder-time text-xs text-pulse-gray-500">${notification.timestamp}</p>
+            </div>
+          `;
         }
         // Regular message notification
         else {
@@ -587,16 +596,31 @@
             notification.thread_id,
           );
 
-          dropdownItem.href = `${threadUrl}#message_${notification.message_id}`;
+          link.href = `${threadUrl}#message_${notification.message_id}`;
 
-          dropdownItem.innerHTML = `
-                    <p class='message-message'>${notification.sender} has sent you a new message.</p>
-                    <p class='message-time'><small>${notification.timestamp}</small></p>
-                `;
+          link.innerHTML = `
+            <div class="flex flex-col gap-1">
+              <p class="reminder-message text-sm font-medium text-wrap break-words pr-8">${notification.sender} has sent you a new message.</p>
+              <p class="reminder-time text-xs text-pulse-gray-500">${notification.timestamp}</p>
+            </div>
+          `;
         }
 
-        wrapperDiv.appendChild(dropdownItem);
-        noti_content.prepend(wrapperDiv);
+        li.appendChild(link);
+
+        // Insert after the menu-title (first li in the list)
+        const menuTitle = noti_content.querySelector(".menu-title");
+        if (menuTitle) {
+          menuTitle.insertAdjacentElement("afterend", li);
+        } else {
+          // If no menu-title, insert at the beginning
+          const firstChild = noti_content.firstElementChild;
+          if (firstChild) {
+            firstChild.insertAdjacentElement("beforebegin", li);
+          } else {
+            noti_content.appendChild(li);
+          }
+        }
       }
     });
   </script>
