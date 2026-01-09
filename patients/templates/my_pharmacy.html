@@ -73,13 +73,10 @@
                 <h3 class="font-bold text-lg mb-4">Confirm Pharmacy Change</h3>
                 <p class="py-4">Are you sure you want to switch pharmacies? Your current pharmacy will no longer have access to your prescription information.</p>
                 <div class="modal-action">
-                  <button type="button" class="btn btn-ghost" onclick="confirm_pharmacy_modal.close()">Cancel</button>
-                  <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red">Confirm Change</button>
+                  <button type="button" class="btn bg-pulse-gray-200 hover:bg-pulse-gray-300 text-black border rounded-sm flex-1" onclick="confirm_pharmacy_modal.close()">Cancel</button>
+                  <button type="submit" class="btn bg-pulse-red hover:bg-pulse-red-dark text-white border-pulse-red flex-1">Confirm Change</button>
                 </div>
               </div>
-              <form method="dialog" class="modal-backdrop">
-                <button>close</button>
-              </form>
             </dialog>
           </form>
         </div>
