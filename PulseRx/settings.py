@@ -83,11 +83,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'PulseRx.wsgi.application'
 ASGI_APPLICATION = 'PulseRx.asgi.application'
 
+# Celery Configuration
+# Use REDIS_URL from environment (Render provides this), fallback to local Redis
+REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [REDIS_URL],
         },
     },
 }
@@ -183,9 +187,6 @@ AUTH_USER_MODEL = 'accounts.CustomAccount'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login'
 
-# Celery Configuration
-# Use REDIS_URL from environment (Render provides this), fallback to local Redis
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TIMEZONE = 'America/New_York'

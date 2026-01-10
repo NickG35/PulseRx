@@ -1,0 +1,59 @@
+services:
+  # Web Service (Daphne ASGI Server)
+  - type: web
+    name: pulserx
+    runtime: python
+    plan: starter
+    buildCommand: "./build.sh"
+    startCommand: "daphne -b 0.0.0.0 -p $PORT PulseRx.asgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pulserx-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pulserx-redis
+          property: connectionString
+
+  # Celery Background Worker
+  - type: worker
+    name: pulserx-worker
+    runtime: python
+    plan: starter
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A PulseRx worker --loglevel=info"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: False
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pulserx-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: pulserx-redis
+          property: connectionString
+
+databases:
+  - name: pulserx-db
+    plan: starter
+    databaseName: pulserx
+    user: pulserx
+
+  - name: pulserx-redis
+    plan: starter
