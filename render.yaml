@@ -3,7 +3,7 @@ services:
   - type: web
     name: pulserx
     runtime: python
-    plan: professional
+    plan: pro
     buildCommand: "./build.sh"
     startCommand: "daphne -b 0.0.0.0 -p $PORT PulseRx.asgi:application"
     envVars:
@@ -29,7 +29,7 @@ services:
   - type: worker
     name: pulserx-worker
     runtime: python
-    plan: professional
+    plan: pro
     buildCommand: "pip install -r requirements.txt"
     startCommand: "celery -A PulseRx worker --loglevel=info"
     envVars:
@@ -51,9 +51,9 @@ services:
 
 databases:
   - name: pulserx-db
-    plan: professional
+    plan: pro-4gb
     databaseName: pulserx
     user: pulserx
 
   - name: pulserx-redis
-    plan: professional
+    plan: pro
