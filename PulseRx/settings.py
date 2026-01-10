@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'accounts',
     'patients',
     'pharmacy',
-    'sslserver',
     'channels',
 ]
 
