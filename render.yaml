@@ -49,11 +49,15 @@ services:
           name: pulserx-redis
           property: connectionString
 
+  # Redis Instance
+  - type: redis
+    name: pulserx-redis
+    plan: pro
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
 databases:
   - name: pulserx-db
     plan: pro-4gb
     databaseName: pulserx
     user: pulserx
-
-  - name: pulserx-redis
-    plan: pro
