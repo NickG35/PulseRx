@@ -3,7 +3,7 @@ services:
   - type: web
     name: pulserx
     runtime: python
-    plan: pro
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "daphne -b 0.0.0.0 -p $PORT PulseRx.asgi:application"
     envVars:
@@ -29,7 +29,7 @@ services:
   - type: worker
     name: pulserx-worker
     runtime: python
-    plan: pro
+    plan: starter
     buildCommand: "pip install -r requirements.txt"
     startCommand: "celery -A PulseRx worker --loglevel=info"
     envVars:
@@ -52,12 +52,12 @@ services:
   # Redis Instance
   - type: redis
     name: pulserx-redis
-    plan: pro
+    plan: free
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
 databases:
   - name: pulserx-db
-    plan: pro-4gb
+    plan: free
     databaseName: pulserx
     user: pulserx
