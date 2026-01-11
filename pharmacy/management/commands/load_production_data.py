@@ -263,13 +263,16 @@ class Command(BaseCommand):
         pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
 
-        # Truncate fields if needed (though model should handle this now)
-        dosage = str(fields.get('dosage', ''))[:2000]
-        route = str(fields.get('route', ''))[:255]
+        # Aggressive truncation to handle migration not being applied yet
+        # Will truncate to 100 chars (old limit) to be safe, migration will increase to 2000
+        dosage = str(fields.get('dosage', ''))[:100]
+        route = str(fields.get('route', ''))[:100]
+        name = str(fields.get('name', ''))[:255]
+        brand = str(fields.get('brand', ''))[:255]
 
         obj, created = Drug.objects.update_or_create(
-            name=fields['name'],
-            brand=fields.get('brand', ''),
+            name=name,
+            brand=brand,
             pharmacy=pharmacy,
             defaults={
                 'description': fields.get('description', ''),
