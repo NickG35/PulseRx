@@ -24,10 +24,10 @@ def export_sqlite_to_json():
         ('pharmacy_prescription', 'pharmacy.prescription'),
         ('patients_medicationreminder', 'patients.medicationreminder'),
         ('patients_remindertime', 'patients.remindertime'),
-        ('pharmacy_message', 'pharmacy.message'),
-        ('accounts_notifications', 'accounts.notifications'),
         ('accounts_thread', 'accounts.thread'),
         ('accounts_thread_participant', 'accounts.thread_participant'),
+        ('pharmacy_message', 'accounts.message'),  # Message model is in accounts app
+        ('accounts_notifications', 'accounts.notifications'),
         ('accounts_readstatus', 'accounts.readstatus'),
     ]
 
