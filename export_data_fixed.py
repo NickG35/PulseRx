@@ -47,10 +47,14 @@ def export_sqlite_to_json():
 
             for row in rows:
                 fields = {}
+                pk = None
                 for key in row.keys():
-                    if key == 'id':
-                        continue  # Skip id, let Django auto-assign
                     value = row[key]
+
+                    # Capture id as pk for the fixture
+                    if key == 'id':
+                        pk = value
+                        continue
 
                     # Convert bytes to string if needed
                     if isinstance(value, bytes):
@@ -64,6 +68,7 @@ def export_sqlite_to_json():
 
                 data.append({
                     "model": model_name,
+                    "pk": pk,
                     "fields": fields
                 })
 

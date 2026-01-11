@@ -113,9 +113,10 @@ class Command(BaseCommand):
 
                     elif model_name == 'pharmacy.prescription':
                         obj = self.load_prescription(pk, fields, pk_map)
-                        if pk:
-                            pk_map[f'prescription_{pk}'] = obj.pk
-                        stats['prescriptions'] += 1
+                        if obj:
+                            if pk:
+                                pk_map[f'prescription_{pk}'] = obj.pk
+                            stats['prescriptions'] += 1
 
                     elif model_name == 'accounts.thread':
                         obj = self.load_thread(pk, fields, pk_map)
@@ -125,9 +126,10 @@ class Command(BaseCommand):
 
                     elif model_name == 'accounts.message':
                         obj = self.load_message(pk, fields, pk_map)
-                        if pk:
-                            pk_map[f'message_{pk}'] = obj.pk
-                        stats['messages'] += 1
+                        if obj:
+                            if pk:
+                                pk_map[f'message_{pk}'] = obj.pk
+                            stats['messages'] += 1
 
                 except Exception as e:
                     self.stdout.write(
@@ -217,8 +219,15 @@ class Command(BaseCommand):
             )
             return None
 
+        # Skip if pharmacy doesn't exist (pharmacy is required for pharmacist)
+        if not pharmacy_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping pharmacist {pk}: pharmacy_id {fields.get("pharmacy_id")} not found')
+            )
+            return None
+
         user = CustomAccount.objects.get(pk=user_pk)
-        pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
+        pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk)
 
         obj, created = PharmacistProfile.objects.update_or_create(
             user=user,
@@ -291,8 +300,20 @@ class Command(BaseCommand):
         drug_pk = pk_map.get(f'drug_{fields.get("medicine_id")}') if fields.get("medicine_id") else None
         pharmacist_pk = pk_map.get(f'pharmacist_{fields.get("prescribed_by_id")}') if fields.get("prescribed_by_id") else None
 
-        patient = PatientProfile.objects.get(pk=patient_pk) if patient_pk else None
-        medicine = Drug.objects.get(pk=drug_pk) if drug_pk else None
+        # Skip if required foreign keys are missing
+        if not patient_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping prescription {pk}: patient_id {fields.get("patient_id")} not found')
+            )
+            return None
+        if not drug_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping prescription {pk}: medicine_id {fields.get("medicine_id")} not found')
+            )
+            return None
+
+        patient = PatientProfile.objects.get(pk=patient_pk)
+        medicine = Drug.objects.get(pk=drug_pk)
         pharmacist = PharmacistProfile.objects.get(pk=pharmacist_pk) if pharmacist_pk else None
 
         obj = Prescription.objects.create(
@@ -340,9 +361,21 @@ class Command(BaseCommand):
         prescription_pk = pk_map.get(f'prescription_{fields.get("prescription_id")}') if fields.get("prescription_id") else None
         drug_pk = pk_map.get(f'drug_{fields.get("drug_id")}') if fields.get("drug_id") else None
 
-        sender = CustomAccount.objects.get(pk=sender_pk) if sender_pk else None
+        # Skip if required foreign keys are missing
+        if not sender_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping message {pk}: sender_id {fields.get("sender_id")} not found')
+            )
+            return None
+        if not thread_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping message {pk}: thread_id {fields.get("thread_id")} not found')
+            )
+            return None
+
+        sender = CustomAccount.objects.get(pk=sender_pk)
         recipient = CustomAccount.objects.get(pk=recipient_pk) if recipient_pk else None
-        thread = Thread.objects.get(pk=thread_pk) if thread_pk else None
+        thread = Thread.objects.get(pk=thread_pk)
         prescription = Prescription.objects.get(pk=prescription_pk) if prescription_pk else None
         drug = Drug.objects.get(pk=drug_pk) if drug_pk else None
 
