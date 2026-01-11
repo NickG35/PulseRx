@@ -38,7 +38,7 @@ class Drug(models.Model):
     name = models.CharField(max_length=255)
     brand = models.CharField(max_length=255, blank=True)
     description = models.TextField()
-    dosage = models.CharField(max_length=1000)
+    dosage = models.CharField(max_length=2000)
     route = models.CharField(max_length=255, blank=True)
     stock = models.IntegerField(default=100)
     status = models.CharField(max_length=20, choices=STOCK_STATUS_CHOICES, default='in_stock')
