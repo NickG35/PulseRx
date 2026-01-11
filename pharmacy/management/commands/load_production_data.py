@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from accounts.models import CustomAccount, Message
+from accounts.models import CustomAccount, Message, Thread
 from pharmacy.models import PharmacyProfile, PharmacistProfile, Drug, Prescription
 from patients.models import PatientProfile
 
@@ -59,6 +59,7 @@ class Command(BaseCommand):
                 'patients': 0,
                 'drugs': 0,
                 'prescriptions': 0,
+                'threads': 0,
                 'messages': 0,
             }
 
@@ -113,6 +114,12 @@ class Command(BaseCommand):
                             pk_map[f'prescription_{pk}'] = obj.pk
                         stats['prescriptions'] += 1
 
+                    elif model_name == 'accounts.thread':
+                        obj = self.load_thread(pk, fields, pk_map)
+                        if pk:
+                            pk_map[f'thread_{pk}'] = obj.pk
+                        stats['threads'] += 1
+
                     elif model_name == 'accounts.message':
                         obj = self.load_message(pk, fields, pk_map)
                         if pk:
@@ -154,13 +161,19 @@ class Command(BaseCommand):
                 'is_staff': fields.get('is_staff', False),
                 'is_superuser': fields.get('is_superuser', False),
                 'date_joined': fields.get('date_joined'),
-                'user_type': fields.get('user_type', 'patient'),
+                'role': fields.get('role', 'patient'),
             }
         )
-        # Set password if provided (already hashed)
+        # Set password and last_login if provided
+        update_fields = []
         if 'password' in fields:
             obj.password = fields['password']
-            obj.save(update_fields=['password'])
+            update_fields.append('password')
+        if 'last_login' in fields and fields['last_login']:
+            obj.last_login = fields['last_login']
+            update_fields.append('last_login')
+        if update_fields:
+            obj.save(update_fields=update_fields)
         return obj
 
     def load_pharmacy(self, pk, fields, pk_map):
@@ -277,19 +290,49 @@ class Command(BaseCommand):
 
         return obj
 
+    def load_thread(self, pk, fields, pk_map):
+        """Load or update a Thread"""
+        obj = Thread.objects.create()
+
+        # Set timestamps manually if provided
+        update_fields = {}
+        if 'created_at' in fields:
+            update_fields['created_at'] = fields['created_at']
+        if 'last_updated' in fields:
+            update_fields['last_updated'] = fields['last_updated']
+        if update_fields:
+            Thread.objects.filter(pk=obj.pk).update(**update_fields)
+
+        # Add participants (this is a ManyToMany relationship)
+        # The fixture may have participant IDs we need to add after thread creation
+        # This will be handled in a separate pass if needed
+
+        return obj
+
     def load_message(self, pk, fields, pk_map):
         """Load or update a Message"""
-        sender_pk = pk_map.get(f'user_{fields["sender"]}')
-        receiver_pk = pk_map.get(f'user_{fields["receiver"]}')
+        sender_pk = pk_map.get(f'user_{fields.get("sender_id")}') if fields.get("sender_id") else None
+        recipient_pk = pk_map.get(f'user_{fields.get("recipient_id")}') if fields.get("recipient_id") else None
+        thread_pk = pk_map.get(f'thread_{fields.get("thread_id")}') if fields.get("thread_id") else None
+        prescription_pk = pk_map.get(f'prescription_{fields.get("prescription_id")}') if fields.get("prescription_id") else None
+        drug_pk = pk_map.get(f'drug_{fields.get("drug_id")}') if fields.get("drug_id") else None
 
         sender = CustomAccount.objects.get(pk=sender_pk) if sender_pk else None
-        receiver = CustomAccount.objects.get(pk=receiver_pk) if receiver_pk else None
+        recipient = CustomAccount.objects.get(pk=recipient_pk) if recipient_pk else None
+        thread = Thread.objects.get(pk=thread_pk) if thread_pk else None
+        prescription = Prescription.objects.get(pk=prescription_pk) if prescription_pk else None
+        drug = Drug.objects.get(pk=drug_pk) if drug_pk else None
 
         obj = Message.objects.create(
             sender=sender,
-            receiver=receiver,
+            recipient=recipient,
+            thread=thread,
             content=fields.get('content', ''),
-            is_read=fields.get('is_read', False),
+            link=fields.get('link'),
+            prescription=prescription,
+            refill_fulfilled=fields.get('refill_fulfilled'),
+            drug=drug,
+            resupply_fulfilled=fields.get('resupply_fulfilled'),
         )
 
         # Set timestamp manually if provided
