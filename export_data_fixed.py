@@ -19,20 +19,21 @@ def export_sqlite_to_json():
     data = []
 
     # Tables to export (in order to respect foreign keys)
+    # IMPORTANT: Order matters! Dependencies must come before dependents
     tables_to_export = [
         ('auth_group', 'auth.group', {}),
         ('accounts_customaccount', 'accounts.customaccount', {}),
-        ('patients_patientprofile', 'patients.patientprofile', {}),
-        ('pharmacy_pharmacyprofile', 'pharmacy.pharmacyprofile', {}),
+        ('pharmacy_pharmacyprofile', 'pharmacy.pharmacyprofile', {}),  # Must come before patients/pharmacists
         ('pharmacy_pharmacistprofile', 'pharmacy.pharmacistprofile', {}),
+        ('patients_patientprofile', 'patients.patientprofile', {}),  # Depends on pharmacy
         ('pharmacy_drug', 'pharmacy.drug', {'dosage': 100, 'route': 100}),  # Truncate these fields
         ('pharmacy_prescription', 'pharmacy.prescription', {}),
         ('patients_medicationreminder', 'patients.medicationreminder', {}),
         ('patients_remindertime', 'patients.remindertime', {}),
+        ('accounts_thread', 'accounts.thread', {}),  # Must come before thread_participant and messages
+        ('accounts_thread_participant', 'accounts.thread_participant', {}),
         ('pharmacy_message', 'pharmacy.message', {}),
         ('accounts_notifications', 'accounts.notifications', {}),
-        ('accounts_thread', 'accounts.thread', {}),
-        ('accounts_thread_participant', 'accounts.thread_participant', {}),
         ('accounts_readstatus', 'accounts.readstatus', {}),
     ]
 
