@@ -66,44 +66,57 @@ class Command(BaseCommand):
             pk_map = {}
 
             for item in data:
-                model_name = item['model']
-                pk = item['pk']
-                fields = item['fields']
+                model_name = item.get('model')
+                pk = item.get('pk')
+                fields = item.get('fields', {})
+
+                if not model_name or not fields:
+                    self.stdout.write(
+                        self.style.WARNING(f'Skipping invalid item: {item}')
+                    )
+                    continue
 
                 try:
                     if model_name == 'accounts.customaccount':
                         obj = self.load_user(pk, fields)
-                        pk_map[f'user_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'user_{pk}'] = obj.pk
                         stats['users'] += 1
 
                     elif model_name == 'pharmacy.pharmacyprofile':
                         obj = self.load_pharmacy(pk, fields, pk_map)
-                        pk_map[f'pharmacy_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'pharmacy_{pk}'] = obj.pk
                         stats['pharmacies'] += 1
 
                     elif model_name == 'pharmacy.pharmacistprofile':
                         obj = self.load_pharmacist(pk, fields, pk_map)
-                        pk_map[f'pharmacist_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'pharmacist_{pk}'] = obj.pk
                         stats['pharmacists'] += 1
 
                     elif model_name == 'patients.patientprofile':
                         obj = self.load_patient(pk, fields, pk_map)
-                        pk_map[f'patient_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'patient_{pk}'] = obj.pk
                         stats['patients'] += 1
 
                     elif model_name == 'pharmacy.drug':
                         obj = self.load_drug(pk, fields, pk_map)
-                        pk_map[f'drug_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'drug_{pk}'] = obj.pk
                         stats['drugs'] += 1
 
                     elif model_name == 'pharmacy.prescription':
                         obj = self.load_prescription(pk, fields, pk_map)
-                        pk_map[f'prescription_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'prescription_{pk}'] = obj.pk
                         stats['prescriptions'] += 1
 
                     elif model_name == 'accounts.message':
                         obj = self.load_message(pk, fields, pk_map)
-                        pk_map[f'message_{pk}'] = obj.pk
+                        if pk:
+                            pk_map[f'message_{pk}'] = obj.pk
                         stats['messages'] += 1
 
                 except Exception as e:
