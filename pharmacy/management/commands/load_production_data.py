@@ -86,21 +86,24 @@ class Command(BaseCommand):
 
                     elif model_name == 'pharmacy.pharmacyprofile':
                         obj = self.load_pharmacy(pk, fields, pk_map)
-                        if pk:
+                        if obj and pk:
                             pk_map[f'pharmacy_{pk}'] = obj.pk
-                        stats['pharmacies'] += 1
+                        if obj:
+                            stats['pharmacies'] += 1
 
                     elif model_name == 'pharmacy.pharmacistprofile':
                         obj = self.load_pharmacist(pk, fields, pk_map)
-                        if pk:
+                        if obj and pk:
                             pk_map[f'pharmacist_{pk}'] = obj.pk
-                        stats['pharmacists'] += 1
+                        if obj:
+                            stats['pharmacists'] += 1
 
                     elif model_name == 'patients.patientprofile':
                         obj = self.load_patient(pk, fields, pk_map)
-                        if pk:
+                        if obj and pk:
                             pk_map[f'patient_{pk}'] = obj.pk
-                        stats['patients'] += 1
+                        if obj:
+                            stats['patients'] += 1
 
                     elif model_name == 'pharmacy.drug':
                         obj = self.load_drug(pk, fields, pk_map)
@@ -179,7 +182,15 @@ class Command(BaseCommand):
     def load_pharmacy(self, pk, fields, pk_map):
         """Load or update a PharmacyProfile"""
         user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
-        user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
+
+        # Skip if user doesn't exist (orphaned data)
+        if not user_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping pharmacy {pk}: user_id {fields.get("user_id")} not found')
+            )
+            return None
+
+        user = CustomAccount.objects.get(pk=user_pk)
 
         obj, created = PharmacyProfile.objects.update_or_create(
             user=user,
@@ -199,7 +210,14 @@ class Command(BaseCommand):
         user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
         pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
 
-        user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
+        # Skip if user doesn't exist (orphaned data)
+        if not user_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping pharmacist {pk}: user_id {fields.get("user_id")} not found')
+            )
+            return None
+
+        user = CustomAccount.objects.get(pk=user_pk)
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
 
         obj, created = PharmacistProfile.objects.update_or_create(
@@ -217,7 +235,14 @@ class Command(BaseCommand):
         user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
         pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
 
-        user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
+        # Skip if user doesn't exist (orphaned data)
+        if not user_pk:
+            self.stdout.write(
+                self.style.WARNING(f'Skipping patient {pk}: user_id {fields.get("user_id")} not found')
+            )
+            return None
+
+        user = CustomAccount.objects.get(pk=user_pk)
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
 
         obj, created = PatientProfile.objects.update_or_create(
