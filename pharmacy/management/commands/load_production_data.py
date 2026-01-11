@@ -178,7 +178,7 @@ class Command(BaseCommand):
 
     def load_pharmacy(self, pk, fields, pk_map):
         """Load or update a PharmacyProfile"""
-        user_pk = pk_map.get(f'user_{fields["user"]}')
+        user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
         user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
 
         obj, created = PharmacyProfile.objects.update_or_create(
@@ -196,8 +196,8 @@ class Command(BaseCommand):
 
     def load_pharmacist(self, pk, fields, pk_map):
         """Load or update a PharmacistProfile"""
-        user_pk = pk_map.get(f'user_{fields["user"]}')
-        pharmacy_pk = pk_map.get(f'pharmacy_{fields["pharmacy"]}')
+        user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
+        pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
 
         user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
@@ -214,8 +214,8 @@ class Command(BaseCommand):
 
     def load_patient(self, pk, fields, pk_map):
         """Load or update a PatientProfile"""
-        user_pk = pk_map.get(f'user_{fields["user"]}')
-        pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy")}') if fields.get("pharmacy") else None
+        user_pk = pk_map.get(f'user_{fields.get("user_id")}') if fields.get("user_id") else None
+        pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
 
         user = CustomAccount.objects.get(pk=user_pk) if user_pk else None
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
@@ -225,22 +225,17 @@ class Command(BaseCommand):
             defaults={
                 'first_name': fields['first_name'],
                 'last_name': fields['last_name'],
-                'date_of_birth': fields.get('date_of_birth'),
-                'street_address': fields.get('street_address', ''),
-                'city': fields.get('city', ''),
-                'state': fields.get('state', ''),
-                'zip_code': fields.get('zip_code', ''),
+                'dob': fields.get('dob'),
+                'gender': fields.get('gender', 'N'),
                 'phone_number': fields.get('phone_number', ''),
                 'pharmacy': pharmacy,
-                'insurance_provider': fields.get('insurance_provider', ''),
-                'insurance_policy_number': fields.get('insurance_policy_number', ''),
             }
         )
         return obj
 
     def load_drug(self, pk, fields, pk_map):
         """Load or update a Drug"""
-        pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy")}') if fields.get("pharmacy") else None
+        pharmacy_pk = pk_map.get(f'pharmacy_{fields.get("pharmacy_id")}') if fields.get("pharmacy_id") else None
         pharmacy = PharmacyProfile.objects.get(pk=pharmacy_pk) if pharmacy_pk else None
 
         # Truncate fields if needed (though model should handle this now)
@@ -264,9 +259,9 @@ class Command(BaseCommand):
 
     def load_prescription(self, pk, fields, pk_map):
         """Load or update a Prescription"""
-        patient_pk = pk_map.get(f'patient_{fields.get("patient")}') if fields.get("patient") else None
-        drug_pk = pk_map.get(f'drug_{fields["medicine"]}')
-        pharmacist_pk = pk_map.get(f'pharmacist_{fields.get("prescribed_by")}') if fields.get("prescribed_by") else None
+        patient_pk = pk_map.get(f'patient_{fields.get("patient_id")}') if fields.get("patient_id") else None
+        drug_pk = pk_map.get(f'drug_{fields.get("medicine_id")}') if fields.get("medicine_id") else None
+        pharmacist_pk = pk_map.get(f'pharmacist_{fields.get("prescribed_by_id")}') if fields.get("prescribed_by_id") else None
 
         patient = PatientProfile.objects.get(pk=patient_pk) if patient_pk else None
         medicine = Drug.objects.get(pk=drug_pk) if drug_pk else None
