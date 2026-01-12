@@ -93,6 +93,14 @@ python manage.py createsuperuser
 python manage.py import_drugs pharmacy/data/drugs.csv
 ```
 
+8. **Seed demo data (for testing)**
+```bash
+./seed_demo.sh
+# Or view available accounts:
+python show_demo_accounts.py
+# See DEMO-SCENARIOS.md for testing workflows
+```
+
 ### Running the Application (4 Terminal Setup)
 
 **Terminal 1: Django Development Server**
@@ -251,6 +259,35 @@ Multi-pharmacy inventory tracking in [pharmacy/views.py](pharmacy/views.py):
 - Ensure DATABASE_URL environment variable is set
 - Check PostgreSQL credentials are correct
 - Run migrations manually: `python manage.py migrate`
+
+## Demo Data & Testing
+
+### Quick Demo Setup
+```bash
+# Seed comprehensive demo data with various scenarios
+./seed_demo.sh
+
+# View all demo accounts and credentials
+python show_demo_accounts.py
+```
+
+### What's Included
+The demo data seeder creates realistic scenarios for testing:
+- **Inventory**: Out of stock, low stock, and in-stock items with resupply flags
+- **Prescriptions**: Active prescriptions, refill requests, expiring prescriptions
+- **Reminders**: Active reminders, archived reminders, reminders running out
+- **Messages**: Patient-pharmacist conversations with read/unread states
+- **Notifications**: Various notification types with read/unread states
+
+See [DEMO-SCENARIOS.md](DEMO-SCENARIOS.md) for detailed testing workflows and [DEMO-DATA-GUIDE.md](DEMO-DATA-GUIDE.md) for complete data descriptions.
+
+### Multi-Role Testing
+To test multiple roles simultaneously in the same browser:
+1. **Regular Window**: Login as Pharmacist
+2. **Incognito Window**: Login as Patient
+3. **Another Browser Profile**: Login as Admin
+
+This allows you to see real-time interactions between different user types.
 
 ## Development Notes
 
