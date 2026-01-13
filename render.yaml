@@ -31,7 +31,7 @@ services:
     runtime: python
     plan: starter
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "celery -A PulseRx worker --loglevel=info"
+    startCommand: "celery -A PulseRx worker --loglevel=warning --max-tasks-per-child=50 --pool=solo --concurrency=1 --without-gossip --without-mingle"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
